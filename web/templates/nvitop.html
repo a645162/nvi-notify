@@ -2,20 +2,21 @@
 <html>
 <head>
     <title>NVITOP Output</title>
-    <script src="{{ url_for('static', filename='js/socket.io.4.4.1.js') }}"></script>
-<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>-->
+    <script src="{{ url_for('static', filename='js/socket.io.4.4.1.js') }}"/>
     <script type="text/javascript">
         let host = window.location.hostname;
         let port = window.location.port;
         let socket = io.connect('http://' + host + ':' + port);
 
-        // 在控制台输出连接信息
+        // Connect to Socket.IO Server
         socket.on('connect', function () {
+            // log connection message
             console.log('Connected to Socket.IO Server');
         });
 
-        // 在控制台输出断开连接信息
+        // Disconnect from Socket.IO Server
         socket.on('disconnect', function () {
+            // log disconnection message
             console.log('Disconnected from Socket.IO Server');
         });
 

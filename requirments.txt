@@ -1,0 +1,9 @@
+
+
+nvidia-ml-py
+nvitop
+
+flask
+
+flask-socketio
+gevent-websocket

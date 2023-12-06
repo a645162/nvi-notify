@@ -28,3 +28,11 @@ python main.py
 - [ ] Support for Feishu
 - [ ] Support for PushDeer
 - [ ] Support for PushPlus
+
+## References
+
+https://github.com/XuehaiPan/nvitop/blob/main/README.md
+
+## Thanks
+
+[XuehaiPan/nvitop](https://github.com/XuehaiPan/nvitop)

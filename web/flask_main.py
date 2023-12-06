@@ -1,11 +1,13 @@
 from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
+
 import subprocess
 import html
 import time
 
 import threading
 
-from flask_socketio import SocketIO, emit
+from config import config
 
 app = Flask(__name__)
 # app.config['SECRET_KEY'] = 'secret_key'
@@ -91,5 +93,9 @@ def handle_disconnect():
     running = False  # 停止发送数据的线程
 
 
+def start_web_server():
+    app.run(host=config.web_server_host, port=config.web_server_port)
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1234)
+    start_web_server()

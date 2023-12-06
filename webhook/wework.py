@@ -7,9 +7,9 @@ from utils import my_time
 
 
 def get_wework_url():
-    wework_env = os.environ.get('GPU_MONITOR_WEWORK')
+    wework_env = os.environ.get('GPU_MONITOR_WEBHOOK_WEWORK')
     if not wework_env:
-        # print("GPU_MONITOR_WEWORK 环境变量未设置")
+        # print("GPU_MONITOR_WEBHOOK_WEWORK Not Set!")
         return None
     webhook_url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=' + wework_env
     return webhook_url
@@ -19,7 +19,7 @@ def send_text(msg):
     webhook_url = get_wework_url()
 
     if not webhook_url:
-        print("GPU_MONITOR_WEWORK 环境变量未设置")
+        print("GPU_MONITOR_WEBHOOK_WEWORK Not Set!")
         return
 
     headers = {'Content-Type': 'application/json'}

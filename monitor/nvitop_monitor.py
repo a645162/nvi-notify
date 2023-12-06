@@ -5,8 +5,10 @@ import time
 from utils import my_time
 from webhook import wework
 
-threshold = 20
-sleep_time = 5
+from config import config
+
+threshold = config.gpu_monitor_usage_threshold
+sleep_time = config.gpu_monitor_sleep_time
 
 
 def send_text_to_wework(gpu_id: int, msg: str):
@@ -106,8 +108,7 @@ class nvidia_monitor:
             self.thread.join()
 
 
-if __name__ == '__main__':
-
+def start_monitor_all():
     # Get GPU count
     gpu_count = Device.count()
 
@@ -115,3 +116,7 @@ if __name__ == '__main__':
         nvidia_monitor_i = nvidia_monitor(i)
         # print(nvidia_monitor_i.get_gpu_usage())
         nvidia_monitor_i.start_monitor()
+
+
+if __name__ == '__main__':
+    start_monitor_all()

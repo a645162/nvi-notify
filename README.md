@@ -1,6 +1,6 @@
-# nvidia-smi-webhook-notify
+# NVIDIA-SMI WebHook Notify
 
-Auto monitor NVIDIA GPU auto send idlesse msg to webhook.
+Auto monitor NVIDIA GPU auto sends a status message to webhook when GPU usage is changed.
 
 ## Support Webhook
 

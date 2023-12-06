@@ -1,5 +1,5 @@
 from flask import Flask, render_template
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 
 import subprocess
 import html
@@ -10,10 +10,9 @@ import threading
 from config import config
 
 app = Flask(__name__)
-# app.config['SECRET_KEY'] = 'secret_key'
-# socketio = SocketIO(app)
 app.config['SECRET_KEY'] = 'secret_key'
-socketio = SocketIO(app, async_mode='threading')
+async_mode = 'threading'
+socketio = SocketIO(app, async_mode=async_mode)
 
 
 @app.route('/')
@@ -60,12 +59,9 @@ def run_nvitop():
                 ['nvitop', '-1'],
                 stdout=subprocess.PIPE, universal_newlines=True
             )
-            # 一次性读取所有
+
             output = process.stdout.read().strip()
             socketio.emit('nvitop_output', {'output': output})
-            # for line in process.stdout:
-            #     print(line.strip())
-            #     socketio.emit('nvitop_output', {'output': line.strip()})
         except Exception as e:
             socketio.emit('nvitop_output', {'output': str(e)})
 
@@ -90,7 +86,7 @@ def handle_connect():
 def handle_disconnect():
     global running
     print('Client disconnected.')
-    running = False  # 停止发送数据的线程
+    running = False
 
 
 def start_web_server():

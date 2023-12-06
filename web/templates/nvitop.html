@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Nvitop Output</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <title>NVITOP Output</title>
+    <script src="{{ url_for('static', filename='js/socket.io.4.4.1.js') }}"></script>
+<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>-->
     <script type="text/javascript">
         let host = window.location.hostname;
         let port = window.location.port;
@@ -10,12 +11,12 @@
 
         // 在控制台输出连接信息
         socket.on('connect', function () {
-            console.log('已连接到 Socket.IO 服务器');
+            console.log('Connected to Socket.IO Server');
         });
 
         // 在控制台输出断开连接信息
         socket.on('disconnect', function () {
-            console.log('已断开与 Socket.IO 服务器的连接');
+            console.log('Disconnected from Socket.IO Server');
         });
 
         socket.on('nvitop_output', function (data) {
@@ -27,7 +28,7 @@
     </script>
 </head>
 <body>
-<h1>Nvitop Output</h1>
+<h1>NVITOP Realtime Output</h1>
 <pre id="output"></pre>
 </body>
 </html>

@@ -20,3 +20,11 @@ export GPU_MONITOR_WEBHOOK_WEWORK="your webhook key"
 pip install -r requirements.txt
 python main.py
 ```
+
+## TODO
+
+- [ ] Support for DingTalk
+- [ ] Support for Bark
+- [ ] Support for Feishu
+- [ ] Support for PushDeer
+- [ ] Support for PushPlus

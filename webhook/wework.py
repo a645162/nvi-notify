@@ -1,5 +1,6 @@
 import os
-
+import time
+import threading
 import requests
 import json
 
@@ -15,7 +16,7 @@ def get_wework_url():
     return webhook_url
 
 
-def send_text(msg):
+def direct_send_text(msg):
     webhook_url = get_wework_url()
 
     if not webhook_url:
@@ -33,7 +34,7 @@ def send_text(msg):
     print("WeWork", "text", r.text)
 
 
-def send_markdown(content):
+def direct_send_markdown(content):
     webhook_url = get_wework_url()
 
     if not webhook_url:
@@ -50,6 +51,30 @@ def send_markdown(content):
     }
     r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
     print("WeWork", "MarkDown", r.text)
+
+
+msg_queue = []
+thread_is_start = False
+
+
+def send_text_thread():
+    while True:
+        if len(msg_queue) == 0:
+            time.sleep(5)
+            continue
+        try:
+            direct_send_text(msg_queue[0])
+            msg_queue.pop(0)
+        except:
+            time.sleep(60)
+
+
+def send_text(msg):
+    msg_queue.append(msg)
+    global thread_is_start
+    if not thread_is_start:
+        thread_is_start = True
+        threading.Thread(target=send_text_thread).start()
 
 
 if __name__ == '__main__':
@@ -70,9 +95,9 @@ if __name__ == '__main__':
         f"Test Pass!\n"
     )
 
-    send_markdown(
-        f"# GPU Monitor\n"
-        f"## Machine Name\n{machine_name}\n"
-        f"## Time\n{formatted_time}\n"
-        f"# Test Pass!\n"
-    )
+    # direct_send_markdown(
+    #     f"# GPU Monitor\n"
+    #     f"## Machine Name\n{machine_name}\n"
+    #     f"## Time\n{formatted_time}\n"
+    #     f"# Test Pass!\n"
+    # )

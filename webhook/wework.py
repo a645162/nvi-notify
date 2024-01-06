@@ -5,6 +5,9 @@ import requests
 import json
 
 from utils import my_time
+from utils import env
+
+import datetime
 
 
 def get_wework_url():
@@ -56,12 +59,34 @@ def direct_send_markdown(content):
 msg_queue = []
 thread_is_start = False
 
+sleep_time_start = (
+    env.get_env_time(
+        "GPU_MONITOR_SLEEP_TIME_START",
+        datetime.time(23, 0))
+)
+sleep_time_end = (
+    env.get_env_time(
+        "GPU_MONITOR_SLEEP_TIME_END",
+        datetime.time(7, 30))
+)
+
+is_in_sleep_time = False
+
 
 def send_text_thread():
+    global is_in_sleep_time
+
     while True:
         if len(msg_queue) == 0:
             time.sleep(5)
             continue
+        if is_in_sleep_time:
+            if my_time.is_within_time_range(sleep_time_start, sleep_time_end):
+                time.sleep(60)
+                continue
+            else:
+                is_in_sleep_time = False
+
         try:
             direct_send_text(msg_queue[0])
             msg_queue.pop(0)

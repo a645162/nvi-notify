@@ -27,7 +27,7 @@ def parse_user_list(file_path: str):
         return list(json.load(f))
 
 
-user_list = parse_user_list('user_list_exp.json')
+user_list = parse_user_list('config/user_list.json')
 print()
 
 if __name__ == '__main__':

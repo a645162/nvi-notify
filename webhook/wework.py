@@ -9,12 +9,19 @@ from utils import env
 
 import datetime
 
+ENV_VAR_NAME = "GPU_MONITOR_WEBHOOK_WEWORK"
+
 
 def get_wework_url():
-    wework_env = os.environ.get('GPU_MONITOR_WEBHOOK_WEWORK')
+    wework_env = env.get_env(ENV_VAR_NAME)
     if not wework_env:
-        # print("GPU_MONITOR_WEBHOOK_WEWORK Not Set!")
+        print(f"{ENV_VAR_NAME} Not Set!")
         return None
+
+    # Judge is URL
+    if wework_env.startswith('http'):
+        return wework_env
+
     webhook_url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=' + wework_env
     return webhook_url
 
@@ -28,7 +35,7 @@ def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
     webhook_url = get_wework_url()
 
     if not webhook_url:
-        print("GPU_MONITOR_WEBHOOK_WEWORK Not Set!")
+        print(f"{ENV_VAR_NAME} Not Set!")
         return
 
     headers = {'Content-Type': 'application/json'}

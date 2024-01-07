@@ -22,9 +22,23 @@ def parse_user_list(file_path: str):
     if not os.path.exists(file_path):
         return []
 
-    # parse json array to list
     with open(file_path, 'r', encoding='utf-8') as f:
-        return list(json.load(f))
+        return_list = list(json.load(f))
+
+    for user in return_list:
+        if not user.get('user_id'):
+            user['user_id'] = "Unknown"
+
+        if not user.get('keywords'):
+            user['keywords'] = []
+
+        if not user.get('mention_id'):
+            user['mention_id'] = ""
+
+        if not user.get('mention_phone_number'):
+            user['mention_phone_number'] = ""
+
+    return return_list
 
 
 user_list = parse_user_list('config/user_list.json')

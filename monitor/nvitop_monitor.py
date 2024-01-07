@@ -16,13 +16,14 @@ def send_text_to_wework(msg: str):
     send_text = \
         (
             f"GPU Monitor\n"
-            f"\t{msg}\n"
+            f"{msg}\n"
             f"Time: {now_time}"
         )
     wework.send_text(send_text)
 
 
 def gpu_create_task(
+        pid: int,
         task_info: dict,
         gpu_usage: int,
         gpu_mem_usage: str,
@@ -30,17 +31,17 @@ def gpu_create_task(
         gpu_mem_percent: float,
         gpu_mem_total: str
 ):
-    print(f"GPU {task_info['device']} start create new task:{task_info['pid']}")
-    if not task_info['debug']:
+    print(f"GPU {task_info[pid]['device']} start create new task:{task_info[pid]['pid']}")
+    if not task_info[pid]['debug']:
         send_text_to_wework(
-            f"{task_info['device']}Create New Task\n"
-            f"\tGPU Usage: {gpu_usage}%\n"
+            f"\t{task_info[pid]['user']} Create New Task({task_info[pid]['command']}) on GPU:{task_info[pid]['device']}\n"
+            f"\tGPU Usage: {gpu_usage}%,\tGPU Mem Free: {gpu_mem_free}\n"
             f"\tGPU Mem: {gpu_mem_usage}/{gpu_mem_total}({gpu_mem_percent}%)\n"
-            f"\tGPU Mem Free: {gpu_mem_free}\n"
         )
 
 
 def gpu_finish_task(
+        pid: int,
         task_info: dict,
         gpu_usage: int,
         gpu_mem_usage: str,
@@ -48,13 +49,12 @@ def gpu_finish_task(
         gpu_mem_percent: float,
         gpu_mem_total: str
 ):
-    print(f"GPU {task_info['device']} finish task:{task_info['pid']}")
-    if not task_info['debug']:
+    print(f"GPU {task_info[pid]['device']} finish task:{task_info[pid]['pid']}")
+    if not task_info[pid]['debug']:
         send_text_to_wework(
-            f"{task_info['device']}Finish Task\n"
-            f"\tGPU Usage: {gpu_usage}%\n"
-            f"\tGPU Mem: {gpu_mem_usage}/{gpu_mem_total}({gpu_mem_percent}%)\n"
-            f"\tGPU Mem Free: {gpu_mem_free}\n"
+            f"\t{task_info[pid]['user']} Finish Task({task_info[pid]['command']}) on GPU:{task_info[pid]['device']}\n"
+            f"\tGPU Usage: {gpu_usage}%,\tGPU Mem Free: {gpu_mem_free}\n"
+            f"\tGPU Mem: {gpu_mem_usage}/{gpu_mem_total}({gpu_mem_percent}%)"
         )
 
 
@@ -83,9 +83,10 @@ class nvidia_monitor:
                 start_time = gpu_process.create_time()
 
                 gpu_task_info[pid] = {
-                    "memory_usage": gpu_process.gpu_memory_human(),
                     "device": self.gpu_id,
                     "user": config.user_list[gpu_process.cwd().split("/")[-1]],
+                    "memory_usage": gpu_process.gpu_memory_human(),
+                    "command": gpu_process.command(),
                     "running_time": gpu_process.running_time_human(),
                     "debug": debug_flag,
                 }
@@ -138,7 +139,8 @@ class nvidia_monitor:
 
                     for pid in new_task_pid:
                         gpu_create_task(
-                            runing_task[pid],
+                            pid,
+                            runing_task,
                             gpu_util,
                             gpu_mem_usage,
                             gpu_mem_free,
@@ -148,7 +150,8 @@ class nvidia_monitor:
 
                     for pid in finished_task_pid:
                         gpu_finish_task(
-                            last_runing_task[pid],
+                            pid,
+                            last_runing_task,
                             gpu_util,
                             gpu_mem_usage,
                             gpu_mem_free,

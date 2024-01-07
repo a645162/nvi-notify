@@ -5,7 +5,7 @@ import time
 from utils import my_time
 from webhook import wework
 
-from config import config
+from config import config, keywords 
 
 threshold = config.gpu_monitor_usage_threshold
 sleep_time = config.gpu_monitor_sleep_time
@@ -74,17 +74,14 @@ class nvidia_monitor:
         gpu_task_info = {}
         for pid, gpu_process in self.get_gpu_all_processes().items():
             process_name = gpu_process.name().lower()
-            if len(gpu_process.cmdline()) > 1:
-                debug_flag = config.ignore_vscode_debug_procees_name in gpu_process.cmdline()[1]
-            else:
-                debug_flag = None
 
             if process_name not in config.ignore_procees_name:
                 start_time = gpu_process.create_time()
+                debug_flag = keywords.is_debug_process(gpu_process.cmdline())
 
                 gpu_task_info[pid] = {
                     "device": self.gpu_id,
-                    "user": config.user_list[gpu_process.cwd().split("/")[-1]],
+                    "user": keywords.find_user_by_path(config.user_list, gpu_process.cwd()),
                     "memory_usage": gpu_process.gpu_memory_human(),
                     "command": gpu_process.command(),
                     "running_time": gpu_process.running_time_human(),

@@ -14,3 +14,13 @@ def find_user_by_path(user_list: list, path: str):
             return user
 
     return None
+
+def is_debug_process(process_cmdline_list: list):
+    for line in process_cmdline_list:
+        if line.split('/')[-1] == 'python' or line == 'python':
+            process_cmdline_list.remove(line)
+
+    if any(keyword in process_cmdline_list[0] for keyword in ['vscode-server', 'debugpy']):
+        return True
+    else:
+        return None

@@ -38,6 +38,12 @@ def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
             "content": msg
         }
     }
+
+    if mentioned_id:
+        data["text"]["mentioned_list"] = mentioned_id
+    if mentioned_mobile:
+        data["text"]["mentioned_mobile_list"] = mentioned_mobile
+
     r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
     print("WeWork", "text", r.text)
 
@@ -123,7 +129,8 @@ if __name__ == '__main__':
         f"GPU Monitor\n"
         f"\tMachine Name: {machine_name}\n"
         f"\tTime: {formatted_time}\n"
-        f"Test Pass!\n"
+        f"Test Pass!\n",
+        mentioned_id=["khm"]
     )
 
     # direct_send_markdown(

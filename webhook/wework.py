@@ -12,10 +12,18 @@ import datetime
 ENV_VAR_NAME = "GPU_MONITOR_WEBHOOK_WEWORK"
 
 
-def get_wework_url():
-    wework_env = env.get_env(ENV_VAR_NAME)
+def get_wework_url(webhook_env: str = ""):
+    if len(webhook_env.strip()) == 0:
+        wework_env = env.get_env(ENV_VAR_NAME)
+    else:
+        wework_env = webhook_env.strip()
+
     if not wework_env:
         print(f"{ENV_VAR_NAME} Not Set!")
+        return None
+
+    if len(wework_env) == 0:
+        print(f"WeWork Key Env!")
         return None
 
     # Judge is URL
@@ -36,6 +44,39 @@ def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
 
     if not webhook_url:
         print(f"{ENV_VAR_NAME} Not Set!")
+        return
+
+    headers = {'Content-Type': 'application/json'}
+    data = {
+        "msgtype": "text",
+        "text": {
+            "content": msg
+        }
+    }
+
+    if mentioned_id:
+        data["text"]["mentioned_list"] = mentioned_id
+    if mentioned_mobile:
+        data["text"]["mentioned_mobile_list"] = mentioned_mobile
+
+    r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
+    print("WeWork", "text", r.text)
+
+
+def direct_send_text_warning(msg: str, mentioned_id=None, mentioned_mobile=None):
+    if mentioned_mobile is None:
+        mentioned_mobile = []
+    if mentioned_id is None:
+        mentioned_id = []
+
+    WARNING_ENV_NAME = "GPU_MONITOR_WEBHOOK_WEWORK_WARNING"
+
+    webhook_url = get_wework_url(
+        env.get_env(WARNING_ENV_NAME, "")
+    )
+
+    if not webhook_url:
+        print(f"{WARNING_ENV_NAME} Not Set!")
         return
 
     headers = {'Content-Type': 'application/json'}

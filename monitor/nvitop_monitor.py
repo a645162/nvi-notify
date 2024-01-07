@@ -11,51 +11,96 @@ threshold = config.gpu_monitor_usage_threshold
 sleep_time = config.gpu_monitor_sleep_time
 user_list = config.user_list
 
-def send_text_to_wework(msg: str):
+def send_text_to_wework(msg: str, mentioned_id=None, mentioned_mobile=None):
     now_time = my_time.get_now_time()
     send_text = \
         (
             f"GPU Monitor\n"
-            f"{msg}\n"
+            f"{msg}"
             f"Time: {now_time}"
         )
-    wework.send_text(send_text)
+    wework.send_text(send_text, mentioned_id, mentioned_mobile)
 
 
 def gpu_create_task(
         pid: int,
-        task_info: dict,
+        running_tasks: dict,
         gpu_usage: int,
         gpu_mem_usage: str,
         gpu_mem_free: str,
         gpu_mem_percent: float,
         gpu_mem_total: str
 ):
-    print(f"GPU {task_info[pid]['device']} start create new task:{task_info[pid]['pid']}")
-    if not task_info[pid]['debug']:
+    all_tasks_msg = get_all_tasks_msg(running_tasks)
+    
+    gpu_name = f"GPU:{running_tasks[pid]['device']}"
+    print(f"{gpu_name} start create new task:{pid}")
+
+    if running_tasks[pid]['debug'] is None:
         send_text_to_wework(
-            f"\t{task_info[pid]['user']} Create New Task({task_info[pid]['command']}) on GPU:{task_info[pid]['device']}\n"
-            f"\tGPU Usage: {gpu_usage}%,\tGPU Mem Free: {gpu_mem_free}\n"
-            f"\tGPU Mem: {gpu_mem_usage}/{gpu_mem_total}({gpu_mem_percent}%)\n"
+            f"{running_tasks[pid]['user']['name']} Create New Task ({get_command_py_files(running_tasks[pid])}) on {gpu_name}\n"
+            f"\t{gpu_name} Usage: {gpu_usage}%, Mem Free: {gpu_mem_free}\n"
+            f"\t{gpu_name} Mem: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)\n"
+            f"{gpu_name} Running {len(running_tasks)} task(s).\n"
+            f"\t{all_tasks_msg}",
+            mentioned_id=running_tasks[pid]['user']['mention_id'],
+            mentioned_mobile=running_tasks[pid]['user']['mention_phone_number']
         )
 
 
 def gpu_finish_task(
         pid: int,
-        task_info: dict,
+        fininshed_task: dict,
+        running_tasks: dict,
         gpu_usage: int,
         gpu_mem_usage: str,
         gpu_mem_free: str,
         gpu_mem_percent: float,
         gpu_mem_total: str
 ):
-    print(f"GPU {task_info[pid]['device']} finish task:{task_info[pid]['pid']}")
-    if not task_info[pid]['debug']:
+    all_tasks_msg = get_all_tasks_msg(running_tasks)
+
+    gpu_name = f"GPU:{fininshed_task['device']}"
+    print(f"{gpu_name} finish task:{pid}")
+
+    if fininshed_task["debug"] is None:
+        user_dict = fininshed_task['user']
+        user_name = user_dict['name']
+        mention_id_list = user_dict['mention_id']
+        mention_mobile_list = user_dict['mention_phone_number']
+
         send_text_to_wework(
-            f"\t{task_info[pid]['user']} Finish Task({task_info[pid]['command']}) on GPU:{task_info[pid]['device']}\n"
-            f"\tGPU Usage: {gpu_usage}%,\tGPU Mem Free: {gpu_mem_free}\n"
-            f"\tGPU Mem: {gpu_mem_usage}/{gpu_mem_total}({gpu_mem_percent}%)"
+            f"{user_name} Finish Task ({get_command_py_files(fininshed_task)}) on {gpu_name}\n"
+            f"\t{gpu_name} Usage: {gpu_usage}%, {gpu_name} Mem Free: {gpu_mem_free}\n"
+            f"\t{gpu_name} Mem: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)\n"
+            f"{gpu_name} Running {len(running_tasks)} Task(s).\n"
+            f"{all_tasks_msg}",
+            mentioned_id=mention_id_list,
+            mentioned_mobile=mention_mobile_list
         )
+
+
+def get_command_py_files(task_info: dict):
+    cmdline = task_info["cmdline"]
+    for cmd_str in cmdline:
+        if cmd_str.lower().endswith(".py"):
+            if "/" in cmd_str:
+                cmd_list = cmd_str.split("/")
+                return(f"{cmd_list[-2]}/{cmd_list[-1]}")
+            else:
+                return cmd_str
+
+
+def get_all_tasks_msg(tasks_info: dict):
+    all_tasks_msg = []
+    for task_idx, info in enumerate(tasks_info.values()):
+        debug_info = 'Debug' if info['debug'] is not None else ''
+        task_msg = (f"\t{debug_info} Task {task_idx}  User: {info['user']['name']}  "
+                    f"GPU Mem Usage: {info['memory_usage']}  "
+                    f"Running Time: {info['running_time']}  \n")
+        all_tasks_msg.append(task_msg)
+
+    return ''.join(all_tasks_msg)
 
 
 class nvidia_monitor:
@@ -70,25 +115,34 @@ class nvidia_monitor:
     def update_device(self):
         self.nvidia_i = Device(self.gpu_id)
 
-    def get_valid_gpu_task(self):
-        gpu_task_info = {}
+    def get_valid_gpu_tasks(self):
+        gpu_tasks_info = {}
         for pid, gpu_process in self.get_gpu_all_processes().items():
-            process_name = gpu_process.name().lower()
+            process_name = gpu_process.name()
 
-            if process_name not in config.ignore_procees_name:
-                start_time = gpu_process.create_time()
+            if process_name == "python":
                 debug_flag = keywords.is_debug_process(gpu_process.cmdline())
-
-                gpu_task_info[pid] = {
+                
+                user_dict = keywords.find_user_by_path(config.user_list, gpu_process.cwd())
+                if user_dict is None:
+                    user_dict={
+                        "name": "Unknow",
+                        "keywords": [],
+                        "mention_id": [],
+                        "mention_phone_number": []
+                    }
+                
+                gpu_tasks_info[pid] = {
                     "device": self.gpu_id,
-                    "user": keywords.find_user_by_path(config.user_list, gpu_process.cwd()),
+                    "user": user_dict,
                     "memory_usage": gpu_process.gpu_memory_human(),
                     "command": gpu_process.command(),
+                    "cmdline": gpu_process.cmdline(),
                     "running_time": gpu_process.running_time_human(),
                     "debug": debug_flag,
                 }
 
-        return gpu_task_info
+        return gpu_tasks_info
 
     def get_gpu_all_processes(self):
         return self.nvidia_i.processes()
@@ -120,13 +174,13 @@ class nvidia_monitor:
             print(f"GPU {self.gpu_id} monitor start")
             print(f"GPU {self.gpu_id} threshold is {threshold}")
 
-            last_runing_task = None
+            last_running_tasks = None
             while monitor_thread_work:
-                runing_task = self.get_valid_gpu_task()
+                running_tasks = self.get_valid_gpu_tasks()
 
-                if last_runing_task and runing_task.keys() != last_runing_task.keys():
-                    new_task_pid = set(runing_task.keys()) - set(last_runing_task.keys())
-                    finished_task_pid = set(last_runing_task.keys()) - set(runing_task.keys())
+                if last_running_tasks and running_tasks.keys() != last_running_tasks.keys():
+                    new_task_pid = set(running_tasks.keys()) - set(last_running_tasks.keys())
+                    finished_task_pid = set(last_running_tasks.keys()) - set(running_tasks.keys())
 
                     gpu_util = self.get_gpu_utl()
                     gpu_mem_usage = self.get_gpu_mem_usage()
@@ -137,7 +191,7 @@ class nvidia_monitor:
                     for pid in new_task_pid:
                         gpu_create_task(
                             pid,
-                            runing_task,
+                            running_tasks,
                             gpu_util,
                             gpu_mem_usage,
                             gpu_mem_free,
@@ -148,7 +202,8 @@ class nvidia_monitor:
                     for pid in finished_task_pid:
                         gpu_finish_task(
                             pid,
-                            last_runing_task,
+                            last_running_tasks[pid],
+                            running_tasks,
                             gpu_util,
                             gpu_mem_usage,
                             gpu_mem_free,
@@ -156,7 +211,7 @@ class nvidia_monitor:
                             gpu_mem_total
                         )
 
-                last_runing_task = runing_task
+                last_running_tasks = running_tasks
                 time.sleep(sleep_time)
 
             print(f"GPU {self.gpu_id} monitor stop")
@@ -182,5 +237,5 @@ def start_monitor_all():
         nvidia_monitor_i.start_monitor()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     start_monitor_all()

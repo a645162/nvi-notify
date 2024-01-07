@@ -5,3 +5,12 @@ def is_contain_keyword(text: str, keywords: list):
             return True
 
     return False
+
+
+def find_user_by_path(user_list: list, path: str):
+    for user in user_list:
+        keywords_list = user['keywords']
+        if is_contain_keyword(path, keywords_list):
+            return user
+
+    return None

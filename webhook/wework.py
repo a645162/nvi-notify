@@ -19,7 +19,12 @@ def get_wework_url():
     return webhook_url
 
 
-def direct_send_text(msg):
+def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
+    if mentioned_mobile is None:
+        mentioned_mobile = []
+    if mentioned_id is None:
+        mentioned_id = []
+
     webhook_url = get_wework_url()
 
     if not webhook_url:
@@ -37,7 +42,7 @@ def direct_send_text(msg):
     print("WeWork", "text", r.text)
 
 
-def direct_send_markdown(content):
+def direct_send_markdown(content: str):
     webhook_url = get_wework_url()
 
     if not webhook_url:
@@ -88,14 +93,15 @@ def send_text_thread():
                 is_in_sleep_time = False
 
         try:
-            direct_send_text(msg_queue[0])
+            current_msg = msg_queue[0]
+            direct_send_text(current_msg[0], current_msg[1], current_msg[2])
             msg_queue.pop(0)
         except:
             time.sleep(60)
 
 
-def send_text(msg):
-    msg_queue.append(msg)
+def send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
+    msg_queue.append((msg, mentioned_id, mentioned_mobile))
     global thread_is_start
     if not thread_is_start:
         thread_is_start = True

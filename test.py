@@ -4,8 +4,11 @@ nvidia_i = Device(0)
 print(str(int(float(nvidia_i.memory_total_human().split('GiB')[0]) * 1024))+'MiB',)
       #f'{(nvidia_i.memory_total() / 1024 / 1024 / 1024):.2f}')
 
+a = {}
 
-all = nvidia_i.processes()
+print(len(a))
+
+# all = nvidia_i.processes()
 # for i, j in all.items():
 #     process_name = j.name().lower()
 #     if process_name in ['python']:

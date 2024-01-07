@@ -38,6 +38,10 @@ def parse_user_list(file_path: str):
         if not user.get('mention_phone_number'):
             user['mention_phone_number'] = ""
 
+        for i in range(len(user['keywords'])):
+            if len(user['keywords'][i].strip()) > 0:
+                user['keywords'][i] = f"/{user['keywords'][i].lower()}/"
+
     return return_list
 
 

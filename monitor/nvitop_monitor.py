@@ -173,44 +173,51 @@ class nvidia_monitor:
         def monitor_thread():
 
             print(f"GPU {self.gpu_id} monitor start")
-            print(f"GPU {self.gpu_id} threshold is {threshold}")
 
-            last_running_tasks = None
+            finished_task_pid, new_task_pid = [], []
+            last_running_tasks = {}
             while monitor_thread_work:
                 running_tasks = self.get_valid_gpu_tasks()
 
-                if last_running_tasks and running_tasks.keys() != last_running_tasks.keys():
+                if len(running_tasks) == 0 and len(last_running_tasks) > 0:
+                    finished_task_pid = last_running_tasks.keys()
+                if len(running_tasks) > 0 and len(last_running_tasks) == 0:
+                    # print(running_tasks)
+                    new_task_pid = running_tasks.keys()
+                if len(running_tasks) > 0 and len(last_running_tasks) > 0:
                     new_task_pid = set(running_tasks.keys()) - set(last_running_tasks.keys())
                     finished_task_pid = set(last_running_tasks.keys()) - set(running_tasks.keys())
+                if len(running_tasks) == 0 and len(last_running_tasks) == 0:
+                    finished_task_pid, new_task_pid = [], []
 
-                    gpu_util = self.get_gpu_utl()
-                    gpu_mem_usage = self.get_gpu_mem_usage()
-                    gpu_mem_free = self.get_gpu_mem_free()
-                    gpu_mem_percent = self.get_gpu_mem_percent()
-                    gpu_mem_total = self.get_gpu_mem_total()
+                gpu_util = self.get_gpu_utl()
+                gpu_mem_usage = self.get_gpu_mem_usage()
+                gpu_mem_free = self.get_gpu_mem_free()
+                gpu_mem_percent = self.get_gpu_mem_percent()
+                gpu_mem_total = self.get_gpu_mem_total()
 
-                    for pid in new_task_pid:
-                        gpu_create_task(
-                            pid,
-                            running_tasks,
-                            gpu_util,
-                            gpu_mem_usage,
-                            gpu_mem_free,
-                            gpu_mem_percent,
-                            gpu_mem_total
-                        )
+                for pid in new_task_pid:
+                    gpu_create_task(
+                        pid,
+                        running_tasks,
+                        gpu_util,
+                        gpu_mem_usage,
+                        gpu_mem_free,
+                        gpu_mem_percent,
+                        gpu_mem_total
+                    )
 
-                    for pid in finished_task_pid:
-                        gpu_finish_task(
-                            pid,
-                            last_running_tasks[pid],
-                            running_tasks,
-                            gpu_util,
-                            gpu_mem_usage,
-                            gpu_mem_free,
-                            gpu_mem_percent,
-                            gpu_mem_total
-                        )
+                for pid in finished_task_pid:
+                    gpu_finish_task(
+                        pid,
+                        last_running_tasks[pid],
+                        running_tasks,
+                        gpu_util,
+                        gpu_mem_usage,
+                        gpu_mem_free,
+                        gpu_mem_percent,
+                        gpu_mem_total
+                    )
 
                 last_running_tasks = running_tasks
                 time.sleep(sleep_time)

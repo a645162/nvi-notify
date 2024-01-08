@@ -21,7 +21,9 @@ def is_debug_process(process_cmdline_list: list):
         if line.split('/')[-1] == 'python' or line == 'python':
             process_cmdline_list.remove(line)
 
-    if any(keyword in process_cmdline_list[0] for keyword in ['vscode-server', 'debugpy']):
+    debug_cmd_keywords = ['vscode-server', 'debugpy', 'pydev/pydevd.py']
+
+    if any(keyword in process_cmdline_list[0] for keyword in debug_cmd_keywords):
         return True
     else:
         return None

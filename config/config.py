@@ -12,7 +12,7 @@ gpu_monitor_sleep_time = env.get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
 web_server_host = '0.0.0.0'
 web_server_port = 1234
 
-emoji_number_dict = {
+emoji_dict = {
     0: "0️⃣",
     1: "1️⃣",
     2: "2️⃣",
@@ -24,7 +24,16 @@ emoji_number_dict = {
     8: "8️⃣",
     9: "9️⃣",
     10: "🔟",
+    "呲牙": "/::D",
+    "Unknown": "Unknown Emoji"
 }
+
+
+def get_emoji(key: (int, str)):
+    if key not in emoji_dict.keys():
+        key = "Unknown"
+    return emoji_dict[key]
+
 
 # https://developer.work.weixin.qq.com/document/path/91770
 def parse_user_list(file_path: str):

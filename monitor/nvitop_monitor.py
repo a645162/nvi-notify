@@ -42,8 +42,8 @@ def gpu_create_task(
     if running_tasks[pid]['debug'] is None and running_tasks[pid]["running_time_second"] < 120:
         send_text_to_wework(
             f"[{gpu_name}🚀]{running_tasks[pid]['user']['name']}新任务({get_command_py_files(running_tasks[pid])})已启动。"
-            f"{config.get_emoji('呲牙')}当前核心占用: {gpu_usage}%，显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲。\n"
-            f"{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
+            f"当前核心占用: {gpu_usage}%，显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲。\n"
+            f"{config.get_emoji('呲牙')}{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
             f"{all_tasks_msg}",
             mentioned_id=running_tasks[pid]['user']['mention_id'],
             mentioned_mobile=running_tasks[pid]['user']['mention_phone_number']
@@ -73,8 +73,8 @@ def gpu_finish_task(
 
         send_text_to_wework(
             f"[{gpu_name}🔚]{user_name}的任务({get_command_py_files(fininshed_task)})已完成，用时{fininshed_task['running_time']}。\n"
-            f"{config.get_emoji('呲牙')}当前核心占用: {gpu_usage}%，显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲。\n"
-            f"{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
+            f"当前核心占用: {gpu_usage}%，显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲。\n"
+            f"{config.get_emoji('呲牙')}{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
             f"{all_tasks_msg}",
             mentioned_id=mention_id_list,
             mentioned_mobile=mention_mobile_list
@@ -96,7 +96,7 @@ def get_all_tasks_msg(tasks_info: dict):
     all_tasks_msg = []
     for task_idx, info in enumerate(tasks_info.values()):
         debug_info = '🐞' if info['debug'] is not None else ''
-        task_msg = (f"{config.get_emoji('呲牙')}{debug_info}\t"
+        task_msg = (f"{config.get_emoji(task_idx)}{debug_info}\t"
                     f"用户: {info['user']['name']}\t"
                     f"显存占用: {info['memory_usage']}\t"
                     f"运行时长: {info['running_time']}\n")

@@ -67,7 +67,7 @@ def gpu_finish_task(
     gpu_name = f"GPU:{fininshed_task['device']}"
     print(f"{gpu_name} finish task:{pid}")
 
-    if fininshed_task["debug"] is None:# and fininshed_task["running_time_second"] > 300:
+    if fininshed_task["debug"] is None and fininshed_task["running_time_second"] > 300:
         user_dict = fininshed_task['user']
         user_name = user_dict['name']
         mention_id_list = user_dict['mention_id']
@@ -92,7 +92,7 @@ def get_command_py_files(task_info: dict):
         if cmd_str.lower().endswith(".py"):
             if "/" in cmd_str:
                 cmd_list = cmd_str.split("/")
-                return(f"{cmd_list[-2]}/{cmd_list[-1]}")
+                return(f"{cmd_list[-2]}/{cmd_list[-1][:-3]}")
             else:
                 return cmd_str
 

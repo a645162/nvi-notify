@@ -5,10 +5,12 @@ import time
 from utils import my_time
 from webhook import wework
 
-from config import config, keywords 
+from config import config, keywords
 
+local_ip = config.local_ip
 threshold = config.gpu_monitor_usage_threshold
 sleep_time = config.gpu_monitor_sleep_time
+web_server_port = config.web_server_port
 user_list = config.user_list
 
 
@@ -17,7 +19,8 @@ def send_text_to_wework(msg: str, mentioned_id=None, mentioned_mobile=None):
     send_text = \
         (
             f"{msg}"
-            f"发送时间: {now_time}"
+            f"查看GPU详情：http://{local_ip}:{web_server_port}/nvitop1\n"
+            f"⏰: {now_time}"
         )
     wework.send_text(send_text, mentioned_id, mentioned_mobile)
 
@@ -38,9 +41,8 @@ def gpu_create_task(
 
     if running_tasks[pid]['debug'] is None:
         send_text_to_wework(
-            f"[{gpu_name}启动]{running_tasks[pid]['user']['name']}新任务({get_command_py_files(running_tasks[pid])})已启动。\n"
-            f"\t{gpu_name}占用：{gpu_usage}%，空闲显存：{gpu_mem_free}\n"
-            f"\t{gpu_name}显存情况：{gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)\n"
+            f"[{gpu_name}🚀]{running_tasks[pid]['user']['name']}新任务({get_command_py_files(running_tasks[pid])})已启动。"
+            f"当前核心占用：{gpu_usage}%；显存占用：{gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，空闲：{gpu_mem_free}。\n"
             f"{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
             f"\t{all_tasks_msg}",
             mentioned_id=running_tasks[pid]['user']['mention_id'],
@@ -70,9 +72,8 @@ def gpu_finish_task(
         mention_mobile_list = user_dict['mention_phone_number']
 
         send_text_to_wework(
-            f"[{gpu_name}完成]{user_name}的任务({get_command_py_files(fininshed_task)})已完成，用时{fininshed_task['running_time']}。\n"
-            f"\t{gpu_name}占用：{gpu_usage}%，空闲显存：{gpu_mem_free}\n"
-            f"\t{gpu_name}显存情况：{gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)\n"
+            f"[{gpu_name}🔚]{user_name}的任务({get_command_py_files(fininshed_task)})已完成，用时{fininshed_task['running_time']}。\n"
+            f"当前核心占用：{gpu_usage}%；显存占用：{gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，空闲：{gpu_mem_free}。\n"
             f"{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
             f"{all_tasks_msg}",
             mentioned_id=mention_id_list,
@@ -94,8 +95,8 @@ def get_command_py_files(task_info: dict):
 def get_all_tasks_msg(tasks_info: dict):
     all_tasks_msg = []
     for task_idx, info in enumerate(tasks_info.values()):
-        debug_info = '调试' if info['debug'] is not None else ''
-        task_msg = (f"\t{debug_info}任务{task_idx}  用户：{info['user']['name']}  "
+        debug_info = '🐞' if info['debug'] is not None else ''
+        task_msg = (f"{config.emoji_number_dict[task_idx]}{debug_info}\t用户：{info['user']['name']}  "
                     f"显存占用：{info['memory_usage']}  "
                     f"运行时长：{info['running_time']}  \n")
         all_tasks_msg.append(task_msg)

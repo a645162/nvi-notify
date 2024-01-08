@@ -3,6 +3,8 @@ from utils import env
 import json
 import os
 
+local_ip = env.get_env("GPU_MONITOR_LOCAL_IP")
+
 gpu_monitor_usage_threshold = env.get_env_int("GPU_MONITOR_USAGE_THRESHOLD", 20)
 
 gpu_monitor_sleep_time = env.get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
@@ -10,6 +12,19 @@ gpu_monitor_sleep_time = env.get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
 web_server_host = '0.0.0.0'
 web_server_port = 1234
 
+emoji_number_dict = {
+    0: "0️⃣",
+    1: "1️⃣",
+    2: "2️⃣",
+    3: "3️⃣",
+    4: "4️⃣",
+    5: "5️⃣",
+    6: "6️⃣",
+    7: "7️⃣",
+    8: "8️⃣",
+    9: "9️⃣",
+    10: "🔟",
+}
 
 # https://developer.work.weixin.qq.com/document/path/91770
 def parse_user_list(file_path: str):
@@ -46,7 +61,7 @@ def parse_user_list(file_path: str):
 
 
 user_list = parse_user_list('config/user_list.json')
-print()
+
 
 if __name__ == '__main__':
     print()

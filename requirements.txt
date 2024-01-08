@@ -1,0 +1,7 @@
+nvidia-ml-py
+nvitop
+
+flask
+flask-socketio
+
+requests

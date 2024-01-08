@@ -11,6 +11,8 @@ if __name__ == '__main__':
     print(env.get_env("GPU_MONITOR_LOCAL_IP"))
     print("GPU_MONITOR_WEBHOOK_WEWORK")
     print(env.get_env("GPU_MONITOR_WEBHOOK_WEWORK"))
+    print("GPU_MONITOR_WEBHOOK_WEWORK_WARNING")
+    print(env.get_env("GPU_MONITOR_WEBHOOK_WEWORK_WARNING"))
     print("GPU_MONITOR_SLEEP_TIME_START")
     print(env.get_env_time("GPU_MONITOR_SLEEP_TIME_START"))
     print("GPU_MONITOR_SLEEP_TIME_END")

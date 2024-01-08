@@ -8,7 +8,8 @@ from webhook import wework
 from config import config, keywords
 
 local_ip = config.local_ip
-threshold = config.gpu_monitor_usage_threshold
+server_name = config.server_name
+# threshold = config.gpu_monitor_usage_threshold
 sleep_time = config.gpu_monitor_sleep_time
 web_server_port = config.web_server_port
 user_list = config.user_list
@@ -41,8 +42,8 @@ def gpu_create_task(
 
     if running_tasks[pid]['debug'] is None and running_tasks[pid]["running_time_second"] < 120:
         send_text_to_wework(
-            f"[{gpu_name}]\n🚀{running_tasks[pid]['user']['name']}的"
-            f"({running_tasks[pid]['project_name']}/{get_command_py_files(running_tasks[pid])})启动\n"
+            f"[{gpu_name}]\t{server_name}\n🚀{running_tasks[pid]['user']['name']}的"
+            f"({running_tasks[pid]['project_name']}-{get_command_py_files(running_tasks[pid])})启动\n"
             f"🌀{gpu_name}核心占用: {gpu_usage}%\n"
             f"🌀{gpu_name}显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲\n\n"
             f"{config.get_emoji('呲牙')*len(running_tasks)}{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
@@ -74,8 +75,8 @@ def gpu_finish_task(
         mention_mobile_list = user_dict['mention_phone_number']
 
         send_text_to_wework(
-            f"[{gpu_name}]\n☑️{user_name}的"
-            f"({fininshed_task['project_name']}/{get_command_py_files(fininshed_task)})完成，"
+            f"[{gpu_name}]\t{server_name}\n☑️{user_name}的"
+            f"({fininshed_task['project_name']}-{get_command_py_files(fininshed_task)})完成，"
             f"用时{fininshed_task['running_time']}\n"
             f"🌀{gpu_name}核心占用: {gpu_usage}%\n"
             f"🌀{gpu_name}显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲\n\n"
@@ -91,10 +92,9 @@ def get_command_py_files(task_info: dict):
     for cmd_str in cmdline:
         if cmd_str.lower().endswith(".py"):
             if "/" in cmd_str:
-                cmd_list = cmd_str.split("/")
-                return(f"{cmd_list[-2]}/{cmd_list[-1][:-3]}")
+                return cmd_str.split("/")[-1]
             else:
-                return cmd_str
+                return cmd_str  # cmd_str[:-3] # remove file expanded-name
 
 
 def get_all_tasks_msg(tasks_info: dict):
@@ -157,7 +157,12 @@ class nvidia_monitor:
         try:
             return self.nvidia_i.processes()
         except:
-            return ('error')
+            warning_message = (
+                    f"⚠️⚠️⚠️{server_name}获取进程失败！⚠️⚠️⚠️\n"
+                    f"IP: {local_ip}"
+                    f"⏰{my_time.get_now_time()}"
+                )
+            return wework.direct_send_text_warning(msg=warning_message)
 
     def get_gpu_utl(self):
         return self.nvidia_i.gpu_utilization()
@@ -190,16 +195,19 @@ class nvidia_monitor:
             while monitor_thread_work:
                 running_tasks = self.get_valid_gpu_tasks()
 
-                if len(running_tasks) == 0 and len(last_running_tasks) > 0:
-                    finished_task_pid = last_running_tasks.keys()
-                if len(running_tasks) > 0 and len(last_running_tasks) == 0:
-                    # print(running_tasks)
-                    new_task_pid = running_tasks.keys()
-                if len(running_tasks) > 0 and len(last_running_tasks) > 0:
-                    new_task_pid = set(running_tasks.keys()) - set(last_running_tasks.keys())
-                    finished_task_pid = set(last_running_tasks.keys()) - set(running_tasks.keys())
-                if len(running_tasks) == 0 and len(last_running_tasks) == 0:
-                    finished_task_pid, new_task_pid = [], []
+                if len(running_tasks) == 0:
+                    if len(last_running_tasks) > 0:
+                        finished_task_pid = list(last_running_tasks.keys())
+                    else:
+                        finished_task_pid, new_task_pid = [], []
+                else:
+                    if len(last_running_tasks) == 0:
+                        new_task_pid = list(running_tasks.keys())
+                    else:
+                        new_task_pid = list(
+                            set(running_tasks.keys()) - set(last_running_tasks.keys()))
+                        finished_task_pid = list(
+                            set(last_running_tasks.keys()) - set(running_tasks.keys()))
 
                 gpu_util = self.get_gpu_utl()
                 gpu_mem_usage = self.get_gpu_mem_usage()

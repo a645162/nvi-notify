@@ -4,8 +4,8 @@ import json
 import os
 
 local_ip = env.get_env("GPU_MONITOR_LOCAL_IP")
-
-gpu_monitor_usage_threshold = env.get_env_int("GPU_MONITOR_USAGE_THRESHOLD", 20)
+server_name = env.get_env("SERVER_NAME")
+# gpu_monitor_usage_threshold = env.get_env_int("GPU_MONITOR_USAGE_THRESHOLD", 20)
 
 gpu_monitor_sleep_time = env.get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
 
@@ -75,7 +75,7 @@ user_list = parse_user_list('config/user_list.json')
 if __name__ == '__main__':
     print()
 
-    print(f"gpu_monitor_usage_threshold: {gpu_monitor_usage_threshold}")
+    # print(f"gpu_monitor_usage_threshold: {gpu_monitor_usage_threshold}")
     print(f"gpu_monitor_sleep_time: {gpu_monitor_sleep_time}")
     print(f"web_server: {web_server_host}:{web_server_port}")
     print()

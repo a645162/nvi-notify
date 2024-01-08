@@ -5,10 +5,12 @@ import time
 from utils import my_time
 from webhook import wework
 
-from config import config, keywords 
+from config import config, keywords
 
+local_ip = config.local_ip
 threshold = config.gpu_monitor_usage_threshold
 sleep_time = config.gpu_monitor_sleep_time
+web_server_port = config.web_server_port
 user_list = config.user_list
 
 
@@ -17,7 +19,8 @@ def send_text_to_wework(msg: str, mentioned_id=None, mentioned_mobile=None):
     send_text = \
         (
             f"{msg}"
-            f"发送时间: {now_time}"
+            f"📈GPU详情: http://{local_ip}:{web_server_port}/nvitop1\n"
+            f"⏰{now_time}"
         )
     wework.send_text(send_text, mentioned_id, mentioned_mobile)
 
@@ -36,13 +39,14 @@ def gpu_create_task(
     gpu_name = f"GPU:{running_tasks[pid]['device']}"
     print(f"{gpu_name} start create new task:{pid}")
 
-    if running_tasks[pid]['debug'] is None:
+    if running_tasks[pid]['debug'] is None and running_tasks[pid]["running_time_second"] < 120:
         send_text_to_wework(
-            f"[{gpu_name}启动]{running_tasks[pid]['user']['name']}新任务({get_command_py_files(running_tasks[pid])})已启动。\n"
-            f"\t{gpu_name}占用：{gpu_usage}%，空闲显存：{gpu_mem_free}\n"
-            f"\t{gpu_name}显存情况：{gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)\n"
-            f"{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
-            f"\t{all_tasks_msg}",
+            f"[{gpu_name}]\n🚀{running_tasks[pid]['user']['name']}的"
+            f"({running_tasks[pid]['project_name']}/{get_command_py_files(running_tasks[pid])})启动\n"
+            f"🌀{gpu_name}核心占用: {gpu_usage}%\n"
+            f"🌀{gpu_name}显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲\n\n"
+            f"{config.get_emoji('呲牙')*len(running_tasks)}{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
+            f"{all_tasks_msg}",
             mentioned_id=running_tasks[pid]['user']['mention_id'],
             mentioned_mobile=running_tasks[pid]['user']['mention_phone_number']
         )
@@ -70,10 +74,12 @@ def gpu_finish_task(
         mention_mobile_list = user_dict['mention_phone_number']
 
         send_text_to_wework(
-            f"[{gpu_name}完成]{user_name}的任务({get_command_py_files(fininshed_task)})已完成，用时{fininshed_task['running_time']}。\n"
-            f"\t{gpu_name}占用：{gpu_usage}%，空闲显存：{gpu_mem_free}\n"
-            f"\t{gpu_name}显存情况：{gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)\n"
-            f"{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
+            f"[{gpu_name}]\n☑️{user_name}的"
+            f"({fininshed_task['project_name']}/{get_command_py_files(fininshed_task)})完成，"
+            f"用时{fininshed_task['running_time']}\n"
+            f"🌀{gpu_name}核心占用: {gpu_usage}%\n"
+            f"🌀{gpu_name}显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲\n\n"
+            f"{config.get_emoji('呲牙')*len(running_tasks)}{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
             f"{all_tasks_msg}",
             mentioned_id=mention_id_list,
             mentioned_mobile=mention_mobile_list
@@ -86,7 +92,7 @@ def get_command_py_files(task_info: dict):
         if cmd_str.lower().endswith(".py"):
             if "/" in cmd_str:
                 cmd_list = cmd_str.split("/")
-                return(f"{cmd_list[-2]}/{cmd_list[-1]}")
+                return(f"{cmd_list[-2]}/{cmd_list[-1][:-3]}")
             else:
                 return cmd_str
 
@@ -94,10 +100,11 @@ def get_command_py_files(task_info: dict):
 def get_all_tasks_msg(tasks_info: dict):
     all_tasks_msg = []
     for task_idx, info in enumerate(tasks_info.values()):
-        debug_info = '调试' if info['debug'] is not None else ''
-        task_msg = (f"\t{debug_info}任务{task_idx}  用户：{info['user']['name']}  "
-                    f"显存占用：{info['memory_usage']}  "
-                    f"运行时长：{info['running_time']}  \n")
+        debug_info = '🐞' if info['debug'] is not None else ''
+        task_msg = (f"{config.get_emoji(task_idx)}{debug_info}"
+                    f"用户: {info['user']['name']}  "
+                    f"显存占用: {info['memory_usage']}  "
+                    f"运行时长: {info['running_time']}\n")
         all_tasks_msg.append(task_msg)
 
     return ''.join(all_tasks_msg)
@@ -123,7 +130,7 @@ class nvidia_monitor:
             if process_name == "python":
                 debug_flag = keywords.is_debug_process(gpu_process.cmdline())
                 
-                user_dict = keywords.find_user_by_path(config.user_list, gpu_process.cwd())
+                user_dict = keywords.find_user_by_path(config.user_list, gpu_process.cwd() + '/')
                 if user_dict is None:
                     user_dict={
                         "name": "Unknown",
@@ -136,6 +143,7 @@ class nvidia_monitor:
                     "device": self.gpu_id,
                     "user": user_dict,
                     "memory_usage": gpu_process.gpu_memory_human(),
+                    "project_name": gpu_process.cwd().split('/')[-1],
                     "command": gpu_process.command(),
                     "cmdline": gpu_process.cmdline(),
                     "running_time_second": gpu_process.running_time_in_seconds(),
@@ -146,7 +154,10 @@ class nvidia_monitor:
         return gpu_tasks_info
 
     def get_gpu_all_processes(self):
-        return self.nvidia_i.processes()
+        try:
+            return self.nvidia_i.processes()
+        except:
+            return ('error')
 
     def get_gpu_utl(self):
         return self.nvidia_i.gpu_utilization()
@@ -173,44 +184,51 @@ class nvidia_monitor:
         def monitor_thread():
 
             print(f"GPU {self.gpu_id} monitor start")
-            print(f"GPU {self.gpu_id} threshold is {threshold}")
 
-            last_running_tasks = None
+            finished_task_pid, new_task_pid = [], []
+            last_running_tasks = {}
             while monitor_thread_work:
                 running_tasks = self.get_valid_gpu_tasks()
 
-                if last_running_tasks and running_tasks.keys() != last_running_tasks.keys():
+                if len(running_tasks) == 0 and len(last_running_tasks) > 0:
+                    finished_task_pid = last_running_tasks.keys()
+                if len(running_tasks) > 0 and len(last_running_tasks) == 0:
+                    # print(running_tasks)
+                    new_task_pid = running_tasks.keys()
+                if len(running_tasks) > 0 and len(last_running_tasks) > 0:
                     new_task_pid = set(running_tasks.keys()) - set(last_running_tasks.keys())
                     finished_task_pid = set(last_running_tasks.keys()) - set(running_tasks.keys())
+                if len(running_tasks) == 0 and len(last_running_tasks) == 0:
+                    finished_task_pid, new_task_pid = [], []
 
-                    gpu_util = self.get_gpu_utl()
-                    gpu_mem_usage = self.get_gpu_mem_usage()
-                    gpu_mem_free = self.get_gpu_mem_free()
-                    gpu_mem_percent = self.get_gpu_mem_percent()
-                    gpu_mem_total = self.get_gpu_mem_total()
+                gpu_util = self.get_gpu_utl()
+                gpu_mem_usage = self.get_gpu_mem_usage()
+                gpu_mem_free = self.get_gpu_mem_free()
+                gpu_mem_percent = self.get_gpu_mem_percent()
+                gpu_mem_total = self.get_gpu_mem_total()
 
-                    for pid in new_task_pid:
-                        gpu_create_task(
-                            pid,
-                            running_tasks,
-                            gpu_util,
-                            gpu_mem_usage,
-                            gpu_mem_free,
-                            gpu_mem_percent,
-                            gpu_mem_total
-                        )
+                for pid in new_task_pid:
+                    gpu_create_task(
+                        pid,
+                        running_tasks,
+                        gpu_util,
+                        gpu_mem_usage,
+                        gpu_mem_free,
+                        gpu_mem_percent,
+                        gpu_mem_total
+                    )
 
-                    for pid in finished_task_pid:
-                        gpu_finish_task(
-                            pid,
-                            last_running_tasks[pid],
-                            running_tasks,
-                            gpu_util,
-                            gpu_mem_usage,
-                            gpu_mem_free,
-                            gpu_mem_percent,
-                            gpu_mem_total
-                        )
+                for pid in finished_task_pid:
+                    gpu_finish_task(
+                        pid,
+                        last_running_tasks[pid],
+                        running_tasks,
+                        gpu_util,
+                        gpu_mem_usage,
+                        gpu_mem_free,
+                        gpu_mem_percent,
+                        gpu_mem_total
+                    )
 
                 last_running_tasks = running_tasks
                 time.sleep(sleep_time)

@@ -161,8 +161,7 @@ cython_debug/
 .idea/
 
 /config/user_list.json
-/config/user_list.txt
-/config/*.txt
+start-deploy.sh
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
@@ -262,6 +261,3 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
-
-
-start.sh

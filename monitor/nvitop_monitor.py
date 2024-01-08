@@ -9,7 +9,6 @@ from config import config, keywords
 
 local_ip = config.local_ip
 server_name = config.server_name
-# threshold = config.gpu_monitor_usage_threshold
 sleep_time = config.gpu_monitor_sleep_time
 web_server_port = config.web_server_port
 user_list = config.user_list
@@ -42,7 +41,7 @@ def gpu_create_task(
 
     if running_tasks[pid]['debug'] is None and running_tasks[pid]["running_time_second"] < 120:
         send_text_to_wework(
-            f"[{gpu_name}]\t{server_name}\n🚀{running_tasks[pid]['user']['name']}的"
+            f"[{gpu_name}]\n🚀{running_tasks[pid]['user']['name']}的"
             f"({running_tasks[pid]['project_name']}-{get_command_py_files(running_tasks[pid])})启动\n"
             f"🌀{gpu_name}核心占用: {gpu_usage}%\n"
             f"🌀{gpu_name}显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲\n\n"
@@ -75,7 +74,7 @@ def gpu_finish_task(
         mention_mobile_list = user_dict['mention_phone_number']
 
         send_text_to_wework(
-            f"[{gpu_name}]\t{server_name}\n☑️{user_name}的"
+            f"[{gpu_name}]\n☑️{user_name}的"
             f"({fininshed_task['project_name']}-{get_command_py_files(fininshed_task)})完成，"
             f"用时{fininshed_task['running_time']}\n"
             f"🌀{gpu_name}核心占用: {gpu_usage}%\n"
@@ -129,8 +128,9 @@ class nvidia_monitor:
 
             if process_name == "python":
                 debug_flag = keywords.is_debug_process(gpu_process.cmdline())
-                
-                user_dict = keywords.find_user_by_path(config.user_list, gpu_process.cwd() + '/')
+                user_dict = keywords.find_user_by_path(
+                    config.user_list, self.get_gpu_process_cmd(gpu_process) + '/')
+
                 if user_dict is None:
                     user_dict={
                         "name": "Unknown",
@@ -138,12 +138,12 @@ class nvidia_monitor:
                         "mention_id": [],
                         "mention_phone_number": []
                     }
-                
+
                 gpu_tasks_info[pid] = {
                     "device": self.gpu_id,
                     "user": user_dict,
                     "memory_usage": gpu_process.gpu_memory_human(),
-                    "project_name": gpu_process.cwd().split('/')[-1],
+                    "project_name": self.get_gpu_process_cmd(gpu_process).split('/')[-1],
                     "command": gpu_process.command(),
                     "cmdline": gpu_process.cmdline(),
                     "running_time_second": gpu_process.running_time_in_seconds(),
@@ -163,6 +163,12 @@ class nvidia_monitor:
                     f"⏰{my_time.get_now_time()}"
                 )
             return wework.direct_send_text_warning(msg=warning_message)
+
+    def get_gpu_process_cmd(self, process: GpuProcess):
+        try:
+            return process.cwd()
+        except FileNotFoundError:
+            return ("Error")
 
     def get_gpu_utl(self):
         return self.nvidia_i.gpu_utilization()

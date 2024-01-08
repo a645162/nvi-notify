@@ -129,24 +129,19 @@ sleep_time_end = (
         datetime.time(7, 30))
 )
 
-is_in_sleep_time = False
-
 
 def send_text_thread():
-    global is_in_sleep_time
 
     while True:
         if len(msg_queue) == 0:
             time.sleep(5)
             continue
-        if is_in_sleep_time:
+
+        try:
             if my_time.is_within_time_range(sleep_time_start, sleep_time_end):
                 time.sleep(60)
                 continue
-            else:
-                is_in_sleep_time = False
 
-        try:
             current_msg = msg_queue[0]
             direct_send_text(current_msg[0], current_msg[1], current_msg[2])
             msg_queue.pop(0)

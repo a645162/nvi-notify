@@ -5,8 +5,6 @@ import os
 
 local_ip = env.get_env("GPU_MONITOR_LOCAL_IP")
 server_name = env.get_env("SERVER_NAME")
-# gpu_monitor_usage_threshold = env.get_env_int("GPU_MONITOR_USAGE_THRESHOLD", 20)
-
 gpu_monitor_sleep_time = env.get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
 
 web_server_host = '0.0.0.0'

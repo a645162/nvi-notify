@@ -9,21 +9,41 @@ from utils import env
 
 import datetime
 
+ENV_VAR_NAME = "GPU_MONITOR_WEBHOOK_WEWORK"
 
-def get_wework_url():
-    wework_env = os.environ.get('GPU_MONITOR_WEBHOOK_WEWORK')
+
+def get_wework_url(webhook_env: str = ""):
+    if len(webhook_env.strip()) == 0:
+        wework_env = env.get_env(ENV_VAR_NAME)
+    else:
+        wework_env = webhook_env.strip()
+
     if not wework_env:
-        # print("GPU_MONITOR_WEBHOOK_WEWORK Not Set!")
+        print(f"{ENV_VAR_NAME} Not Set!")
         return None
+
+    if len(wework_env) == 0:
+        print(f"WeWork Key Env!")
+        return None
+
+    # Judge is URL
+    if wework_env.startswith('http'):
+        return wework_env
+
     webhook_url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=' + wework_env
     return webhook_url
 
 
-def direct_send_text(msg):
+def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
+    if mentioned_mobile is None:
+        mentioned_mobile = []
+    if mentioned_id is None:
+        mentioned_id = []
+
     webhook_url = get_wework_url()
 
     if not webhook_url:
-        print("GPU_MONITOR_WEBHOOK_WEWORK Not Set!")
+        print(f"{ENV_VAR_NAME} Not Set!")
         return
 
     headers = {'Content-Type': 'application/json'}
@@ -33,11 +53,50 @@ def direct_send_text(msg):
             "content": msg
         }
     }
+
+    if mentioned_id:
+        data["text"]["mentioned_list"] = mentioned_id
+    if mentioned_mobile:
+        data["text"]["mentioned_mobile_list"] = mentioned_mobile
+
     r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
     print("WeWork", "text", r.text)
 
 
-def direct_send_markdown(content):
+def direct_send_text_warning(msg: str, mentioned_id=None, mentioned_mobile=None):
+    if mentioned_mobile is None:
+        mentioned_mobile = []
+    if mentioned_id is None:
+        mentioned_id = []
+
+    WARNING_ENV_NAME = "GPU_MONITOR_WEBHOOK_WEWORK_WARNING"
+
+    webhook_url = get_wework_url(
+        env.get_env(WARNING_ENV_NAME, "")
+    )
+
+    if not webhook_url:
+        print(f"{WARNING_ENV_NAME} Not Set!")
+        return
+
+    headers = {'Content-Type': 'application/json'}
+    data = {
+        "msgtype": "text",
+        "text": {
+            "content": msg
+        }
+    }
+
+    if mentioned_id:
+        data["text"]["mentioned_list"] = mentioned_id
+    if mentioned_mobile:
+        data["text"]["mentioned_mobile_list"] = mentioned_mobile
+
+    r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
+    print("WeWork", "text", r.text)
+
+
+def direct_send_markdown(content: str):
     webhook_url = get_wework_url()
 
     if not webhook_url:
@@ -70,32 +129,28 @@ sleep_time_end = (
         datetime.time(7, 30))
 )
 
-is_in_sleep_time = False
-
 
 def send_text_thread():
-    global is_in_sleep_time
 
     while True:
         if len(msg_queue) == 0:
             time.sleep(5)
             continue
-        if is_in_sleep_time:
+
+        try:
             if my_time.is_within_time_range(sleep_time_start, sleep_time_end):
                 time.sleep(60)
                 continue
-            else:
-                is_in_sleep_time = False
 
-        try:
-            direct_send_text(msg_queue[0])
+            current_msg = msg_queue[0]
+            direct_send_text(current_msg[0], current_msg[1], current_msg[2])
             msg_queue.pop(0)
         except:
             time.sleep(60)
 
 
-def send_text(msg):
-    msg_queue.append(msg)
+def send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
+    msg_queue.append((msg, mentioned_id, mentioned_mobile))
     global thread_is_start
     if not thread_is_start:
         thread_is_start = True
@@ -117,7 +172,8 @@ if __name__ == '__main__':
         f"GPU Monitor\n"
         f"\tMachine Name: {machine_name}\n"
         f"\tTime: {formatted_time}\n"
-        f"Test Pass!\n"
+        f"Test Pass!\n",
+        mentioned_id=["khm"]
     )
 
     # direct_send_markdown(

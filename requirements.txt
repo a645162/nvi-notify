@@ -3,3 +3,5 @@ nvitop
 
 flask
 flask-socketio
+
+requests

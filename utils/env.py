@@ -8,6 +8,14 @@ def get_env(key, default=None):
     return default
 
 
+def get_env_int(key, default=None):
+    str_int = get_env(key, "")
+    try:
+        return int(str_int)
+    except:
+        return default
+
+
 def get_env_time(key, default=None):
     time_str = get_env(key, "")
     index = time_str.find(":")

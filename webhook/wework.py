@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+from typing import List
 import requests
 import json
 
@@ -40,13 +41,13 @@ def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
     if mentioned_id is None:
         mentioned_id = []
 
-    if type(mentioned_id) is not list:
+    if not isinstance(mentioned_id, List):
         try:
             mentioned_id = [str(mentioned_id)]
         except:
             mentioned_id = []
 
-    if type(mentioned_mobile) is not list:
+    if not isinstance(mentioned_mobile, List):
         try:
             mentioned_mobile = [str(mentioned_mobile)]
         except:

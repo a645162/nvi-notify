@@ -14,6 +14,7 @@ local_ip = config.local_ip
 server_name = config.server_name
 sleep_time = config.gpu_monitor_sleep_time
 web_server_port = config.web_server_port
+delay_send_seconds = config.delay_send_seconds
 user_list = config.user_list
 
 
@@ -50,7 +51,7 @@ def delay_send_create_task_msg(
 
     for pid in task_start_times.keys():
         if pid in running_tasks:
-            if task_start_times[pid] > 30:
+            if task_start_times[pid] > delay_send_seconds:
                 gpu_create_task(pid, running_tasks, **gpu_staus)
                 ignore_pid = pid
             else:

@@ -17,6 +17,8 @@ if __name__ == '__main__':
     print(env.get_env_time("GPU_MONITOR_SLEEP_TIME_START"))
     print("GPU_MONITOR_SLEEP_TIME_END")
     print(env.get_env_time("GPU_MONITOR_SLEEP_TIME_END"))
+    print("DELAY_SEND_SECONDS")
+    print(env.get_env("DELAY_SEND_SECONDS"))
     print("=" * 40)
     print("Program will start in 60 seconds...")
     # time.sleep(60)

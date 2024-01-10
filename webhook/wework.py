@@ -40,6 +40,18 @@ def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
     if mentioned_id is None:
         mentioned_id = []
 
+    if type(mentioned_id) is not list:
+        try:
+            mentioned_id = [str(mentioned_id)]
+        except:
+            mentioned_id = []
+
+    if type(mentioned_mobile) is not list:
+        try:
+            mentioned_mobile = [str(mentioned_mobile)]
+        except:
+            mentioned_mobile = []
+
     webhook_url = get_wework_url()
 
     if not webhook_url:
@@ -131,7 +143,6 @@ sleep_time_end = (
 
 
 def send_text_thread():
-
     while True:
         if len(msg_queue) == 0:
             time.sleep(5)

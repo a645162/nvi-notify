@@ -67,8 +67,34 @@ def parse_user_list(file_path: str):
     return return_list
 
 
-user_list = parse_user_list('config/user_list.json')
+def parse_user_list_from_directory(directory_path: str) -> list:
+    if not directory_path:
+        return []
 
+    if not os.path.exists(directory_path):
+        return []
+
+    return_list = []
+    for file_name in os.listdir(directory_path):
+        file_path = os.path.join(directory_path, file_name)
+
+        if not file_path.endswith('.json'):
+            continue
+
+        return_list.extend(parse_user_list(file_path))
+
+    return return_list
+
+
+def read_user_list() -> list:
+    current_user_list = []
+
+    current_user_list.extend(parse_user_list('config/user_list.json'))
+
+    return current_user_list
+
+
+user_list = read_user_list()
 
 if __name__ == '__main__':
     print()

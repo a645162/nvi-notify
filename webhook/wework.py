@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+from typing import List
 import requests
 import json
 
@@ -12,10 +13,18 @@ import datetime
 ENV_VAR_NAME = "GPU_MONITOR_WEBHOOK_WEWORK"
 
 
-def get_wework_url():
-    wework_env = env.get_env(ENV_VAR_NAME)
+def get_wework_url(webhook_env: str = ""):
+    if len(webhook_env.strip()) == 0:
+        wework_env = env.get_env(ENV_VAR_NAME)
+    else:
+        wework_env = webhook_env.strip()
+
     if not wework_env:
         print(f"{ENV_VAR_NAME} Not Set!")
+        return None
+
+    if len(wework_env) == 0:
+        print(f"WeWork Key Env!")
         return None
 
     # Judge is URL
@@ -32,10 +41,55 @@ def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
     if mentioned_id is None:
         mentioned_id = []
 
+    if not isinstance(mentioned_id, List):
+        try:
+            mentioned_id = [str(mentioned_id)]
+        except:
+            mentioned_id = []
+
+    if not isinstance(mentioned_mobile, List):
+        try:
+            mentioned_mobile = [str(mentioned_mobile)]
+        except:
+            mentioned_mobile = []
+
     webhook_url = get_wework_url()
 
     if not webhook_url:
         print(f"{ENV_VAR_NAME} Not Set!")
+        return
+
+    headers = {'Content-Type': 'application/json'}
+    data = {
+        "msgtype": "text",
+        "text": {
+            "content": msg
+        }
+    }
+
+    if mentioned_id:
+        data["text"]["mentioned_list"] = mentioned_id
+    if mentioned_mobile:
+        data["text"]["mentioned_mobile_list"] = mentioned_mobile
+
+    r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
+    print("WeWork", "text", r.text)
+
+
+def direct_send_text_warning(msg: str, mentioned_id=None, mentioned_mobile=None):
+    if mentioned_mobile is None:
+        mentioned_mobile = []
+    if mentioned_id is None:
+        mentioned_id = []
+
+    WARNING_ENV_NAME = "GPU_MONITOR_WEBHOOK_WEWORK_WARNING"
+
+    webhook_url = get_wework_url(
+        env.get_env(WARNING_ENV_NAME, "")
+    )
+
+    if not webhook_url:
+        print(f"{WARNING_ENV_NAME} Not Set!")
         return
 
     headers = {'Content-Type': 'application/json'}
@@ -88,24 +142,18 @@ sleep_time_end = (
         datetime.time(7, 30))
 )
 
-is_in_sleep_time = False
-
 
 def send_text_thread():
-    global is_in_sleep_time
-
     while True:
         if len(msg_queue) == 0:
             time.sleep(5)
             continue
-        if is_in_sleep_time:
+
+        try:
             if my_time.is_within_time_range(sleep_time_start, sleep_time_end):
                 time.sleep(60)
                 continue
-            else:
-                is_in_sleep_time = False
 
-        try:
             current_msg = msg_queue[0]
             direct_send_text(current_msg[0], current_msg[1], current_msg[2])
             msg_queue.pop(0)

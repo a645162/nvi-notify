@@ -88,7 +88,15 @@ def gpu_create_task(
         gpu_server_info = ""
 
     if running_tasks[pid]['debug'] is None:
-        if running_tasks[pid]["running_time_second"] < delay_send_seconds - 30:
+        if running_tasks[pid]["running_time_second"] > delay_send_seconds + 30:
+            send_text_to_wework(
+                f"{gpu_name}监控启动\n"
+                f"{config.get_emoji('呲牙')*len(running_tasks)}{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
+                f"{all_tasks_msg}\n"
+                f"🌀{gpu_name}核心占用: {gpu_usage}%\n"
+                f"🌀{gpu_name}显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲\n",
+            )
+        elif running_tasks[pid]["running_time_second"] > delay_send_seconds:
             send_text_to_wework(
                 f"{gpu_server_info}🚀{running_tasks[pid]['user']['name']}的"
                 f"({running_tasks[pid]['project_name']}-{get_command_py_files(running_tasks[pid])})启动\n"
@@ -96,16 +104,6 @@ def gpu_create_task(
                 f"🌀{gpu_name}显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲\n\n"
                 f"{config.get_emoji('呲牙')*len(running_tasks)}{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
                 f"{all_tasks_msg}",
-                # mentioned_id=running_tasks[pid]['user']['mention_id'],
-                # mentioned_mobile=running_tasks[pid]['user']['mention_phone_number']
-            )
-        else:
-            send_text_to_wework(
-                f"{gpu_name}监控启动\n"
-                f"{config.get_emoji('呲牙')*len(running_tasks)}{gpu_name}上正在运行{len(running_tasks)}个任务：\n"
-                f"{all_tasks_msg}\n"
-                f"🌀{gpu_name}核心占用: {gpu_usage}%\n"
-                f"🌀{gpu_name}显存占用: {gpu_mem_usage}/{gpu_mem_total} ({gpu_mem_percent}%)，{gpu_mem_free}空闲\n",
             )
 
 

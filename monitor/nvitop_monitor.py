@@ -198,17 +198,20 @@ class nvidia_monitor:
                         "mention_phone_number": []
                     }
 
-                gpu_tasks_info[pid] = {
-                    "device": self.gpu_id,
-                    "user": user_dict,
-                    "memory_usage": gpu_process.gpu_memory_human(),
-                    "project_name": self.get_gpu_process_cmd(gpu_process).split('/')[-1],
-                    "command": gpu_process.command(),
-                    "cmdline": gpu_process.cmdline(),
-                    "running_time_second": gpu_process.running_time_in_seconds(),
-                    "running_time": gpu_process.running_time_human(),
-                    "debug": debug_flag,
-                }
+                try:
+                    gpu_tasks_info[pid] = {
+                        "device": self.gpu_id,
+                        "user": user_dict,
+                        "memory_usage": gpu_process.gpu_memory_human(),
+                        "project_name": self.get_gpu_process_cmd(gpu_process).split('/')[-1],
+                        "command": gpu_process.command(),
+                        "cmdline": gpu_process.cmdline(),
+                        "running_time_second": gpu_process.running_time_in_seconds(),
+                        "running_time": gpu_process.running_time_human(),
+                        "debug": debug_flag,
+                    }
+                except Exception as e:
+                    print(e)
 
         return gpu_tasks_info
 

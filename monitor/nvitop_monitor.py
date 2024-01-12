@@ -8,9 +8,9 @@ from nvitop import *
 from config import config, keywords
 from utils import my_time
 from webhook import wework
-from web.ipaddr_simple import get_local_ip
+from utils import ip
 
-local_ip = config.local_ip
+local_ip = ip.get_local_ip()
 server_name = config.server_name
 sleep_time = config.gpu_monitor_sleep_time
 web_server_port = config.web_server_port
@@ -40,14 +40,15 @@ def delay_send_create_task_msg(
 
     ignore_pid = 0
     for pid in new_task_pid:
-        print(f"GPU:{running_tasks[pid]['device']} start create new task:{pid}")
-        running_time = running_tasks[pid]["running_time_second"]
-        if len(task_start_times) == 0:
-            task_start_times = {pid: running_time}
-            temp_running_times = {pid: running_time}
-        else:
-            task_start_times[pid] = running_time
-            temp_running_times[pid] = running_time
+        if pid in running_tasks.keys():
+            print(f"{running_tasks[pid]['user']['name']} create new task:{pid} on GPU:{running_tasks[pid]['device']}")
+            running_time = running_tasks[pid]["running_time_second"]
+            if len(task_start_times) == 0:
+                task_start_times = {pid: running_time}
+                temp_running_times = {pid: running_time}
+            else:
+                task_start_times[pid] = running_time
+                temp_running_times[pid] = running_time
 
     for pid in task_start_times.keys():
         if pid in running_tasks:
@@ -87,7 +88,7 @@ def gpu_create_task(
         gpu_server_info = ""
 
     if running_tasks[pid]['debug'] is None:
-        if running_tasks[pid]["running_time_second"] < 120:
+        if running_tasks[pid]["running_time_second"] < delay_send_seconds + 30:
             send_text_to_wework(
                 f"{gpu_server_info}🚀{running_tasks[pid]['user']['name']}的"
                 f"({running_tasks[pid]['project_name']}-{get_command_py_files(running_tasks[pid])})启动\n"
@@ -121,7 +122,7 @@ def gpu_finish_task(
     all_tasks_msg = get_all_tasks_msg(running_tasks)
 
     gpu_name = f"GPU:{fininshed_task['device']}"
-    print(f"{gpu_name} finish task:{pid}")
+    print(f"{gpu_name} finish {fininshed_task['user']['name']}'s task:{pid}")
 
     if fininshed_task["debug"] is None and fininshed_task["running_time_second"] > 300:
         if num_gpu > 1:

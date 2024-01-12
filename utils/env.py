@@ -32,3 +32,24 @@ def get_env_time(key, default=None):
         return time(int_1, int_2)
     except:
         return default
+
+
+def get_env_variable(env_name):
+    # 使用 os.environ.get 获取环境变量的值
+    env_value = os.environ.get(env_name)
+
+    # 如果环境变量不存在或为空，返回空字符串
+    return env_value.strip() if env_value is not None else ""
+
+
+def get_env_variable_int(env_name):
+    env_str = get_env_variable(env_name)
+    if env_str == "":
+        return -1
+    else:
+        value: int
+        try:
+            value = int(env_str)
+        except:
+            value = -1
+        return value

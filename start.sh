@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export GPU_MONITOR_LOCAL_IP=$(ip -o -4 addr show | awk '$2 !~ /lo/ {print $4}' | grep -E '^10\.' | awk -F'/' '{print $1}')
+# export GPU_MONITOR_LOCAL_IP=$(ip -o -4 addr show | awk '$2 !~ /lo/ {print $4}' | grep -E '^10\.' | awk -F'/' '{print $1}')
 export GPU_MONITOR_WEBHOOK_WEWORK_TEST=""
 export GPU_MONITOR_WEBHOOK_WEWORK_DEPLOY=""
 export SERVER_NAME="SERVER_NAME"

@@ -88,7 +88,7 @@ def gpu_create_task(
         gpu_server_info = ""
 
     if running_tasks[pid]['debug'] is None:
-        if running_tasks[pid]["running_time_second"] < delay_send_seconds + 30:
+        if running_tasks[pid]["running_time_second"] < delay_send_seconds - 30:
             send_text_to_wework(
                 f"{gpu_server_info}🚀{running_tasks[pid]['user']['name']}的"
                 f"({running_tasks[pid]['project_name']}-{get_command_py_files(running_tasks[pid])})启动\n"

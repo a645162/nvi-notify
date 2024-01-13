@@ -23,7 +23,7 @@ def send_text_to_wework(msg: str, mentioned_id=None, mentioned_mobile=None):
     send_text = \
         (
             f"{msg}"
-            f"📈详情: http://{local_ip}:{web_server_port}/nvitop1\n"
+            f"📈详情: http://{local_ip}:{web_server_port}/nvitop\n"
             f"⏰{now_time}"
         )
     wework.send_text(send_text, mentioned_id, mentioned_mobile)
@@ -156,6 +156,22 @@ def get_command_py_files(task_info: dict):
                 return cmd_str  # cmd_str[:-3] # remove file expanded-name
 
 
+def get_conda_env_name(pid: int):
+    try:
+        process = psutil.Process(pid)
+
+        # 查找环境变量中包含 "CONDA_DEFAULT_ENV" 的键
+        conda_env = process.environ().get('CONDA_DEFAULT_ENV', None)
+
+        if conda_env:
+            return conda_env
+
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        pass
+
+    return None
+
+
 def get_all_tasks_msg(tasks_info: dict):
     all_tasks_msg = []
     for task_idx, info in enumerate(tasks_info.values()):
@@ -180,12 +196,18 @@ class nvidia_monitor:
     def update_device(self):
         self.nvidia_i = Device(self.gpu_id)
 
-    def get_valid_gpu_tasks(self):
+    def get_valid_gpu_tasks_info(self):
         gpu_tasks_info = {}
         for pid, gpu_process in self.get_gpu_all_processes().items():
             process_name = gpu_process.name()
+            is_python = False
+            if process_name in ["python", "yolo"]:
+                is_python = True
+            else:
+                if any('python' in cmd for cmd in gpu_process.cmdline()):
+                    is_python = True
 
-            if process_name == "python":
+            if is_python:
                 debug_flag = keywords.is_debug_process(gpu_process.cmdline())
                 user_dict = keywords.find_user_by_path(
                     config.user_list, self.get_gpu_process_cmd(gpu_process) + '/')
@@ -209,6 +231,7 @@ class nvidia_monitor:
                         "running_time_second": gpu_process.running_time_in_seconds(),
                         "running_time": gpu_process.running_time_human(),
                         "debug": debug_flag,
+                        "conda_env": get_conda_env_name(pid),
                     }
                 except Exception as e:
                     print(e)
@@ -270,7 +293,7 @@ class nvidia_monitor:
             task_start_times = {}
             temp_running_times = {}
             while monitor_thread_work:
-                running_tasks = self.get_valid_gpu_tasks()
+                running_tasks = self.get_valid_gpu_tasks_info()
 
                 if len(running_tasks) == 0:
                     if len(last_running_tasks) > 0:

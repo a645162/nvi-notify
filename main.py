@@ -1,10 +1,10 @@
-from monitor import nvitop_monitor
-from web import flask_main
-from utils import env
-
 import time
 
-if __name__ == '__main__':
+from monitor import cpu_monitor, nvitop_monitor
+from utils import env
+from web import flask_main
+
+if __name__ == "__main__":
     print("GPU MONITOR")
     print("=" * 40)
     # print("GPU_MONITOR_LOCAL_IP")
@@ -25,5 +25,6 @@ if __name__ == '__main__':
     print("=" * 40)
     print("Program starting...")
 
-    nvitop_monitor.start_monitor_all()
+    cpu_monitor.start_cpu_monitor_all()
+    nvitop_monitor.start_gpu_monitor_all()
     flask_main.start_web_server()

@@ -187,6 +187,15 @@ def get_all_tasks_msg(tasks_info: dict):
     return "".join(all_tasks_msg)
 
 
+def send_process_except_msg():
+    warning_message = (
+        f"⚠️⚠️{server_name}获取进程失败！⚠️⚠️\n"
+        f"IP: {local_ip}\n"
+        f"⏰{my_time.get_now_time()}"
+    )
+    wework.direct_send_text_warning(msg=warning_message)
+
+
 class nvidia_monitor:
     def __init__(self, gpu_id: int):
         self.gpu_id = gpu_id
@@ -248,50 +257,27 @@ class nvidia_monitor:
         try:
             return self.nvidia_i.processes()
         except:
-            warning_message = (
-                f"⚠️⚠️⚠️{server_name}获取进程失败！⚠️⚠️⚠️\n"
-                f"IP: {local_ip}"
-                f"⏰{my_time.get_now_time()}"
-            )
-            wework.direct_send_text_warning(msg=warning_message)
+            send_process_except_msg()
 
     def get_gpu_process_cwd(self, process: GpuProcess) -> str:
         try:
             return process.cwd()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            warning_message = (
-                f"⚠️⚠️⚠️{server_name}获取进程失败！⚠️⚠️⚠️\n"
-                f"IP: {local_ip}"
-                f"⏰{my_time.get_now_time()}"
-            )
-            wework.direct_send_text_warning(msg=warning_message)
-
+            send_process_except_msg()
             return ""
 
     def get_gpu_process_command(self, process: GpuProcess) -> str:
         try:
             return process.command()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            warning_message = (
-                f"⚠️⚠️⚠️{server_name}获取进程失败！⚠️⚠️⚠️\n"
-                f"IP: {local_ip}"
-                f"⏰{my_time.get_now_time()}"
-            )
-            wework.direct_send_text_warning(msg=warning_message)
-
+            send_process_except_msg()
             return ""
 
     def get_gpu_process_cmdline(self, process: GpuProcess) -> str:
         try:
             return process.cmdline()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            warning_message = (
-                f"⚠️⚠️⚠️{server_name}获取进程失败！⚠️⚠️⚠️\n"
-                f"IP: {local_ip}"
-                f"⏰{my_time.get_now_time()}"
-            )
-            wework.direct_send_text_warning(msg=warning_message)
-
+            send_process_except_msg()
             return ""
 
     def get_gpu_utl(self):
@@ -382,7 +368,7 @@ class nvidia_monitor:
             self.thread.join()
 
 
-def start_monitor_all():
+def start_gpu_monitor_all():
     global num_gpu
     # Get GPU count
     num_gpu = Device.count()
@@ -394,4 +380,4 @@ def start_monitor_all():
 
 
 if __name__ == "__main__":
-    start_monitor_all()
+    start_gpu_monitor_all()

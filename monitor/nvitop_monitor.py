@@ -174,7 +174,7 @@ def get_all_tasks_msg(tasks_info: dict):
     all_tasks_msg = []
     for task_idx, info in enumerate(tasks_info.values()):
     
-        debug_info = "🐞" if info["debug"] is not None else ''
+        debug_info = "🐞" if info["debug"] is not None else ""
         task_msg = (
             f"{config.get_emoji(task_idx)}{debug_info}"
             f"用户: {info['user']['name']}  "
@@ -271,21 +271,21 @@ class NvidiaMonitor:
         try:
             return process.cwd()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            send_process_except_msg()
+            # send_process_except_msg()
             return ""
 
     def get_gpu_process_command(self, process: GpuProcess) -> str:
         try:
             return process.command()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            send_process_except_msg()
+            # send_process_except_msg()
             return ""
 
     def get_gpu_process_cmdline(self, process: GpuProcess) -> List:
         try:
             return process.cmdline()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            send_process_except_msg()
+            # send_process_except_msg()
             return [""]
 
     def get_gpu_utl(self):

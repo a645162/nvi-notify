@@ -33,7 +33,7 @@ def nvidiasmi():
         return str(e), 500
 
 
-@app.route('/nvitop1')
+@app.route('/nvitop')
 def nvitop1():
     try:
         result = subprocess.run(

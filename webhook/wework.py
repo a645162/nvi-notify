@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+from typing import List
 import requests
 import json
 
@@ -39,6 +40,18 @@ def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
         mentioned_mobile = []
     if mentioned_id is None:
         mentioned_id = []
+
+    if not isinstance(mentioned_id, List):
+        try:
+            mentioned_id = [str(mentioned_id)]
+        except:
+            mentioned_id = []
+
+    if not isinstance(mentioned_mobile, List):
+        try:
+            mentioned_mobile = [str(mentioned_mobile)]
+        except:
+            mentioned_mobile = []
 
     webhook_url = get_wework_url()
 
@@ -131,7 +144,6 @@ sleep_time_end = (
 
 
 def send_text_thread():
-
     while True:
         if len(msg_queue) == 0:
             time.sleep(5)

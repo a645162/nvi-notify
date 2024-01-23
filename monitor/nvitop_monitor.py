@@ -5,9 +5,8 @@ from typing import Dict
 from nvitop import *
 
 from config import config
-from monitor.process import PythonProcess
-from monitor.send_task_info import start_gpu_monitor
-from webhook import wework
+from monitor.python_gpu_process import PythonGPUProcess
+from webhook.send_task_msg import send_process_except_msg, start_gpu_monitor
 
 sleep_time = config.gpu_monitor_sleep_time
 num_gpu = Device.count()
@@ -39,7 +38,7 @@ class NvidiaMonitor:
         try:
             return self.nvidia_i.processes()
         except:
-            wework.send_process_except_msg()
+            send_process_except_msg()
 
     def get_gpu_utl(self):
         return self.nvidia_i.gpu_utilization()
@@ -92,7 +91,7 @@ class NvidiaMonitor:
 
                 for pid, gpu_process in self.get_gpu_all_processes().items():
                     if pid not in self.processes:
-                        new_process = PythonProcess(pid, self.gpu_id, gpu_process)
+                        new_process = PythonGPUProcess(pid, self.gpu_id, gpu_process)
                         if new_process.is_python:
                             new_process.state = "newborn"
                             new_process.gpu_status = self.update_gpu_status()

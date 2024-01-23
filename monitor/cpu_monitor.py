@@ -6,7 +6,7 @@ from typing import Dict
 import psutil
 
 from config import config
-from monitor.send_task_info import (
+from webhook.send_task_msg import (
     send_cpu_except_warning_msg,
     send_cpu_temperature_warning_msg,
 )

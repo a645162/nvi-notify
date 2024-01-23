@@ -4,7 +4,7 @@ import psutil
 from nvitop import GpuProcess
 
 from config import config, keywords
-from monitor.send_task_info import (
+from webhook.send_task_msg import (
     create_task_log,
     finish_task_log,
     send_gpu_task_message,
@@ -13,7 +13,7 @@ from monitor.send_task_info import (
 delay_send_seconds = config.delay_send_seconds
 
 
-class PythonProcess:
+class PythonGPUProcess:
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
         self.pid: int = pid
         self.gpu_id: int = gpu_id
@@ -110,7 +110,8 @@ class PythonProcess:
             self.is_debug = False
 
     def get_user(self):
-        user_dict = keywords.find_user_by_path(config.user_list, self.cwd + "/")
+        cwd = self.cwd + "/" if self.cwd is not None else ""
+        user_dict = keywords.find_user_by_path(config.user_list, cwd)
 
         if user_dict is None:
             user_dict = {
@@ -152,7 +153,7 @@ class PythonProcess:
 
     @state.setter
     def state(self, new_state):
-        if new_state == "newborn" and self._state == "death":
+        if new_state == "newborn" and self._state is None:
             create_task_log(self.__dict__)
         elif new_state == "working" and self._state == "newborn":
             send_gpu_task_message(self.__dict__, "create")

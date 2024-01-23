@@ -10,6 +10,8 @@ from monitor.send_task_info import (
     send_gpu_task_message,
 )
 
+delay_send_seconds = config.delay_send_seconds
+
 
 class PythonProcess:
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
@@ -17,7 +19,7 @@ class PythonProcess:
         self.gpu_id: int = gpu_id
         self.gpu_process: GpuProcess = gpu_process
         self.gpu_status: Dict = None
-        self.gpu_all_tasks_msg: str = None
+        self.gpu_all_tasks_msg: Dict = None
         self.num_task: int = 0
 
         self.cwd: str = None  # pwd
@@ -26,6 +28,7 @@ class PythonProcess:
 
         self.is_debug: bool = None
         self.running_time_human: str = None
+        self.gpu_memory_human: str = None
         self.user: Dict = None
         self.conda_env: str = None
         self.memory_usage: str = None
@@ -33,7 +36,7 @@ class PythonProcess:
         self.python_file: str = None
 
         self._state: str = None  # init
-        self._running_time_in_seconds: int = None  # init
+        self._running_time_in_seconds: int = 0  # init
 
         self.__init_info__()
 
@@ -74,7 +77,6 @@ class PythonProcess:
         try:
             self.cmdline = self.gpu_process.cmdline()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            # send_process_except_msg()
             self.state = "death"
 
     def get_gpu_memory_human(self):
@@ -103,9 +105,9 @@ class PythonProcess:
         debug_cmd_keywords = ["vscode-server", "debugpy", "pydev/pydevd.py"]
 
         if any(keyword in _cmdline[0] for keyword in debug_cmd_keywords):
-            self.debug_flag = True
+            self.is_debug = True
         else:
-            self.debug_flag = False
+            self.is_debug = False
 
     def get_user(self):
         user_dict = keywords.find_user_by_path(config.user_list, self.cwd + "/")
@@ -150,17 +152,15 @@ class PythonProcess:
 
     @state.setter
     def state(self, new_state):
-        state_transitions = {
-            ("newborn", "death"): create_task_log,
-            ("working", "newborn"): lambda data: send_gpu_task_message(data, "create"),
-            ("death", "working"): lambda data: send_gpu_task_message(data, "finish"),
-            ("death", "newborn"): finish_task_log,
-        }
-
-        action = state_transitions.get((new_state, self._state))
-        if action:
-            action(self.__dict__)
-
+        if new_state == "newborn" and self._state == "death":
+            create_task_log(self.__dict__)
+        elif new_state == "working" and self._state == "newborn":
+            send_gpu_task_message(self.__dict__, "create")
+        elif new_state == "death" and self._state == "working":
+            finish_task_log(self.__dict__)
+            send_gpu_task_message(self.__dict__, "finish")
+        elif new_state == "death" and self._state == "newborn":
+            finish_task_log(self.__dict__)
         self._state = new_state
 
     @property
@@ -169,6 +169,9 @@ class PythonProcess:
 
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
-        if new_running_time_in_seconds > 300 and self._running_time_in_seconds < 300:
+        if (
+            new_running_time_in_seconds > delay_send_seconds
+            and self._running_time_in_seconds < delay_send_seconds
+        ):
             self.state = "working"
         self._running_time_in_seconds = new_running_time_in_seconds

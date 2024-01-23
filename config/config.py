@@ -8,8 +8,8 @@ server_name = env.get_env("SERVER_NAME")
 gpu_monitor_sleep_time = env.get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
 delay_send_seconds = env.get_env_int("DELAY_SEND_SECONDS", 60)
 
-web_server_host = '0.0.0.0'
-web_server_port = 3456
+web_server_host = "0.0.0.0"
+web_server_port = 1234
 
 emoji_dict = {
     0: "0️⃣",
@@ -38,31 +38,31 @@ def parse_user_list(file_path: str):
     if not file_path:
         return []
 
-    if not file_path.endswith('.json'):
+    if not file_path.endswith(".json"):
         return []
 
     if not os.path.exists(file_path):
         return []
 
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         return_list = list(json.load(f))
 
     for user in return_list:
-        if not user.get('user_id'):
-            user['user_id'] = "Unknown"
+        if not user.get("user_id"):
+            user["user_id"] = "Unknown"
 
-        if not user.get('keywords'):
-            user['keywords'] = []
+        if not user.get("keywords"):
+            user["keywords"] = []
 
-        if not user.get('mention_id'):
-            user['mention_id'] = ""
+        if not user.get("mention_id"):
+            user["mention_id"] = ""
 
-        if not user.get('mention_phone_number'):
-            user['mention_phone_number'] = ""
+        if not user.get("mention_phone_number"):
+            user["mention_phone_number"] = ""
 
-        for i in range(len(user['keywords'])):
-            if len(user['keywords'][i].strip()) > 0:
-                user['keywords'][i] = f"/{user['keywords'][i].lower()}/"
+        for i in range(len(user["keywords"])):
+            if len(user["keywords"][i].strip()) > 0:
+                user["keywords"][i] = f"/{user['keywords'][i].lower()}/"
 
     return return_list
 
@@ -78,7 +78,7 @@ def parse_user_list_from_directory(directory_path: str) -> list:
     for file_name in os.listdir(directory_path):
         file_path = os.path.join(directory_path, file_name)
 
-        if not file_path.endswith('.json'):
+        if not file_path.endswith(".json"):
             continue
 
         return_list.extend(parse_user_list(file_path))
@@ -89,14 +89,14 @@ def parse_user_list_from_directory(directory_path: str) -> list:
 def read_user_list() -> list:
     current_user_list = []
 
-    current_user_list.extend(parse_user_list('config/user_list.json'))
+    current_user_list.extend(parse_user_list("config/user_list.json"))
 
     return current_user_list
 
 
 user_list = read_user_list()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print()
 
     # print(f"gpu_monitor_usage_threshold: {gpu_monitor_usage_threshold}")

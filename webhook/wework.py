@@ -1,14 +1,12 @@
-import os
-import time
-import threading
-from typing import List
-import requests
-import json
-
-from utils import my_time
-from utils import env
-
 import datetime
+import json
+import threading
+import time
+from typing import List
+
+import requests
+
+from utils import env, my_time
 
 ENV_VAR_NAME = "GPU_MONITOR_WEBHOOK_WEWORK"
 
@@ -28,10 +26,10 @@ def get_wework_url(webhook_env: str = ""):
         return None
 
     # Judge is URL
-    if wework_env.startswith('http'):
+    if wework_env.startswith("http"):
         return wework_env
 
-    webhook_url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=' + wework_env
+    webhook_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=" + wework_env
     return webhook_url
 
 
@@ -59,13 +57,8 @@ def direct_send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
         print(f"{ENV_VAR_NAME} Not Set!")
         return
 
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "msgtype": "text",
-        "text": {
-            "content": msg
-        }
-    }
+    headers = {"Content-Type": "application/json"}
+    data = {"msgtype": "text", "text": {"content": msg}}
 
     if mentioned_id:
         data["text"]["mentioned_list"] = mentioned_id
@@ -84,21 +77,14 @@ def direct_send_text_warning(msg: str, mentioned_id=None, mentioned_mobile=None)
 
     WARNING_ENV_NAME = "GPU_MONITOR_WEBHOOK_WEWORK_WARNING"
 
-    webhook_url = get_wework_url(
-        env.get_env(WARNING_ENV_NAME, "")
-    )
+    webhook_url = get_wework_url(env.get_env(WARNING_ENV_NAME, ""))
 
     if not webhook_url:
         print(f"{WARNING_ENV_NAME} Not Set!")
         return
 
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "msgtype": "text",
-        "text": {
-            "content": msg
-        }
-    }
+    headers = {"Content-Type": "application/json"}
+    data = {"msgtype": "text", "text": {"content": msg}}
 
     if mentioned_id:
         data["text"]["mentioned_list"] = mentioned_id
@@ -116,13 +102,10 @@ def direct_send_markdown(content: str):
         print("GPU_MONITOR_WEWORK 环境变量未设置")
         return
 
-    headers = {'Content-Type': 'application/json'}
+    headers = {"Content-Type": "application/json"}
     data = {
         "msgtype": "markdown",
-        "markdown": {
-            "title": "GPU Monitor",
-            "content": content
-        }
+        "markdown": {"title": "GPU Monitor", "content": content},
     }
     r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
     print("WeWork", "MarkDown", r.text)
@@ -131,16 +114,10 @@ def direct_send_markdown(content: str):
 msg_queue = []
 thread_is_start = False
 
-sleep_time_start = (
-    env.get_env_time(
-        "GPU_MONITOR_SLEEP_TIME_START",
-        datetime.time(23, 0))
+sleep_time_start = env.get_env_time(
+    "GPU_MONITOR_SLEEP_TIME_START", datetime.time(23, 0)
 )
-sleep_time_end = (
-    env.get_env_time(
-        "GPU_MONITOR_SLEEP_TIME_END",
-        datetime.time(7, 30))
-)
+sleep_time_end = env.get_env_time("GPU_MONITOR_SLEEP_TIME_END", datetime.time(7, 30))
 
 
 def send_text_thread():
@@ -169,7 +146,7 @@ def send_text(msg: str, mentioned_id=None, mentioned_mobile=None):
         threading.Thread(target=send_text_thread).start()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import socket
 
     # 获取当前机器的名称
@@ -185,7 +162,7 @@ if __name__ == '__main__':
         f"\tMachine Name: {machine_name}\n"
         f"\tTime: {formatted_time}\n"
         f"Test Pass!\n",
-        mentioned_id=["khm"]
+        mentioned_id=["khm"],
     )
 
     # direct_send_markdown(

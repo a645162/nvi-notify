@@ -97,6 +97,8 @@ class PythonGPUProcess:
                 return True
 
     def get_debug_flag(self):
+        if self.cmdline is None:
+            return False
         _cmdline = self.cmdline
         for line in _cmdline:
             if line.split("/")[-1] == "python" or line == "python":
@@ -134,11 +136,13 @@ class PythonGPUProcess:
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
 
-    def get_project_name(self):
+    def get_project_name(self) -> str:
         if self.cwd is not None:
             return self.cwd.split("/")[-1]
 
-    def get_python_filename(self):
+    def get_python_filename(self) -> str:
+        if self.cmdline is None:
+            return ""
         for cmd_str in self.cmdline:
             if cmd_str.lower().endswith(".py"):
                 if "/" in cmd_str:

@@ -6,7 +6,7 @@ from nvitop import *
 
 from config import config
 from monitor.python_gpu_process import PythonGPUProcess
-from webhook.send_task_msg import send_process_except_msg, start_gpu_monitor
+from webhook.send_task_msg import send_process_except_warning_msg, start_gpu_monitor
 
 sleep_time = config.gpu_monitor_sleep_time
 num_gpu = Device.count()
@@ -38,7 +38,7 @@ class NvidiaMonitor:
         try:
             return self.nvidia_i.processes()
         except:
-            send_process_except_msg()
+            send_process_except_warning_msg()
 
     def get_gpu_utl(self):
         return self.nvidia_i.gpu_utilization()

@@ -1,17 +1,19 @@
 import json
 import os
 
-from utils import env
+from utils import env, ip
 
 # local_ip = env.get_env("GPU_MONITOR_LOCAL_IP")
 server_name = env.get_env_str("SERVER_NAME")
 gpu_monitor_sleep_time = env.get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
 delay_send_seconds = env.get_env_int("DELAY_SEND_SECONDS", 60)
 
+web_host = None
+local_ip = ip.get_local_ip()
 web_server_host = "0.0.0.0"
-web_server_port = 1234
+web_server_port = 8080
 
-emoji_dict = {
+EMOJI_DICT = {
     0: "0️⃣",
     1: "1️⃣",
     2: "2️⃣",
@@ -28,9 +30,9 @@ emoji_dict = {
 
 
 def get_emoji(key: (int, str)):
-    if key not in emoji_dict.keys():
+    if key not in EMOJI_DICT.keys():
         return "Unknown Emoji"
-    return emoji_dict[key]
+    return EMOJI_DICT[key]
 
 
 # https://developer.work.weixin.qq.com/document/path/91770

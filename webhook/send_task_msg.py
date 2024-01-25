@@ -3,10 +3,11 @@ from typing import Dict
 from nvitop import Device
 
 from config import config
-from utils import ip, my_time
+from utils import my_time
 from webhook import wework
 
-local_ip = ip.get_local_ip()
+web_host = config.web_host
+local_ip = config.local_ip
 web_server_port = config.web_server_port
 server_name = config.server_name
 delay_send_seconds = config.delay_send_seconds
@@ -30,7 +31,7 @@ def start_gpu_monitor(gpu_id, all_tasks_msg_dict, all_process_info: Dict):
             send_start_info = True
 
     if send_start_info:
-        send_text_to_wework(
+        handle_normal_text(
             f"{gpu_server_info}监控启动\n"
             f"{config.get_emoji('呲牙')*len(all_process_info)}{gpu_name}"
             f"上正在运行{len(all_process_info)}个任务：\n"
@@ -48,7 +49,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
 
     if not process_info["is_debug"]:
         if task_status == "create":
-            send_text_to_wework(
+            handle_normal_text(
                 f"{gpu_server_info}\n🚀{process_info['user']['name']}的"
                 f"({process_info['project_name']}-{process_info['python_file']})启动\n"
                 f"🌀{gpu_name}核心占用: {process_info['gpu_status']['gpu_usage']}%\n"
@@ -57,7 +58,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"{all_tasks_msg}",
             )
         elif task_status == "finish":
-            send_text_to_wework(
+            handle_normal_text(
                 f"{gpu_server_info}\n☑️{process_info['user']['name']}的"
                 f"({process_info['project_name']}-{process_info['python_file']})完成，"
                 f"用时{process_info['running_time_human']}\n"
@@ -84,40 +85,34 @@ def finish_task_log(process_info: Dict):
     )
 
 
-def send_text_to_wework(msg: str, mentioned_id=None, mentioned_mobile=None):
-    msg = (
-        f"{msg}"
-        f"📈详情: http://{local_ip}:{web_server_port}/nvitop\n"
-        f"⏰{my_time.get_now_time()}"
-    )
-    wework.send_text(msg, mentioned_id, mentioned_mobile)
+def handle_normal_text(msg: str, mentioned_id=None, mentioned_mobile=None):
+    if web_host is None:
+        msg += f"📈详情: http://{local_ip}:{web_server_port}/nvitop\n"
+    else:
+        msg += f"📈详情: http://{web_host}/nvitop\n"
+
+    msg += f"⏰{my_time.get_now_time()}"
+    wework.send_text_normal(msg, mentioned_id, mentioned_mobile)
 
 
-def send_process_except_msg():
-    warning_message = (
-        f"⚠️⚠️{server_name}获取进程失败！⚠️⚠️\n"
-        f"IP: {local_ip}\n"
-        f"⏰{my_time.get_now_time()}"
-    )
-    wework.direct_send_text_warning(msg=warning_message)
+def handle_warning_text(msg: str) -> str:
+    msg += f"IP: {local_ip}\n" f"⏰{my_time.get_now_time()}"
+    return msg
+
+
+def send_process_except_warning_msg():
+    warning_message = f"⚠️⚠️{server_name}获取进程失败！⚠️⚠️\n"
+    wework.send_text_warning(msg=handle_warning_text(warning_message))
 
 
 def send_cpu_except_warning_msg(cpu_id: int):
-    warning_message = (
-        f"⚠️⚠️{server_name}获取CPU:{cpu_id}温度失败！⚠️⚠️\n"
-        f"IP: {local_ip}\n"
-        # f"⏰{my_time.get_now_time()}"
-    )
-    # wework.direct_send_text_warning(msg=warning_message)
+    warning_message = f"⚠️⚠️{server_name}获取CPU:{cpu_id}温度失败！⚠️⚠️\n"
+    wework.send_text_warning(msg=handle_warning_text(warning_message))
 
 
 def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
-    warning_message = (
-        f"🤒🤒{server_name}的CPU:{cpu_id}温度已经超过{cpu_temperature}°C\n"
-        f"IP: {local_ip}\n"
-        f"⏰{my_time.get_now_time()}"
-    )
-    wework.direct_send_text_warning(msg=warning_message)
+    warning_message = f"🤒🤒{server_name}的CPU:{cpu_id}温度已经超过{cpu_temperature}°C\n"
+    wework.send_text_warning(msg=handle_warning_text(warning_message))
 
 
 def get_now_all_task_info(process_info: Dict, task_status: str):

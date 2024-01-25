@@ -1,14 +1,12 @@
 import datetime
 import json
 import threading
-import time
+from time import sleep as time_sleep
 from typing import List
 
 import requests
 
 from utils import env, my_time
-
-from time import sleep as time_sleep
 
 ENV_VAR_NAME = "GPU_MONITOR_WEBHOOK_WEWORK"
 WARNING_ENV_NAME = "GPU_MONITOR_WEBHOOK_WEWORK_WARNING"
@@ -109,10 +107,6 @@ def direct_send_text(
     )
 
 
-def handle_warning_text(msg: str) -> str:
-    return f"!!!Warning!!!\n{msg}"
-
-
 def direct_send_text_warning(
         msg: str,
         mentioned_id: List[str] = None,
@@ -120,7 +114,7 @@ def direct_send_text_warning(
 ) -> None:
     direct_send_text_with_url(
         webhook_url=webhook_url_warning,
-        msg=handle_warning_text(msg),
+        msg=msg,
         mentioned_id=mentioned_id,
         mentioned_mobile=mentioned_mobile
     )
@@ -149,7 +143,7 @@ def send_text_thread() -> None:
 
         try:
             if my_time.is_within_time_range(sleep_time_start, sleep_time_end):
-                time.sleep(60)
+                time_sleep(60)
                 continue
 
             current_msg = msg_queue[0]
@@ -161,7 +155,7 @@ def send_text_thread() -> None:
             )
             msg_queue.pop(0)
         except:
-            time.sleep(60)
+            time_sleep(60)
 
 
 def send_text(
@@ -207,7 +201,7 @@ def send_text_warning(
 ) -> None:
     send_text(
         webhook_url=webhook_url_warning,
-        msg=handle_warning_text(msg),
+        msg=msg,
         mentioned_id=mentioned_id,
         mentioned_mobile=mentioned_mobile
     )

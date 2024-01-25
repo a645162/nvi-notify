@@ -29,7 +29,7 @@ emoji_dict = {
 
 def get_emoji(key: (int, str)):
     if key not in emoji_dict.keys():
-        return "Unknow Emoji"
+        return "Unknown Emoji"
     return emoji_dict[key]
 
 
@@ -97,9 +97,6 @@ def read_user_list() -> list:
 user_list = read_user_list()
 
 if __name__ == "__main__":
-    print()
-
     # print(f"gpu_monitor_usage_threshold: {gpu_monitor_usage_threshold}")
     print(f"gpu_monitor_sleep_time: {gpu_monitor_sleep_time}")
     print(f"web_server: {web_server_host}:{web_server_port}")
-    print()

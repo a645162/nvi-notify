@@ -13,7 +13,7 @@ ENV_VAR_NAME = "GPU_MONITOR_WEBHOOK_WEWORK"
 
 def get_wework_url(webhook_env: str = ""):
     if len(webhook_env.strip()) == 0:
-        wework_env = env.get_env(ENV_VAR_NAME)
+        wework_env = env.get_env_str(ENV_VAR_NAME)
     else:
         wework_env = webhook_env.strip()
 
@@ -77,7 +77,7 @@ def direct_send_text_warning(msg: str, mentioned_id=None, mentioned_mobile=None)
 
     WARNING_ENV_NAME = "GPU_MONITOR_WEBHOOK_WEWORK_WARNING"
 
-    webhook_url = get_wework_url(env.get_env(WARNING_ENV_NAME, ""))
+    webhook_url = get_wework_url(env.get_env_str(WARNING_ENV_NAME, ""))
 
     if not webhook_url:
         print(f"{WARNING_ENV_NAME} Not Set!")

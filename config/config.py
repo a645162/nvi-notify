@@ -4,7 +4,7 @@ import os
 from utils import env
 
 # local_ip = env.get_env("GPU_MONITOR_LOCAL_IP")
-server_name = env.get_env("SERVER_NAME")
+server_name = env.get_env_str("SERVER_NAME")
 gpu_monitor_sleep_time = env.get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
 delay_send_seconds = env.get_env_int("DELAY_SEND_SECONDS", 60)
 

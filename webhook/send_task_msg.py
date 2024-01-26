@@ -44,13 +44,13 @@ def start_gpu_monitor(gpu_id, all_tasks_msg_dict, all_process_info: Dict):
 
 def send_gpu_task_message(process_info: Dict, task_status: str):
     gpu_name = f"GPU:{process_info['gpu_id']}" if num_gpu > 1 else "GPU"
-    gpu_server_info = f"[{gpu_name}]" if num_gpu > 1 else gpu_name
+    gpu_server_info = f"[{gpu_name}]\n" if num_gpu > 1 else ""
     all_tasks_msg = get_now_all_task_info(process_info, task_status)
 
     if not process_info["is_debug"]:
         if task_status == "create":
             handle_normal_text(
-                f"{gpu_server_info}\n🚀{process_info['user']['name']}的"
+                f"{gpu_server_info}🚀{process_info['user']['name']}的"
                 f"({process_info['project_name']}-{process_info['python_file']})启动\n"
                 f"🌀{gpu_name}核心占用: {process_info['gpu_status']['gpu_usage']}%\n"
                 f"🌀{gpu_name}显存占用: {process_info['gpu_status']['gpu_mem_usage']}/{process_info['gpu_status']['gpu_mem_total']} ({process_info['gpu_status']['gpu_mem_percent']}%)，{process_info['gpu_status']['gpu_mem_free']}空闲\n\n"
@@ -59,7 +59,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
             )
         elif task_status == "finish":
             handle_normal_text(
-                f"{gpu_server_info}\n☑️{process_info['user']['name']}的"
+                f"{gpu_server_info}☑️{process_info['user']['name']}的"
                 f"({process_info['project_name']}-{process_info['python_file']})完成，"
                 f"用时{process_info['running_time_human']}\n"
                 f"🌀{gpu_name}核心占用: {process_info['gpu_status']['gpu_usage']}%\n"

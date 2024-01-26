@@ -12,7 +12,7 @@ from webhook.send_task_msg import (
 )
 
 sleep_time = config.gpu_monitor_sleep_time
-HIGH_TEMPERATURE_THRESHOLD = 70
+HIGH_TEMPERATURE_THRESHOLD = 80
 
 
 class CPUMonitor:

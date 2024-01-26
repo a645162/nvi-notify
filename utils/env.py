@@ -2,22 +2,22 @@ import os
 from datetime import time
 
 
-def get_env(key, default=None):
+def get_env_str(key: str, default: str = None) -> str:
     if key in os.environ:
         return str(os.environ[key]).strip()
     return default
 
 
-def get_env_int(key, default=None):
-    str_int = get_env(key, "")
+def get_env_int(key: str, default: int = None) -> int:
+    str_int = get_env_str(key, "")
     try:
         return int(str_int)
     except:
         return default
 
 
-def get_env_time(key, default=None):
-    time_str = get_env(key, "")
+def get_env_time(key: str, default: time = None) -> time:
+    time_str = get_env_str(key, "")
     index = time_str.find(":")
     if index == -1:
         return default
@@ -34,22 +34,9 @@ def get_env_time(key, default=None):
         return default
 
 
-def get_env_variable(env_name):
-    # 使用 os.environ.get 获取环境变量的值
-    env_value = os.environ.get(env_name)
-
-    # 如果环境变量不存在或为空，返回空字符串
-    return env_value.strip() if env_value is not None else ""
+def get_env_variable(env_name: str) -> str:
+    return get_env_str(env_name, "")
 
 
-def get_env_variable_int(env_name):
-    env_str = get_env_variable(env_name)
-    if env_str == "":
-        return -1
-    else:
-        value: int
-        try:
-            value = int(env_str)
-        except:
-            value = -1
-        return value
+def get_env_variable_int(env_name: str) -> int:
+    return get_env_int(env_name, -1)

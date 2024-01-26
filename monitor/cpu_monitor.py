@@ -5,64 +5,36 @@ from typing import Dict
 
 import psutil
 
-# from config import config
-# from utils import ip, my_time
-# from webhook import wework
+from config import config
+from webhook.send_task_msg import (
+    send_cpu_except_warning_msg,
+    send_cpu_temperature_warning_msg,
+)
 
-# local_ip = ip.get_local_ip()
-# server_name = config.server_name
-# sleep_time = config.gpu_monitor_sleep_time
-local_ip = "0.0.0.0"
-server_name = "test"
-sleep_time = 5
-
-
-def send_cpu_except_warning_msg(cpu_id: int):
-    warning_message = (
-        f"⚠️⚠️{server_name}获取CPU:{cpu_id}温度失败！⚠️⚠️\n"
-        f"IP: {local_ip}\n"
-        # f"⏰{my_time.get_now_time()}"
-    )
-    # wework.direct_send_text_warning(msg=warning_message)
-
-
-def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
-    warning_message = (
-        f"🤒🤒{server_name}的CPU:{cpu_id}温度已经超过{cpu_temperature}°C\n"
-        f"IP: {local_ip}\n"
-        # f"⏰{my_time.get_now_time()}"
-    )
-    # wework.direct_send_text_warning(msg=warning_message)
+sleep_time = config.gpu_monitor_sleep_time
+HIGH_TEMPERATURE_THRESHOLD = 80
 
 
 class CPUMonitor:
     def __init__(self, cpu_id: int):
-        self.cpu_id = cpu_id
+        self.cpu_id: int = cpu_id
+        self.high_temperature_trigger: bool = False
         self.thread = None
+
+        self._temperature: float = 0.0
 
     monitor_thread_work = False
 
     def start_monitor(self):
         def monitor_thread():
             print(f"CPU {self.cpu_id} monitor start")
-            last_cpu_temperature = 0
-            high_temperature_trigger = False
             while monitor_thread_work:
-                now_cpu_temperature = get_cpu_temperature(self.cpu_id)
+                self.temperature = get_cpu_temperature(self.cpu_id)
 
-                if now_cpu_temperature >= 70:
-                    if last_cpu_temperature < 70:
-                        high_temperature_trigger = True
-                    else:
-                        high_temperature_trigger = False
-                else:
-                    high_temperature_trigger = False
-
-                if high_temperature_trigger:
-                    send_cpu_temperature_warning_msg(self.cpu_id, now_cpu_temperature)
+                if self.high_temperature_trigger:
+                    send_cpu_temperature_warning_msg(self.cpu_id, self.temperature)
 
                 time.sleep(sleep_time)
-                last_cpu_temperature = now_cpu_temperature
 
             print(f"CPU {self.cpu_id} monitor stop")
 
@@ -71,6 +43,19 @@ class CPUMonitor:
         monitor_thread_work = True
         self.thread.start()
         # self.thread.join()
+
+    @property
+    def temperature(self):
+        return self._temperature
+
+    @temperature.setter
+    def temperature(self, new_temperature):
+        self.high_temperature_trigger = (
+            new_temperature > HIGH_TEMPERATURE_THRESHOLD
+            and self._temperature < HIGH_TEMPERATURE_THRESHOLD
+        )
+
+        self._temperature = new_temperature
 
 
 def get_cpu_temperature(cpu_id: int) -> float:

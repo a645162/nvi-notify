@@ -9,7 +9,7 @@ def is_contain_keyword(text: str, keywords: list):
 
 def find_user_by_path(user_list: list, path: str):
     for user in user_list:
-        keywords_list = user['keywords']
+        keywords_list = user["keywords"]
         if is_contain_keyword(path, keywords_list):
             return user
 
@@ -18,10 +18,10 @@ def find_user_by_path(user_list: list, path: str):
 
 def is_debug_process(process_cmdline_list: list):
     for line in process_cmdline_list:
-        if line.split('/')[-1] == 'python' or line == 'python':
+        if line.split("/")[-1] == "python" or line == "python":
             process_cmdline_list.remove(line)
 
-    debug_cmd_keywords = ['vscode-server', 'debugpy', 'pydev/pydevd.py']
+    debug_cmd_keywords = ["vscode-server", "debugpy", "pydev/pydevd.py"]
 
     if any(keyword in process_cmdline_list[0] for keyword in debug_cmd_keywords):
         return True

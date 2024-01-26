@@ -87,9 +87,9 @@ def finish_task_log(process_info: Dict):
 
 def handle_normal_text(msg: str, mentioned_id=None, mentioned_mobile=None):
     if web_host is None:
-        msg += f"📈详情: http://{local_ip}:{web_server_port}/nvitop\n"
+        msg += f"📈详情: http://{local_ip}\n"
     else:
-        msg += f"📈详情: http://{web_host}/nvitop\n"
+        msg += f"📈详情: http://{web_host}\n"
 
     msg += f"⏰{my_time.get_now_time()}"
     wework.send_text_normal(msg, mentioned_id, mentioned_mobile)

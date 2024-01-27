@@ -1,14 +1,44 @@
 #!/bin/bash
 
-# export GPU_MONITOR_LOCAL_IP=$(ip -o -4 addr show | awk '$2 !~ /lo/ {print $4}' | grep -E '^10\.' | awk -F'/' '{print $1}')
-export GPU_MONITOR_WEBHOOK_WEWORK_TEST=""
-export GPU_MONITOR_WEBHOOK_WEWORK_DEPLOY=""
-export SERVER_NAME="SERVER_NAME"
-export GPU_MONITOR_SLEEP_TIME_START="23:00"
-export GPU_MONITOR_SLEEP_TIME_END="7:30"
-export DELAY_SEND_SECONDS="300"
+# Enable the option to exit immediately if any command exits with a non-zero status
+set -e
 
-export GPU_MONITOR_WEBHOOK_WEWORK="$GPU_MONITOR_WEBHOOK_WEWORK_TEST"
+env
+file_path="$HOME/.env/gpu_monitor.sh"
+
+if [ -e "$file_path" ]; then
+    echo "ENV File exists. Sourcing it..."
+    # shellcheck disable=SC1090
+    source "$file_path"
+else
+    echo "ENV File does not exist."
+    echo "Skipping sourcing ENV file..."
+fi
+
+# Load Functions
+source "scripts/env.sh"
+
+check_and_load_env_variable "SERVER_NAME" ""
+
+# Deploy webhook
+check_and_load_env_variable "GPU_MONITOR_WEBHOOK_WEWORK_DEPLOY" ""
+
+# Test webhook(Only for test)
+check_and_load_env_variable "GPU_MONITOR_WEBHOOK_WEWORK_TEST" ""
+
+check_and_load_env_variable "GPU_MONITOR_SLEEP_TIME_START" ""
+check_and_load_env_variable "GPU_MONITOR_SLEEP_TIME_END" ""
+check_and_load_env_variable "DELAY_SEND_SECONDS" ""
+
+check_and_load_env_variable "GPU_MONITOR_WEBHOOK_WEWORK_DEPLOY" ""
+
+export GPU_MONITOR_WEBHOOK_WEWORK="$GPU_MONITOR_WEBHOOK_WEWORK_DEPLOY"
 export GPU_MONITOR_WEBHOOK_WEWORK_WARNING="$GPU_MONITOR_WEBHOOK_WEWORK_TEST"
+
+echo "Python path:"
+which python
+
+echo "Python version:"
+python --version
 
 python main.py

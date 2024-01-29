@@ -32,7 +32,7 @@ if __name__ == "__main__":
     start_gpu_monitor_all()
     send_text_normal(
         f"假期期间，任务提醒功能关闭。\n"
-        f"可使用WebVPN访问http://{local_ip}或http://[{local_ipv6}]查看实时显卡占用情况。"
+        f"可使用WebVPN访问http://{local_ip}查看实时显卡占用情况。"
         f"访问http://{local_ip}:8000使用Web版VS Code。"
     )
     start_web_server_both()

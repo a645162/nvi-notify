@@ -3,20 +3,23 @@
 # Enable the option to exit immediately if any command exits with a non-zero status
 set -e
 
-env
-file_path="$HOME/.env/gpu_monitor.sh"
+# env
+# file_path="$HOME/.env/gpu_monitor.sh"
+
+file_path="./start-deploy.sh"
 
 if [ -e "$file_path" ]; then
     echo "ENV File exists. Sourcing it..."
     # shellcheck disable=SC1090
     source "$file_path"
+    # . "$file_path"
 else
     echo "ENV File does not exist."
     echo "Skipping sourcing ENV file..."
 fi
 
 # Load Functions
-source "scripts/env.sh"
+source "./scripts/env.sh"
 
 check_and_load_env_variable "SERVER_NAME" ""
 

@@ -2,7 +2,7 @@ from nvitop import *
 import threading
 import time
 
-from utils import my_time
+from utils import time_utils
 from webhook import wework
 
 from config import config
@@ -12,7 +12,7 @@ sleep_time = config.gpu_monitor_sleep_time
 
 
 def send_text_to_wework(gpu_id: int, msg: str):
-    now_time = my_time.get_now_time()
+    now_time = time_utils.get_now_time()
     send_text = \
         (
             f"GPU Monitor\n"

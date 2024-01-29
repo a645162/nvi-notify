@@ -4,7 +4,7 @@ from html import escape
 
 from flask import Flask, Response, render_template
 
-from config import config
+from config.config import server_name, web_server_host, web_server_port
 
 app = Flask(__name__)
 
@@ -22,7 +22,7 @@ def get_result():
 @app.route("/")
 def index():
     command_result = run_command("nvitop -1")
-    return render_template("index.html", result=command_result)
+    return render_template("index.html", result=command_result, page_title=server_name)
 
 
 def run_command(command):
@@ -33,11 +33,15 @@ def run_command(command):
         return str(e), 500
 
 
-def start_web_server():
-    app.run(host=config.web_server_host, port=config.web_server_port, debug=False)
+def start_web_server_ipv4():
+    app.run(host=web_server_host, port=web_server_port, debug=False)
+
+
+def start_web_server_both():
+    app.run(host="::", port=web_server_port, threaded=True)
 
 
 if __name__ == "__main__":
     # app.run(debug=True)
     # start_web_server()
-    start_web_server()
+    start_web_server_both()

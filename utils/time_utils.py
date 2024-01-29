@@ -10,10 +10,7 @@ def get_now_time():
     return formatted_time
 
 
-def is_within_time_range(
-        start_time=time(11, 0),
-        end_time=time(7, 30)
-):
+def is_within_time_range(start_time=time(11, 0), end_time=time(7, 30)):
     # 获取当前时间
     current_time = datetime.now().time()
 
@@ -23,10 +20,5 @@ def is_within_time_range(
         return start_time <= current_time or current_time <= end_time
 
 
-if __name__ == '__main__':
-    print(
-        is_within_time_range(
-            time(23, 00),
-            time(7, 30)
-        )
-    )
+if __name__ == "__main__":
+    print(is_within_time_range(time(23, 00), time(7, 30)))

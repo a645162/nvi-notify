@@ -6,7 +6,7 @@ import psutil
 from nvitop import *
 
 from config import config, keywords
-from utils import ip, my_time
+from utils import ip, time_utils
 from webhook import wework
 
 local_ip = ip.get_local_ip()
@@ -18,7 +18,7 @@ user_list = config.user_list
 
 
 def send_text_to_wework(msg: str, mentioned_id=None, mentioned_mobile=None):
-    now_time = my_time.get_now_time()
+    now_time = time_utils.get_now_time()
     send_text = (
         f"{msg}"
         f"📈详情: http://{local_ip}:{web_server_port}/nvitop\n"
@@ -189,7 +189,7 @@ def send_process_except_msg():
     warning_message = (
         f"⚠️⚠️{server_name}获取进程失败！⚠️⚠️\n"
         f"IP: {local_ip}\n"
-        f"⏰{my_time.get_now_time()}"
+        f"⏰{time_utils.get_now_time()}"
     )
     wework.direct_send_text_warning(msg=warning_message)
 
@@ -198,7 +198,7 @@ def send_process_except_msg():
     warning_message = (
         f"⚠️⚠️{server_name}获取进程失败！⚠️⚠️\n"
         f"IP: {local_ip}\n"
-        f"⏰{my_time.get_now_time()}"
+        f"⏰{time_utils.get_now_time()}"
     )
     wework.direct_send_text_warning(msg=warning_message)
 

@@ -1,15 +1,17 @@
 import json
 import os
 
-from utils import env, ip
+from utils.env import get_env_int, get_env_str
+from utils.ip import get_local_ip
 
 # local_ip = env.get_env("GPU_MONITOR_LOCAL_IP")
-server_name = env.get_env_str("SERVER_NAME")
-gpu_monitor_sleep_time = env.get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
-delay_send_seconds = env.get_env_int("DELAY_SEND_SECONDS", 60)
+server_name = get_env_str("SERVER_NAME")
+gpu_monitor_sleep_time = get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
+delay_send_seconds = get_env_int("DELAY_SEND_SECONDS", 60)
 
 web_host = None
-local_ip = ip.get_local_ip()
+local_ip = get_local_ip("v4")
+local_ipv6 = get_local_ip("v6")
 web_server_host = "0.0.0.0"
 web_server_port = 8080
 

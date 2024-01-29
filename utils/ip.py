@@ -1,26 +1,22 @@
 import os
-import psutil
 import socket
 from typing import List
 
-from utils.env import get_env_variable_int
-
-
-# 检测时间间隔，单位：秒
-time_interval = 60
-
-env_time_interval = get_env_variable_int("SHMTU_AUTH_MONITOR_IP_TIME_INTERVAL")
-if env_time_interval > 0:
-    time_interval = env_time_interval
+import psutil
 
 
 # Get IP address of network interface
-def get_ip_address(interface_name) -> str:
+def get_ip_address(interface_name, ip_type: str) -> str:
     try:
         address_list = psutil.net_if_addrs()[interface_name]
-        ip_address = next(
-            addr.address for addr in address_list if addr.family == socket.AF_INET
-        )
+        if ip_type == "v4":
+            ip_address = next(
+                addr.address for addr in address_list if addr.family == socket.AF_INET
+            )
+        elif ip_type == "v6":
+            ip_address = next(
+                addr.address for addr in address_list if addr.family == socket.AF_INET6
+            )
         return str(ip_address).strip()
     except (KeyError, StopIteration):
         return ""
@@ -39,7 +35,7 @@ def get_interface_name_list(black_list=None) -> List[str]:
     ]
 
 
-def get_black_list(black_list_txt_path:str = None) -> List[str]:
+def get_black_list(black_list_txt_path: str = None) -> List[str]:
     if black_list_txt_path is None:
         current_directory = os.path.dirname(os.path.abspath(__file__))
         black_list_txt_path = os.path.join(current_directory, "black_list.txt")
@@ -55,16 +51,21 @@ def is_text_in_black_list(text: str, black_list: List[str]) -> bool:
     return False
 
 
-def is_valid_ip_address(ip_address: str) -> bool:
+def is_valid_ip_address(ip_address: str, ip_type: str) -> bool:
     try:
-        socket.inet_aton(ip_address)
+        if ip_type == "v4":
+            socket.inet_aton(ip_address)
+        elif ip_type == "v6":
+            socket.inet_pton(socket.AF_INET6, ip_address)
         return True
     except socket.error:
         return False
 
 
 def get_valid_ip_list(
-    interface_name_list: List[str] = None, black_list: List[str] = None
+    interface_name_list: List[str] = None,
+    black_list: List[str] = None,
+    ip_type: str = "v4",
 ) -> List[str]:
     if interface_name_list is None:
         if black_list is None:
@@ -73,8 +74,8 @@ def get_valid_ip_list(
 
     ip_list = []
     for interface_name in interface_name_list:
-        ip_addr = get_ip_address(interface_name)
-        if is_valid_ip_address(ip_addr):
+        ip_addr = get_ip_address(interface_name, ip_type)
+        if is_valid_ip_address(ip_addr, ip_type):
             ip_list.append(ip_addr)
 
     return ip_list
@@ -103,10 +104,14 @@ def get_ip_change(
     return disabled_ip_list, new_ip_list
 
 
-def get_local_ip_from_dns():
+def get_local_ip_from_dns(ip_type: str):
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('114.114.114.114', 80))
+        if ip_type == "v4":
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("114.114.114.114", 80))
+        elif ip_type == "v6":
+            s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+            s.connect(("6.ipw.cn", 80))
         local_ip = s.getsockname()[0]
         s.close()
         return local_ip
@@ -114,13 +119,23 @@ def get_local_ip_from_dns():
         print(f"Error getting local IP: {e}")
         return None
 
-def get_local_ip():
+
+def get_local_ip(ip_type: str):
+    """
+    Args:
+        ip_type (str): choices: ["v4", "v6"]
+
+    Returns:
+        ip (str): local ip
+    """
     black_list = get_black_list("config/network_interface_black_list.txt")
     interface_name_list = get_interface_name_list(black_list=black_list)
 
-    ip_list = get_valid_ip_list(interface_name_list=interface_name_list, black_list=black_list)
+    ip_list = get_valid_ip_list(
+        interface_name_list=interface_name_list, black_list=black_list, ip_type=ip_type
+    )
     for ip in ip_list:
-        if ip == get_local_ip_from_dns():
+        if ip == get_local_ip_from_dns(ip_type):
             return ip
 
 
@@ -130,10 +145,11 @@ if __name__ == "__main__":
     interface_name_list = get_interface_name_list(black_list=black_list)
     print(interface_name_list)
 
-    ip = get_valid_ip_list(interface_name_list=interface_name_list, black_list=black_list)
+    ip = get_valid_ip_list(
+        interface_name_list=interface_name_list, black_list=black_list
+    )
     print(ip)
     for i in ip:
         print(i)
         if i == get_local_ip_from_dns():
             print(11111)
-    

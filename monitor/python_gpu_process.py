@@ -160,10 +160,11 @@ class PythonGPUProcess:
         if new_state == "newborn" and self._state is None:
             create_task_log(self.__dict__)
         elif new_state == "working" and self._state == "newborn":
-            send_gpu_task_message(self.__dict__, "create")
+            pass
+            # send_gpu_task_message(self.__dict__, "create")
         elif new_state == "death" and self._state == "working":
             finish_task_log(self.__dict__)
-            send_gpu_task_message(self.__dict__, "finish")
+            # send_gpu_task_message(self.__dict__, "finish")
         elif new_state == "death" and self._state == "newborn":
             finish_task_log(self.__dict__)
         self._state = new_state

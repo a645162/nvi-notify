@@ -4,36 +4,22 @@
 set -e
 
 # env
-# file_path="$HOME/.env/gpu_monitor.sh"
+env_file_path="$HOME/.env/gpu_monitor.sh"
 
-file_path="./start-deploy.sh"
-
-if [ -e "$file_path" ]; then
+if [ -e "$env_file_path" ]; then
     echo "ENV File exists. Sourcing it..."
     # shellcheck disable=SC1090
-    source "$file_path"
-    # . "$file_path"
+    source "$env_file_path"
 else
     echo "ENV File does not exist."
     echo "Skipping sourcing ENV file..."
 fi
 
 # Load Functions
-source "./scripts/env.sh"
+source "./scripts/env_func.sh"
 
-check_and_load_env_variable "SERVER_NAME" ""
-
-# Deploy webhook
-check_and_load_env_variable "GPU_MONITOR_WEBHOOK_WEWORK_DEPLOY" ""
-
-# Test webhook(Only for test)
-check_and_load_env_variable "GPU_MONITOR_WEBHOOK_WEWORK_TEST" ""
-
-check_and_load_env_variable "GPU_MONITOR_SLEEP_TIME_START" ""
-check_and_load_env_variable "GPU_MONITOR_SLEEP_TIME_END" ""
-check_and_load_env_variable "DELAY_SEND_SECONDS" ""
-
-check_and_load_env_variable "GPU_MONITOR_WEBHOOK_WEWORK_DEPLOY" ""
+# Check Env Variables
+source "./config/check_env.sh"
 
 export GPU_MONITOR_WEBHOOK_WEWORK="$GPU_MONITOR_WEBHOOK_WEWORK_DEPLOY"
 export GPU_MONITOR_WEBHOOK_WEWORK_WARNING="$GPU_MONITOR_WEBHOOK_WEWORK_TEST"

@@ -114,7 +114,6 @@ def send_text_thread() -> None:
         if len(msg_queue) == 0:
             time.sleep(5)
             continue
-        print(f"[{get_now_time()}]消息队列添加一条消息。")
         try:
             if is_within_time_range(sleep_time_start, sleep_time_end):
                 time.sleep(60)
@@ -138,6 +137,7 @@ def send_text(
     if len(webhook_url) == 0:
         return
     msg_queue.append((webhook_url, msg, mentioned_id, mentioned_mobile))
+    print(f"[{get_now_time()}]消息队列添加一条消息。")
     global thread_is_start
     if not thread_is_start:
         thread_is_start = True

@@ -98,7 +98,8 @@ def finish_task_log(process_info: Dict):
 
 def handle_normal_text(msg: str, mentioned_id=None, mentioned_mobile=None):
     if web_host is None:
-        msg += f"📈详情: http://{local_ip}\nhttp://[{local_ipv6}]"
+        msg += f"📈详情: http://{local_ip}\n"
+        # msg += f"http://[{local_ipv6}]\n"
     else:
         msg += f"📈详情: http://{web_host}\n"
 
@@ -107,7 +108,9 @@ def handle_normal_text(msg: str, mentioned_id=None, mentioned_mobile=None):
 
 
 def handle_warning_text(msg: str) -> str:
-    msg += f"IP: {local_ip}\nhttp://[{local_ipv6}]" f"⏰{get_now_time()}"
+    msg += f"http://{local_ip}\n"
+    msg += f"http://[{local_ipv6}]\n"
+    msg += f"⏰{get_now_time()}"
     return msg
 
 
@@ -122,7 +125,7 @@ def send_cpu_except_warning_msg(cpu_id: int):
 
 
 def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
-    warning_message = f"🤒🤒{server_name}的CPU:{cpu_id}温度已经超过{cpu_temperature}°C\n"
+    warning_message = f"🤒🤒{server_name}的CPU:{cpu_id}温度已达{cpu_temperature}°C\n"
     send_text_warning(msg=handle_warning_text(warning_message))
 
 

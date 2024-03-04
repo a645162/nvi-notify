@@ -11,7 +11,7 @@ from webhook.send_task_msg import (
     send_cpu_temperature_warning_msg,
 )
 
-HIGH_TEMPERATURE_THRESHOLD = 80
+HIGH_TEMPERATURE_THRESHOLD = 85
 
 
 class CPUMonitor:

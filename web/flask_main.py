@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 @app.route("/get_result")
 def get_result():
-    command_result = run_command("nvitop -1")
+    command_result = run_command("nvitop -U")
     return Response(
         response=json.dumps({"result": escape(command_result)}),
         status=200,
@@ -21,7 +21,7 @@ def get_result():
 
 @app.route("/")
 def index():
-    command_result = run_command("nvitop -1")
+    command_result = run_command("nvitop -U")
     return render_template("index.html", result=command_result, page_title=server_name)
 
 

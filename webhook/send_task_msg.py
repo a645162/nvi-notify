@@ -9,7 +9,7 @@ from config.config import (
     local_ipv6,
     server_name,
     web_host,
-    web_server_port,
+    SERVER_DOMAIN_DICT,
 )
 from utils.time_utils import get_now_time
 from webhook.wework import send_text_normal, send_text_warning
@@ -18,6 +18,12 @@ num_gpu = Device.count()
 
 
 def start_gpu_monitor(gpu_id, all_tasks_msg_dict, all_process_info: Dict):
+    """
+    启动GPU监控函数
+    :param gpu_id: GPU ID
+    :param all_tasks_msg_dict: 所有任务消息字典
+    :param all_process_info: 所有进程信息字典
+    """
     gpu_name = f"GPU:{gpu_id}" if num_gpu > 1 else "GPU"
     gpu_server_info = f"[{gpu_name}]" if num_gpu > 1 else gpu_name
     all_tasks_msg = "".join(all_tasks_msg_dict.values())
@@ -46,6 +52,11 @@ def start_gpu_monitor(gpu_id, all_tasks_msg_dict, all_process_info: Dict):
 
 
 def send_gpu_task_message(process_info: Dict, task_status: str):
+    """
+    发送GPU任务消息函数
+    :param process_info: 进程信息字典
+    :param task_status: 任务状态
+    """
     gpu_name = f"GPU:{process_info['gpu_id']}" if num_gpu > 1 else "GPU"
     gpu_server_info = f"[{gpu_name}]\n" if num_gpu > 1 else ""
     all_tasks_msg = get_now_all_task_info(process_info, task_status)
@@ -75,6 +86,10 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
 
 
 def create_task_log(process_info: Dict):
+    """
+    创建任务日志函数
+    :param process_info: 进程信息字典
+    """
     with open("./logging/log.log", "a") as f:
         output_log = (
             f"[{get_now_time()}]"
@@ -86,6 +101,10 @@ def create_task_log(process_info: Dict):
 
 
 def finish_task_log(process_info: Dict):
+    """
+    完成任务日志函数
+    :param process_info: 进程信息字典
+    """
     with open("./logging/log.log", "a") as f:
         output_log = (
             f"[{get_now_time()}]"
@@ -97,17 +116,28 @@ def finish_task_log(process_info: Dict):
 
 
 def handle_normal_text(msg: str, mentioned_id=None, mentioned_mobile=None):
+    """
+    处理普通文本消息函数
+    :param msg: 消息内容
+    :param mentioned_id: 提及的用户ID
+    :param mentioned_mobile: 提及的用户手机号码
+    """
     if web_host is None:
         msg += f"📈详情: http://{local_ip}\n"
         # msg += f"http://[{local_ipv6}]\n"
     else:
-        msg += f"📈详情: http://{web_host}\n"
+        msg += f"📈详情: {SERVER_DOMAIN_DICT[server_name]}\n"
 
     msg += f"⏰{get_now_time()}"
     send_text_normal(msg, mentioned_id, mentioned_mobile)
 
 
 def handle_warning_text(msg: str) -> str:
+    """
+    处理警告文本消息函数
+    :param msg: 消息内容
+    :return: 处理后的消息内容
+    """
     msg += f"http://{local_ip}\n"
     msg += f"http://[{local_ipv6}]\n"
     msg += f"⏰{get_now_time()}"
@@ -115,21 +145,36 @@ def handle_warning_text(msg: str) -> str:
 
 
 def send_process_except_warning_msg():
+    """
+    发送进程异常警告消息函数
+    """
     warning_message = f"⚠️⚠️{server_name}获取进程失败！⚠️⚠️\n"
     send_text_warning(msg=handle_warning_text(warning_message))
 
 
 def send_cpu_except_warning_msg(cpu_id: int):
+    """
+    发送CPU异常警告消息函数
+    """
     warning_message = f"⚠️⚠️{server_name}获取CPU:{cpu_id}温度失败！⚠️⚠️\n"
     send_text_warning(msg=handle_warning_text(warning_message))
 
 
 def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
+    """
+    发送CPU温度异常警告消息函数
+    """
     warning_message = f"🤒🤒{server_name}的CPU:{cpu_id}温度已达{cpu_temperature}°C\n"
     send_text_warning(msg=handle_warning_text(warning_message))
 
 
 def get_now_all_task_info(process_info: Dict, task_status: str):
+    """
+    获取当前所有任务信息函数
+    :param process_info: 进程信息字典
+    :param task_status: 任务状态
+    :return: 当前所有任务信息
+    """
     all_tasks_msg_dict = process_info["gpu_all_tasks_msg"]
     if task_status == "finish":
         del all_tasks_msg_dict[process_info["pid"]]

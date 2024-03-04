@@ -9,11 +9,11 @@ server_name = get_env_str("SERVER_NAME")
 gpu_monitor_sleep_time = get_env_int("GPU_MONITOR_SLEEP_TIME", 5)
 delay_send_seconds = get_env_int("DELAY_SEND_SECONDS", 60)
 
-web_host = None
+web_host = ""
 local_ip = get_local_ip("v4")
 local_ipv6 = get_local_ip("v6")
-web_server_host = "0.0.0.0"
-web_server_port = 8080
+flask_server_host = "0.0.0.0"
+flask_server_port = 8080
 
 EMOJI_DICT = {
     0: "0️⃣",
@@ -30,6 +30,9 @@ EMOJI_DICT = {
     "呲牙": "/::D",
 }
 
+SERVER_DOMAIN_DICT ={
+    "3090": f"http://3090.{web_host}",
+}
 
 def get_emoji(key: (int, str)):
     if key not in EMOJI_DICT.keys():
@@ -103,4 +106,4 @@ user_list = read_user_list()
 if __name__ == "__main__":
     # print(f"gpu_monitor_usage_threshold: {gpu_monitor_usage_threshold}")
     print(f"gpu_monitor_sleep_time: {gpu_monitor_sleep_time}")
-    print(f"web_server: {web_server_host}:{web_server_port}")
+    print(f"web_server: {flask_server_host}:{flask_server_port}")

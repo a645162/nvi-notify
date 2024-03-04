@@ -4,7 +4,7 @@ from html import escape
 
 from flask import Flask, Response, render_template
 
-from config.config import server_name, web_server_host, web_server_port
+from config.config import server_name, flask_server_host, flask_server_port
 
 app = Flask(__name__)
 
@@ -34,11 +34,11 @@ def run_command(command):
 
 
 def start_web_server_ipv4():
-    app.run(host=web_server_host, port=web_server_port, debug=False)
+    app.run(host=flask_server_host, port=flask_server_port, debug=False)
 
 
 def start_web_server_both():
-    app.run(host="::", port=web_server_port, threaded=True)
+    app.run(host="::", port=flask_server_port, threaded=True)
 
 
 if __name__ == "__main__":

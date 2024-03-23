@@ -1,10 +1,10 @@
 from typing import Dict, List
 
 import psutil
-from monitor import keywords
 from nvitop import GpuProcess
 
-from config.config import delay_send_seconds, all_valid_user_list
+from config.config import all_valid_user_list, delay_send_seconds
+from monitor import keywords
 from webhook.send_task_msg import (
     create_task_log,
     finish_task_log,
@@ -88,57 +88,47 @@ class PythonGPUProcess:
         self.running_time_human = self.gpu_process.running_time_human()
 
     def judge_is_python(self):
-        process_name = self.gpu_process.name()
-        if process_name in ["python", "yolo"]:
-            return True
-        else:
-            if any("python" in cmd for cmd in self.cmdline):
-                return True
+        return self.gpu_process.name() in ["python", "yolo"] or any(
+            "python" in cmd for cmd in self.cmdline
+        )
 
     def get_debug_flag(self):
         if self.cmdline is None:
-            return False
-        _cmdline = self.cmdline
-        for line in _cmdline:
-            if line.split("/")[-1] == "python" or line == "python":
-                _cmdline.remove(line)
-
-        debug_cmd_keywords = ["vscode-server", "debugpy", "pydev/pydevd.py"]
-
-        if any(keyword in _cmdline[0] for keyword in debug_cmd_keywords):
-            self.is_debug = True
-        else:
             self.is_debug = False
+            return
+
+        cmdline = [line for line in self.cmdline if not line.endswith("python")]
+        debug_cmd_keywords = ["vscode-server", "debugpy", "pydev/pydevd.py"]
+        self.is_debug = any(keyword in cmdline[0] for keyword in debug_cmd_keywords)
 
     def get_user(self):
-        for user in all_valid_user_list:
-            if self.gpu_process.username == user["name"]:
-                self.user = user_dict
-                return
+        self.user = next(
+            (
+                user
+                for user in all_valid_user_list
+                if self.gpu_process.username == user["name"]
+            ),
+            None,
+        )
 
         cwd = self.cwd + "/" if self.cwd is not None else ""
-        user_dict = keywords.find_user_by_path(all_valid_user_list, cwd)
+        default_user_dict = {
+            "name": "Unknown",
+            "keywords": [],
+            "wework": {
+                "mention_id": [],
+                "mention_mobile": [],
+            },
+        }
 
-        if user_dict is None:
-            user_dict = {
-                "name": "Unknown",
-                "keywords": [],
-                "wework": {
-                    "mention_id": [],
-                    "mention_mobile": [],
-                },
-            }
-
-        self.user = user_dict
+        self.user = (
+            keywords.find_user_by_path(all_valid_user_list, cwd) or default_user_dict
+        )
 
     def get_conda_env_name(self):
         try:
             process = psutil.Process(self.pid)
-
-            conda_env = process.environ().get("CONDA_DEFAULT_ENV", None)
-
-            if conda_env:
-                self.conda_env = conda_env
+            self.conda_env = process.environ().get("CONDA_DEFAULT_ENV", "")
 
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -150,13 +140,11 @@ class PythonGPUProcess:
     def get_python_filename(self) -> str:
         if self.cmdline is None:
             return ""
-        for cmd_str in self.cmdline:
-            if cmd_str.lower().endswith(".py"):
-                if "/" in cmd_str:
-                    return cmd_str.split("/")[-1]
-                else:
-                    # cmd_str[:-3] # remove file expanded-name
-                    return cmd_str
+
+        file_name = next(
+            (cmd_str for cmd_str in self.cmdline if cmd_str.lower().endswith(".py")), ""
+        )
+        return file_name.split("/")[-1] if "/" in file_name else file_name
 
     @property
     def state(self):
@@ -182,8 +170,9 @@ class PythonGPUProcess:
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
         if (
-            new_running_time_in_seconds > delay_send_seconds
-            and self._running_time_in_seconds < delay_send_seconds
+            new_running_time_in_seconds
+            > delay_send_seconds
+            > self._running_time_in_seconds
         ):
             self.state = "working"
         self._running_time_in_seconds = new_running_time_in_seconds

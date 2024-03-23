@@ -4,7 +4,7 @@ from html import escape
 
 from flask import Flask, Response, render_template
 
-from config.config import server_name, flask_server_host, flask_server_port
+from config.config import flask_server_host, flask_server_port, server_name
 
 app = Flask(__name__)
 

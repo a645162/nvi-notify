@@ -5,7 +5,7 @@ from typing import Dict
 from nvitop import *
 
 from config.config import get_emoji, gpu_monitor_sleep_time
-from monitor.python_gpu_process import PythonGPUProcess
+from monitor.GPU.python_process import PythonGPUProcess
 from webhook.send_task_msg import send_process_except_warning_msg, start_gpu_monitor
 
 num_gpu = Device.count()

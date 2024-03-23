@@ -1,6 +1,6 @@
 import os
 import socket
-from typing import List
+from typing import List, Union
 
 import psutil
 
@@ -87,7 +87,7 @@ def get_list_diff(list1: List[str], list2: List[str]) -> List[str]:
 
 def get_ip_change(
     last_ip_list: List[str], current_ip_list: List[str]
-) -> (List[str], List[str]):
+) -> Union[List[str], List[str]]:
     diff_list = get_list_diff(last_ip_list, current_ip_list)
     if len(diff_list) == 0:
         return [], []

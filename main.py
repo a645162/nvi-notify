@@ -1,9 +1,8 @@
 import time
 
-from config.config import local_ip, local_ipv6
-from monitor.cpu_monitor import start_cpu_monitor_all
-from monitor.nvitop_monitor import start_gpu_monitor_all
-from utils.env import get_env_str, get_env_time
+from monitor.CPU.cpu_monitor import start_cpu_monitor_all
+from monitor.GPU.nvitop_monitor import start_gpu_monitor_all
+from config.env import get_env_str, get_env_time
 from web.flask_main import start_web_server_both
 from webhook.wework import send_text_normal
 
@@ -30,9 +29,5 @@ if __name__ == "__main__":
 
     start_cpu_monitor_all()
     start_gpu_monitor_all()
-    # send_text_normal(
-    #     f"假期期间，任务提醒功能关闭。\n"
-    #     f"可使用WebVPN访问http://{local_ip}查看实时显卡占用情况。"
-    #     f"访问http://{local_ip}:8000使用Web版VS Code。"
-    # )
+    # send_text_normal("str")
     start_web_server_both()

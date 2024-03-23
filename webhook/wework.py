@@ -6,8 +6,8 @@ from typing import List
 
 import requests
 
-from utils.env import get_env_str, get_env_time
-from utils.time_utils import get_now_time, is_within_time_range
+from config.env import get_env_str, get_env_time
+from config.utils.time_utils import get_now_time, is_within_time_range
 
 ENV_VAR_NAME = "GPU_MONITOR_WEBHOOK_WEWORK"
 WARNING_ENV_NAME = "GPU_MONITOR_WEBHOOK_WEWORK_WARNING"

@@ -3,15 +3,15 @@ from typing import Dict
 from nvitop import Device
 
 from config.config import (
+    SERVER_DOMAIN_DICT,
     delay_send_seconds,
     get_emoji,
     server_name,
     web_host,
-    SERVER_DOMAIN_DICT,
 )
+from config.ip import get_local_ip
 from config.utils.time_utils import get_now_time
 from webhook.wework import send_text_normal, send_text_warning
-from config.ip import get_local_ip
 
 num_gpu = Device.count()
 local_ip = get_local_ip("v4")
@@ -167,6 +167,20 @@ def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
     """
     warning_message = f"🤒🤒{server_name}的CPU:{cpu_id}温度已达{cpu_temperature}°C\n"
     send_text_warning(msg=handle_warning_text(warning_message))
+
+
+def get_all_tasks_msg(process_info: Dict) -> Dict:
+    all_tasks_msg_dict = {}
+    for idx, info in enumerate(process_info.values()):
+        task_msg = (
+            f"{get_emoji(idx)}{'🐞' if info.is_debug else ''}"
+            f"用户: {info.user['name']}  "
+            f"显存占用: {info.gpu_memory_human}  "
+            f"运行时长: {info.running_time_human}\n"
+        )
+        all_tasks_msg_dict.update({info.pid: task_msg})
+
+    return all_tasks_msg_dict
 
 
 def get_now_all_task_info(process_info: Dict, task_status: str):

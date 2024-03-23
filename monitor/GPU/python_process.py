@@ -111,7 +111,6 @@ class PythonGPUProcess:
             None,
         )
 
-        cwd = self.cwd + "/" if self.cwd is not None else ""
         default_user_dict = {
             "name": "Unknown",
             "keywords": [],
@@ -121,9 +120,17 @@ class PythonGPUProcess:
             },
         }
 
-        self.user = (
-            keywords.find_user_by_path(all_valid_user_list, cwd) or default_user_dict
-        )
+        def find_user_by_path(user_list: list, path: str):
+            for user in user_list:
+                if any(
+                    keyword.lower().strip() in path.lower()
+                    for keyword in user["keywords"]
+                ):
+                    return user
+            return None
+
+        cwd = self.cwd + "/" if self.cwd is not None else ""
+        self.user = find_user_by_path(all_valid_user_list, cwd) or default_user_dict
 
     def get_conda_env_name(self):
         try:

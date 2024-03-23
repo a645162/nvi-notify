@@ -1,12 +1,15 @@
 import threading
 import time
-from typing import Dict
 
-from nvitop import *
+from nvitop import Device
 
-from config.config import get_emoji, gpu_monitor_sleep_time
+from config.config import gpu_monitor_sleep_time
 from monitor.GPU.python_process import PythonGPUProcess
-from webhook.send_task_msg import send_process_except_warning_msg, start_gpu_monitor
+from webhook.send_task_msg import (
+    get_all_tasks_msg,
+    send_process_except_warning_msg,
+    start_gpu_monitor,
+)
 
 num_gpu = Device.count()
 
@@ -57,19 +60,6 @@ class NvidiaMonitor:
     def get_gpu_mem_total(self):
         return self.nvidia_i.memory_total_human()
 
-    def get_all_tasks_msg(self, process_info: Dict) -> Dict:
-        all_tasks_msg_dict = {}
-        for idx, info in enumerate(process_info.values()):
-            task_msg = (
-                f"{get_emoji(idx)}{'🐞' if info.is_debug else ''}"
-                f"用户: {info.user['name']}  "
-                f"显存占用: {info.gpu_memory_human}  "
-                f"运行时长: {info.running_time_human}\n"
-            )
-            all_tasks_msg_dict.update({info.pid: task_msg})
-
-        return all_tasks_msg_dict
-
     monitor_thread_work = False
 
     def start_monitor(self):
@@ -98,8 +88,7 @@ class NvidiaMonitor:
                         else:
                             continue
 
-                all_tasks_msg_dict = self.get_all_tasks_msg(self.processes)
-                # print("all_task", all_tasks_msg_dict)
+                all_tasks_msg_dict = get_all_tasks_msg(self.processes)
                 for pid in self.processes.keys():
                     self.processes[pid].gpu_all_tasks_msg = all_tasks_msg_dict
                     self.processes[pid].num_task = len(self.processes)
@@ -116,7 +105,6 @@ class NvidiaMonitor:
             self.thread = threading.Thread(target=monitor_thread)
         monitor_thread_work = True
         self.thread.start()
-        # self.thread.join()
 
     def stop_monitor(self):
         monitor_thread_work = False

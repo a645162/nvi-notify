@@ -4,11 +4,10 @@ from typing import Dict
 
 from nvitop import *
 
-from config import config
-from monitor.python_gpu_process import PythonGPUProcess
+from config.config import get_emoji, gpu_monitor_sleep_time
+from monitor.GPU.python_process import PythonGPUProcess
 from webhook.send_task_msg import send_process_except_warning_msg, start_gpu_monitor
 
-sleep_time = config.gpu_monitor_sleep_time
 num_gpu = Device.count()
 
 
@@ -62,7 +61,7 @@ class NvidiaMonitor:
         all_tasks_msg_dict = {}
         for idx, info in enumerate(process_info.values()):
             task_msg = (
-                f"{config.get_emoji(idx)}{'🐞' if info.is_debug else ''}"
+                f"{get_emoji(idx)}{'🐞' if info.is_debug else ''}"
                 f"用户: {info.user['name']}  "
                 f"显存占用: {info.gpu_memory_human}  "
                 f"运行时长: {info.running_time_human}\n"
@@ -109,7 +108,7 @@ class NvidiaMonitor:
                     start_gpu_monitor(self.gpu_id, all_tasks_msg_dict, self.processes)
                     monitor_start_flag = False
 
-                time.sleep(sleep_time)
+                time.sleep(gpu_monitor_sleep_time)
 
             print(f"GPU {self.gpu_id} monitor stop")
 

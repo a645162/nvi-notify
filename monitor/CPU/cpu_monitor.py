@@ -5,14 +5,13 @@ from typing import Dict
 
 import psutil
 
-from config import config
+from config.config import gpu_monitor_sleep_time
 from webhook.send_task_msg import (
     send_cpu_except_warning_msg,
     send_cpu_temperature_warning_msg,
 )
 
-sleep_time = config.gpu_monitor_sleep_time
-HIGH_TEMPERATURE_THRESHOLD = 80
+HIGH_TEMPERATURE_THRESHOLD = 85
 
 
 class CPUMonitor:
@@ -34,7 +33,7 @@ class CPUMonitor:
                 if self.high_temperature_trigger:
                     send_cpu_temperature_warning_msg(self.cpu_id, self.temperature)
 
-                time.sleep(sleep_time)
+                time.sleep(gpu_monitor_sleep_time)
 
             print(f"CPU {self.cpu_id} monitor stop")
 

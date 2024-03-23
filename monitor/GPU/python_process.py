@@ -1,16 +1,15 @@
 from typing import Dict, List
 
 import psutil
+from monitor import keywords
 from nvitop import GpuProcess
 
-from config import config, keywords
+from config.config import delay_send_seconds, all_valid_user_list
 from webhook.send_task_msg import (
     create_task_log,
     finish_task_log,
     send_gpu_task_message,
 )
-
-delay_send_seconds = config.delay_send_seconds
 
 
 class PythonGPUProcess:
@@ -112,16 +111,24 @@ class PythonGPUProcess:
             self.is_debug = False
 
     def get_user(self):
+        for user in all_valid_user_list:
+            if self.gpu_process.username == user["name"]:
+                self.user = user_dict
+                return
+
         cwd = self.cwd + "/" if self.cwd is not None else ""
-        user_dict = keywords.find_user_by_path(config.user_list, cwd)
+        user_dict = keywords.find_user_by_path(all_valid_user_list, cwd)
 
         if user_dict is None:
             user_dict = {
                 "name": "Unknown",
                 "keywords": [],
-                "mention_id": [],
-                "mention_phone_number": [],
+                "wework": {
+                    "mention_id": [],
+                    "mention_mobile": [],
+                },
             }
+
         self.user = user_dict
 
     def get_conda_env_name(self):

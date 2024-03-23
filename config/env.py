@@ -23,7 +23,7 @@ def get_env_time(key: str, default: time = None) -> time:
         return default
 
     time_str_1 = time_str[:index].strip()
-    time_str_2 = time_str[index + 1:].strip()
+    time_str_2 = time_str[index + 1 :].strip()
 
     try:
         int_1 = int(time_str_1)

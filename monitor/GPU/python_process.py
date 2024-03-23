@@ -4,7 +4,6 @@ import psutil
 from nvitop import GpuProcess
 
 from config.config import all_valid_user_list, delay_send_seconds
-from monitor import keywords
 from webhook.send_task_msg import (
     create_task_log,
     finish_task_log,

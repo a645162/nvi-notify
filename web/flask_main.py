@@ -3,11 +3,14 @@ import subprocess
 from html import escape
 
 from flask import Flask, Response, render_template
+from flask_cors import CORS
 
 from config.config import flask_server_host, flask_server_port, server_name
 
 app = Flask(__name__)
 
+# 允许所有域进行跨源请求
+CORS(app)
 
 @app.route("/get_result")
 def get_result():

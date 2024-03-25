@@ -3,6 +3,7 @@ nvitop
 
 flask
 flask-socketio
+flask-cors
 
 requests
 psutil

@@ -39,6 +39,8 @@ def get_black_list(black_list_txt_path: str = None) -> List[str]:
     if black_list_txt_path is None:
         current_directory = os.path.dirname(os.path.abspath(__file__))
         black_list_txt_path = os.path.join(current_directory, "black_list.txt")
+    if not os.path.exists(black_list_txt_path):
+        return []
     with open(black_list_txt_path, "r", encoding="utf-8") as f:
         return [line.strip().lower() for line in f.readlines() if len(line.strip()) > 0]
 

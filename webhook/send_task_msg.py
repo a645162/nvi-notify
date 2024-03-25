@@ -32,8 +32,8 @@ def start_gpu_monitor(gpu_id: int, all_process_info: Dict):
 
     for process in all_process_info.values():
         if (
-            process.running_time_in_seconds > delay_send_seconds
-            and not process.is_debug
+                process.running_time_in_seconds > delay_send_seconds
+                and not process.is_debug
         ):
             send_start_info = True
             gpu_status = process.gpu_status
@@ -43,7 +43,7 @@ def start_gpu_monitor(gpu_id: int, all_process_info: Dict):
     if send_start_info:
         handle_normal_text(
             f"{gpu_server_info}监控启动\n"
-            f"{get_emoji('呲牙')*len(all_process_info)}{gpu_name}"
+            f"{get_emoji('呲牙') * len(all_process_info)}{gpu_name}"
             f"上正在运行{len(all_process_info)}个任务：\n"
             f"{all_tasks_msg}\n"
             f"🌀{gpu_name}核心占用: {gpu_status['gpu_usage']}%\n"
@@ -126,7 +126,10 @@ def handle_normal_text(msg: str, mentioned_id=None, mentioned_mobile=None):
         msg += f"📈http://{local_ip}\n"
         # msg += f"http://[{local_ipv6}]\n"
     else:
-        msg += f"📈http://{SERVER_DOMAIN_DICT[server_name]}\n"
+        if server_name in SERVER_DOMAIN_DICT.keys():
+            msg += f"📈http://{SERVER_DOMAIN_DICT[server_name]}\n"
+        else:
+            msg += f"📈http://{local_ip}\n"
 
     msg += f"⏰{get_now_time()}"
     send_text_normal(msg, mentioned_id, mentioned_mobile)

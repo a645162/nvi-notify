@@ -1,3 +1,4 @@
+import contextlib
 from typing import Dict, List
 
 import psutil
@@ -12,24 +13,30 @@ from webhook.send_task_msg import (
 
 
 class PythonGPUProcess:
+    NEWBORN = "newborn"
+    WORKING = "working"
+    DEATH = "death"
+
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
         self.pid: int = pid
+
+        # current GPU
         self.gpu_id: int = gpu_id
         self.gpu_process: GpuProcess = gpu_process
         self.gpu_status: Dict = None
         self.gpu_all_tasks_msg: Dict = None
         self.num_task: int = 0
 
+        # current process
         self.cwd: str = None  # pwd
         self.command: str = None
         self.cmdline: List = None
 
         self.is_debug: bool = None
         self.running_time_human: str = None
-        self.gpu_memory_human: str = None
+        self.taks_gpu_memory_human: str = None
         self.user: Dict = None
         self.conda_env: str = None
-        self.memory_usage: str = None
         self.project_name: str = None
         self.python_file: str = None
 
@@ -55,7 +62,7 @@ class PythonGPUProcess:
         self.get_cmdline()
 
     def update_gpu_process_info(self):
-        self.get_gpu_memory_human()
+        self.get_task_gpu_memory_human()
         self.get_running_time_in_seconds()
         self.get_running_time_human()
 
@@ -63,22 +70,23 @@ class PythonGPUProcess:
         try:
             self.cwd = self.gpu_process.cwd()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            self.state = "death"
+            # self.state = "death"
+            pass
 
     def get_command(self):
         try:
             self.command = self.gpu_process.command()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            self.state = "death"
-
+            # self.state = "death"
+            pass
     def get_cmdline(self):
         try:
             self.cmdline = self.gpu_process.cmdline()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            self.state = "death"
-
-    def get_gpu_memory_human(self):
-        self.gpu_memory_human = self.gpu_process.gpu_memory_human()
+            # self.state = "death"
+            pass
+    def get_task_gpu_memory_human(self):
+        self.taks_gpu_memory_human = self.gpu_process.gpu_memory_human()
 
     def get_running_time_in_seconds(self):
         self.running_time_in_seconds = self.gpu_process.running_time_in_seconds()
@@ -131,13 +139,17 @@ class PythonGPUProcess:
         cwd = self.cwd + "/" if self.cwd is not None else ""
         self.user = find_user_by_path(all_valid_user_list, cwd) or default_user_dict
 
-    def get_conda_env_name(self):
+    @contextlib.contextmanager
+    def process_environment(self):
         try:
             process = psutil.Process(self.pid)
-            self.conda_env = process.environ().get("CONDA_DEFAULT_ENV", "")
-
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            yield process.environ()
+        except:
             pass
+
+    def get_conda_env_name(self):
+        with self.process_environment() as env_vars:
+            self.conda_env = env_vars.get("CONDA_DEFAULT_ENV", "")
 
     def get_project_name(self) -> str:
         if self.cwd is not None:

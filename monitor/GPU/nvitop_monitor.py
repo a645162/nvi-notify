@@ -1,12 +1,13 @@
+import copy
 import threading
 import time
+from typing import Dict
 
 from nvitop import Device
 
-from config.config import gpu_monitor_sleep_time
+from config.config import get_emoji, gpu_monitor_sleep_time, delay_send_seconds
 from monitor.GPU.python_process import PythonGPUProcess
 from webhook.send_task_msg import (
-    get_all_tasks_msg,
     send_process_except_warning_msg,
     start_gpu_monitor,
 )
@@ -60,41 +61,63 @@ class NvidiaMonitor:
     def get_gpu_mem_total(self):
         return self.nvidia_i.memory_total_human()
 
+    def get_all_tasks_msg(self, process_info: Dict) -> Dict:
+        all_tasks_msg_dict = {}
+        for idx, info in enumerate(process_info.values()):
+            task_msg = (
+                f"{get_emoji(idx)}{'🐞' if info.is_debug else ''}"
+                f"用户: {info.user['name']}  "
+                f"显存占用: {info.taks_gpu_memory_human}  "
+                f"运行时长: {info.running_time_human}\n"
+            )
+            all_tasks_msg_dict.update({info.pid: task_msg})
+
+        return all_tasks_msg_dict
+    
     monitor_thread_work = False
 
     def start_monitor(self):
-        def monitor_thread():
+        def gpu_monitor_thread():
             print(f"GPU {self.gpu_id} monitor start")
             monitor_start_flag = True
             while monitor_thread_work:
-                death_pid = []
-                for pid in self.processes.keys():
+                # update all process info
+                for pid in self.processes:
                     self.processes[pid].gpu_status = self.update_gpu_status()
                     self.processes[pid].update_cmd()
                     self.processes[pid].update_gpu_process_info()
-                    if self.processes[pid].state == "death":
-                        death_pid.append(pid)
 
-                for pid in death_pid:
-                    del self.processes[pid]
+                # check death process pid
+                tmp_process = copy.copy(self.processes)
+                cur_gpu_all_processes = self.get_gpu_all_processes()
+                for pid in tmp_process:
+                    if pid not in cur_gpu_all_processes:
+                        del self.processes[pid].gpu_all_tasks_msg[pid]
+                        self.processes[pid].state = "death"
+                        del self.processes[pid]
 
+                # update new process
                 for pid, gpu_process in self.get_gpu_all_processes().items():
                     if pid not in self.processes:
                         new_process = PythonGPUProcess(pid, self.gpu_id, gpu_process)
                         if new_process.is_python:
-                            new_process.state = "newborn"
+                            if new_process.running_time_in_seconds > delay_send_seconds:
+                                new_process.state = "working"
+                            else:
+                                new_process.state = "newborn"
                             new_process.gpu_status = self.update_gpu_status()
                             self.processes[pid] = new_process
                         else:
                             continue
 
-                all_tasks_msg_dict = get_all_tasks_msg(self.processes)
-                for pid in self.processes.keys():
+                # get gpu staus info for webhook msg 
+                all_tasks_msg_dict = self.get_all_tasks_msg(self.processes)
+                for pid in self.processes:
                     self.processes[pid].gpu_all_tasks_msg = all_tasks_msg_dict
                     self.processes[pid].num_task = len(self.processes)
 
-                if monitor_start_flag and len(all_tasks_msg_dict) > 0:
-                    start_gpu_monitor(self.gpu_id, all_tasks_msg_dict, self.processes)
+                if monitor_start_flag and len(self.processes) > 0:
+                    start_gpu_monitor(self.gpu_id, self.processes)
                     monitor_start_flag = False
 
                 time.sleep(gpu_monitor_sleep_time)
@@ -102,7 +125,7 @@ class NvidiaMonitor:
             print(f"GPU {self.gpu_id} monitor stop")
 
         if self.thread is None or not self.thread.is_alive():
-            self.thread = threading.Thread(target=monitor_thread)
+            self.thread = threading.Thread(target=gpu_monitor_thread)
         monitor_thread_work = True
         self.thread.start()
 

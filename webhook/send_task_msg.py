@@ -18,16 +18,14 @@ local_ip = get_local_ip("v4")
 local_ipv6 = get_local_ip("v6")
 
 
-def start_gpu_monitor(gpu_id, all_tasks_msg_dict, all_process_info: Dict):
+def start_gpu_monitor(gpu_id: int, all_process_info: Dict):
     """
     启动GPU监控函数
     :param gpu_id: GPU ID
-    :param all_tasks_msg_dict: 所有任务消息字典
     :param all_process_info: 所有进程信息字典
     """
     gpu_name = f"GPU:{gpu_id}" if num_gpu > 1 else "GPU"
     gpu_server_info = f"[{gpu_name}]" if num_gpu > 1 else gpu_name
-    all_tasks_msg = "".join(all_tasks_msg_dict.values())
 
     gpu_status = None
     send_start_info = False
@@ -37,8 +35,10 @@ def start_gpu_monitor(gpu_id, all_tasks_msg_dict, all_process_info: Dict):
             process.running_time_in_seconds > delay_send_seconds
             and not process.is_debug
         ):
-            gpu_status = process.gpu_status
             send_start_info = True
+            gpu_status = process.gpu_status
+            all_tasks_msg = "".join(process.gpu_all_tasks_msg.values())
+            break
 
     if send_start_info:
         handle_normal_text(
@@ -60,7 +60,6 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
     """
     gpu_name = f"GPU:{process_info['gpu_id']}" if num_gpu > 1 else "GPU"
     gpu_server_info = f"[{gpu_name}]\n" if num_gpu > 1 else ""
-    all_tasks_msg = get_now_all_task_info(process_info, task_status)
 
     if not process_info["is_debug"]:
         if task_status == "create":
@@ -70,7 +69,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"🌀{gpu_name}核心占用: {process_info['gpu_status']['gpu_usage']}%\n"
                 f"🌀{gpu_name}显存占用: {process_info['gpu_status']['gpu_mem_usage']}/{process_info['gpu_status']['gpu_mem_total']} ({process_info['gpu_status']['gpu_mem_percent']}%)，{process_info['gpu_status']['gpu_mem_free']}空闲\n\n"
                 f"{get_emoji('呲牙') * process_info['num_task']}{gpu_name}上正在运行{process_info['num_task']}个任务：\n"
-                f"{all_tasks_msg}",
+                f"{''.join(process_info['gpu_all_tasks_msg'].values())}",
             )
         elif task_status == "finish":
             handle_normal_text(
@@ -80,7 +79,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"🌀{gpu_name}核心占用: {process_info['gpu_status']['gpu_usage']}%\n"
                 f"🌀{gpu_name}显存占用: {process_info['gpu_status']['gpu_mem_usage']}/{process_info['gpu_status']['gpu_mem_total']} ({process_info['gpu_status']['gpu_mem_percent']}%)，{process_info['gpu_status']['gpu_mem_free']}空闲\n\n"
                 f"{get_emoji('呲牙') * (process_info['num_task'] - 1)}{gpu_name}上正在运行{process_info['num_task'] - 1}个任务：\n"
-                f"{all_tasks_msg}",
+                f"{''.join(process_info['gpu_all_tasks_msg'].values())}",
                 mentioned_id=process_info["user"]["wework"]["mention_id"],
                 mentioned_mobile=process_info["user"]["wework"]["mention_mobile"],
             )
@@ -167,32 +166,3 @@ def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
     """
     warning_message = f"🤒🤒{server_name}的CPU:{cpu_id}温度已达{cpu_temperature}°C\n"
     send_text_warning(msg=handle_warning_text(warning_message))
-
-
-def get_all_tasks_msg(process_info: Dict) -> Dict:
-    all_tasks_msg_dict = {}
-    for idx, info in enumerate(process_info.values()):
-        task_msg = (
-            f"{get_emoji(idx)}{'🐞' if info.is_debug else ''}"
-            f"用户: {info.user['name']}  "
-            f"显存占用: {info.gpu_memory_human}  "
-            f"运行时长: {info.running_time_human}\n"
-        )
-        all_tasks_msg_dict.update({info.pid: task_msg})
-
-    return all_tasks_msg_dict
-
-
-def get_now_all_task_info(process_info: Dict, task_status: str):
-    """
-    获取当前所有任务信息函数
-    :param process_info: 进程信息字典
-    :param task_status: 任务状态
-    :return: 当前所有任务信息
-    """
-    all_tasks_msg_dict = process_info["gpu_all_tasks_msg"]
-    if task_status == "finish":
-        del all_tasks_msg_dict[process_info["pid"]]
-    all_tasks_msg = "".join(all_tasks_msg_dict.values())
-
-    return all_tasks_msg

@@ -25,7 +25,7 @@ class CPUMonitor:
     monitor_thread_work = False
 
     def start_monitor(self):
-        def monitor_thread():
+        def cpu_monitor_thread():
             print(f"CPU {self.cpu_id} monitor start")
             while monitor_thread_work:
                 self.temperature = get_cpu_temperature(self.cpu_id)
@@ -38,7 +38,7 @@ class CPUMonitor:
             print(f"CPU {self.cpu_id} monitor stop")
 
         if self.thread is None or not self.thread.is_alive():
-            self.thread = threading.Thread(target=monitor_thread)
+            self.thread = threading.Thread(target=cpu_monitor_thread)
         monitor_thread_work = True
         self.thread.start()
         # self.thread.join()

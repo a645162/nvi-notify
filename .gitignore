@@ -1,3 +1,6 @@
+# Nvidia Smi Webhook Notify
+/start-deploy.sh
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

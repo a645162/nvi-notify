@@ -59,8 +59,7 @@ class PythonGPUProcess:
             self.get_conda_env_name()
             self.project_name = self.get_project_name()
             self.python_file = self.get_python_filename()
-
-        self.start_time = self.gpu_process.create_time()
+            self.start_time = self.gpu_process.create_time()
 
     def update_cmd(self):
         self.get_cwd()
@@ -103,7 +102,16 @@ class PythonGPUProcess:
         self.running_time_human = self.gpu_process.running_time_human()
 
     def judge_is_python(self):
-        return self.gpu_process.name() in ["python", "yolo"] or any(
+        try:
+            gpu_name = self.gpu_process.name()
+        except Exception as e:
+            e_str = str(e)
+            if not (
+                    "process no longer exists" in e_str
+            ):
+                print(e)
+            return False
+        return gpu_name in ["python", "yolo"] or any(
             "python" in cmd for cmd in self.cmdline
         )
 

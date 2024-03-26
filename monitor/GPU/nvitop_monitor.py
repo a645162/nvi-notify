@@ -108,7 +108,7 @@ class NvidiaMonitor:
             task_msg = (
                 f"{get_emoji(idx)}{'🐞' if info.is_debug else ''}"
                 f"用户: {info.user['name']}  "
-                f"显存占用: {info.taks_gpu_memory_human}  "
+                f"显存占用: {info.task_gpu_memory_human}  "
                 f"运行时长: {info.running_time_human}\n"
             )
             all_tasks_msg_dict.update({info.pid: task_msg})

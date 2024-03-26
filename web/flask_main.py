@@ -110,7 +110,7 @@ def get_gpu_task():
                 "projectName": process_obj.project_name,
                 "pyFileName": process_obj.python_file,
                 "runTime": process_obj.running_time_human,
-                "gpuMemoryUsage": process_obj.taks_gpu_memory_human,
+                "gpuMemoryUsage": process_obj.task_gpu_memory_human,
             }
         )
 

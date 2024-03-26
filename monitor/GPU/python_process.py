@@ -1,5 +1,5 @@
 import contextlib
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import psutil
 from nvitop import GpuProcess
@@ -13,6 +13,7 @@ from webhook.send_task_msg import (
 
 
 class PythonGPUProcess:
+    # Enum
     NEWBORN = "newborn"
     WORKING = "working"
     DEATH = "death"
@@ -23,24 +24,24 @@ class PythonGPUProcess:
         # current GPU
         self.gpu_id: int = gpu_id
         self.gpu_process: GpuProcess = gpu_process
-        self.gpu_status: Dict = None
-        self.gpu_all_tasks_msg: Dict = None
+        self.gpu_status: Optional[Dict] = None
+        self.gpu_all_tasks_msg: Optional[Dict] = None
         self.num_task: int = 0
 
         # current process
-        self.cwd: str = None  # pwd
-        self.command: str = None
-        self.cmdline: List = None
+        self.cwd: Optional[str] = None  # pwd
+        self.command: Optional[str] = None
+        self.cmdline: Optional[List] = None
 
-        self.is_debug: bool = None
-        self.running_time_human: str = None
-        self.taks_gpu_memory_human: str = None
-        self.user: Dict = None
-        self.conda_env: str = None
-        self.project_name: str = None
-        self.python_file: str = None
+        self.is_debug: Optional[bool] = None
+        self.running_time_human: Optional[str] = None
+        self.task_gpu_memory_human: Optional[str] = None
+        self.user: Optional[Dict] = None
+        self.conda_env: Optional[str] = None
+        self.project_name: Optional[str] = None
+        self.python_file: Optional[str] = None
 
-        self._state: str = None  # init
+        self._state: Optional[str] = None  # init
         self._running_time_in_seconds: int = 0  # init
 
         self.__init_info__()
@@ -79,14 +80,16 @@ class PythonGPUProcess:
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             # self.state = "death"
             pass
+
     def get_cmdline(self):
         try:
             self.cmdline = self.gpu_process.cmdline()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             # self.state = "death"
             pass
+
     def get_task_gpu_memory_human(self):
-        self.taks_gpu_memory_human = self.gpu_process.gpu_memory_human()
+        self.task_gpu_memory_human = self.gpu_process.gpu_memory_human()
 
     def get_running_time_in_seconds(self):
         self.running_time_in_seconds = self.gpu_process.running_time_in_seconds()
@@ -130,8 +133,8 @@ class PythonGPUProcess:
         def find_user_by_path(user_list: list, path: str):
             for user in user_list:
                 if any(
-                    keyword.lower().strip() in path.lower()
-                    for keyword in user["keywords"]
+                        keyword.lower().strip() in path.lower()
+                        for keyword in user["keywords"]
                 ):
                     return user
             return None
@@ -188,9 +191,9 @@ class PythonGPUProcess:
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
         if (
-            new_running_time_in_seconds
-            > delay_send_seconds
-            > self._running_time_in_seconds
+                new_running_time_in_seconds
+                > delay_send_seconds
+                > self._running_time_in_seconds
         ):
             self.state = "working"
         self._running_time_in_seconds = new_running_time_in_seconds

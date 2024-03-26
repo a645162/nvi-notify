@@ -103,7 +103,7 @@ class PythonGPUProcess:
 
     def judge_is_python(self):
         try:
-            gpu_name = self.gpu_process.name()
+            gpu_process_name = self.gpu_process.name()
         except Exception as e:
             e_str = str(e)
             if not (
@@ -111,7 +111,7 @@ class PythonGPUProcess:
             ):
                 print(e)
             return False
-        return gpu_name in ["python", "yolo"] or any(
+        return gpu_process_name in ["python", "yolo"] or any(
             "python" in cmd for cmd in self.cmdline
         )
 

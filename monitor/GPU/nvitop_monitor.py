@@ -1,7 +1,7 @@
 import copy
 import threading
 import time
-from typing import Dict
+from typing import Dict, List, Optional
 
 from nvitop import Device
 
@@ -12,16 +12,32 @@ from webhook.send_task_msg import (
     start_gpu_monitor,
 )
 
+from global_variable.global_gpu import (
+    global_gpu_info,
+    global_gpu_usage,
+    global_gpu_task,
+)
+
 num_gpu = Device.count()
 
 
 class NvidiaMonitor:
     def __init__(self, gpu_id: int):
         self.gpu_id = gpu_id
-        self.thread = None
+        self.thread: Optional[threading.Thread] = None
         self.processes = {}
-        self.nvidia_i = None
+        self.nvidia_i: Optional[Device] = None
         self.update_device()
+        self.update_gpu_info()
+        self.update_gpu_status()
+
+    def update_gpu_info(self):
+        cur_gpu_info = {
+            "gpuName": self.get_gpu_name(),
+            "gpuTDP": self.get_gpu_tdp(),
+        }
+
+        global_gpu_info[self.gpu_id].update(cur_gpu_info)
 
     def update_device(self):
         self.nvidia_i = Device(self.gpu_id)
@@ -29,11 +45,24 @@ class NvidiaMonitor:
     def update_gpu_status(self):
         cur_gpu_status = {
             "gpu_usage": self.get_gpu_utl(),
+
             "gpu_mem_usage": self.get_gpu_mem_usage(),
             "gpu_mem_free": self.get_gpu_mem_free(),
-            "gpu_mem_percent": self.get_gpu_mem_percent(),
             "gpu_mem_total": self.get_gpu_mem_total(),
+            "gpu_mem_percent": self.get_gpu_mem_percent(),
+
+            "gpuPowerUsage": self.get_gpu_power_usage(),
+            "gpuTemperature": self.get_gpu_temperature(),
         }
+
+        global_gpu_usage[self.gpu_id]["coreUsage"] = cur_gpu_status["gpu_usage"]
+        global_gpu_usage[self.gpu_id]["memoryUsage"] = cur_gpu_status["gpu_mem_percent"]
+
+        global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = cur_gpu_status["gpu_mem_usage"]
+        global_gpu_usage[self.gpu_id]["gpuMemoryTotal"] = cur_gpu_status["gpu_mem_total"]
+
+        global_gpu_usage[self.gpu_id]["gpuPowerUsage"] = cur_gpu_status["gpuPowerUsage"]
+        global_gpu_usage[self.gpu_id]["gpuTemperature"] = cur_gpu_status["gpuTemperature"]
 
         return cur_gpu_status
 
@@ -42,6 +71,9 @@ class NvidiaMonitor:
             return self.nvidia_i.processes()
         except:
             send_process_except_warning_msg()
+
+    def get_gpu_name(self) -> str:
+        return self.nvidia_i.name()
 
     def get_gpu_utl(self):
         return self.nvidia_i.gpu_utilization()
@@ -61,6 +93,15 @@ class NvidiaMonitor:
     def get_gpu_mem_total(self):
         return self.nvidia_i.memory_total_human()
 
+    def get_gpu_power_usage(self) -> int:
+        return int(round(self.nvidia_i.power_usage() / 1000, 0))
+
+    def get_gpu_tdp(self) -> int:
+        return int(round(self.nvidia_i.power_limit() / 1000, 0))
+
+    def get_gpu_temperature(self) -> int:
+        return self.nvidia_i.temperature()
+
     def get_all_tasks_msg(self, process_info: Dict) -> Dict:
         all_tasks_msg_dict = {}
         for idx, info in enumerate(process_info.values()):
@@ -73,7 +114,7 @@ class NvidiaMonitor:
             all_tasks_msg_dict.update({info.pid: task_msg})
 
         return all_tasks_msg_dict
-    
+
     monitor_thread_work = False
 
     def start_monitor(self):
@@ -81,6 +122,11 @@ class NvidiaMonitor:
             print(f"GPU {self.gpu_id} monitor start")
             monitor_start_flag = True
             while monitor_thread_work:
+                # GPU线程周期开始
+
+                # Update Gpu Status
+                self.update_gpu_status()
+
                 # update all process info
                 for pid in self.processes:
                     self.processes[pid].gpu_status = self.update_gpu_status()
@@ -120,7 +166,15 @@ class NvidiaMonitor:
                     start_gpu_monitor(self.gpu_id, self.processes)
                     monitor_start_flag = False
 
+                # 在监视线程中就进行处理，哪怕这里阻塞了，也就是相当于多加一点延时
+                current_gpu_list: List = list(self.processes.values()).copy()
+                current_gpu_list.sort(key=lambda x: x.pid)
+
+                global_gpu_task[self.gpu_id].clear()
+                global_gpu_task[self.gpu_id].extend(current_gpu_list)
+
                 time.sleep(gpu_monitor_sleep_time)
+                # 线程周期结束
 
             print(f"GPU {self.gpu_id} monitor stop")
 
@@ -137,6 +191,29 @@ class NvidiaMonitor:
 
 def start_gpu_monitor_all():
     for idx in range(num_gpu):
+        # Initialize global variables
+        global_gpu_info.append(
+            {
+                "gpuName": "NVIDIA GeForce RTX",
+
+                "gpuTDP": "0W",
+            }
+        )
+        global_gpu_usage.append(
+            {
+                "coreUsage": "0",
+                "memoryUsage": "0",
+
+                "gpuMemoryUsage": "0GiB",
+                "gpuMemoryTotal": "0GiB",
+
+                "gpuPowerUsage": "0",
+
+                "gpuTemperature": "0",
+            }
+        )
+        global_gpu_task.append([])
+
         nvidia_monitor_idx = NvidiaMonitor(idx)
         # print(NvidiaMonitor_i.get_gpu_usage())
         nvidia_monitor_idx.start_monitor()

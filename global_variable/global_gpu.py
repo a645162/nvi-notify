@@ -1,5 +1,7 @@
 from typing import List
 
+from monitor.GPU.python_process import PythonGPUProcess
+
 """
 gpu_info:
 包括 GPU名称
@@ -13,7 +15,8 @@ gpu_task为一个列表
 
 global_gpu_info: List[dict] = []
 global_gpu_usage: List[dict] = []
-global_gpu_task: List[List[dict]] = []
+global_gpu_task: List[List[PythonGPUProcess]] = []
+
 
 # For Debug Use
 # global_gpu_usage.append({})

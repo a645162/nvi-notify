@@ -41,6 +41,8 @@ class PythonGPUProcess:
         self.project_name: Optional[str] = None
         self.python_file: Optional[str] = None
 
+        self.start_time: Optional[float] = None
+
         self._state: Optional[str] = None  # init
         self._running_time_in_seconds: int = 0  # init
 
@@ -48,6 +50,7 @@ class PythonGPUProcess:
 
     def __init_info__(self):
         self.update_cmd()
+
         self.is_python = self.judge_is_python()
         if self.is_python:
             self.update_gpu_process_info()
@@ -56,6 +59,8 @@ class PythonGPUProcess:
             self.get_conda_env_name()
             self.project_name = self.get_project_name()
             self.python_file = self.get_python_filename()
+
+        self.start_time = self.gpu_process.create_time()
 
     def update_cmd(self):
         self.get_cwd()

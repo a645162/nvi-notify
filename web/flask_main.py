@@ -10,6 +10,8 @@ from config.config import flask_server_host, flask_server_port, server_name
 
 from global_variable.global_gpu import global_gpu_info, global_gpu_usage, global_gpu_task
 
+from monitor.GPU.python_process import PythonGPUProcess
+
 app = Flask(__name__)
 
 # 允许所有域进行跨源请求
@@ -97,7 +99,7 @@ def get_gpu_task():
             mimetype="application/json",
         )
 
-    current_gpu_processes: List = global_gpu_task[gpu_index]
+    current_gpu_processes: List[PythonGPUProcess] = global_gpu_task[gpu_index]
 
     task_list = []
 
@@ -110,6 +112,7 @@ def get_gpu_task():
                 "projectName": process_obj.project_name,
                 "pyFileName": process_obj.python_file,
                 "runTime": process_obj.running_time_human,
+                "startTimestamp": int(process_obj.start_time) * 1000,
                 "gpuMemoryUsage": process_obj.task_gpu_memory_human,
             }
         )

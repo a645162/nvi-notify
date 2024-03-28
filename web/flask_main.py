@@ -114,6 +114,7 @@ def get_gpu_task():
                 "runTime": process_obj.running_time_human,
                 "startTimestamp": int(process_obj.start_time) * 1000,
                 "gpuMemoryUsage": process_obj.task_gpu_memory >> 10 >> 10,
+                "worldSize": process_obj.world_size,
             }
         )
 

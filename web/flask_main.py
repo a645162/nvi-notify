@@ -108,13 +108,22 @@ def get_gpu_task():
             {
                 "id": process_obj.pid,
                 "name": process_obj.user["name"],
+
                 "debugMode": process_obj.is_debug,
+
                 "projectName": process_obj.project_name,
                 "pyFileName": process_obj.python_file,
+
                 "runTime": process_obj.running_time_human,
                 "startTimestamp": int(process_obj.start_time) * 1000,
+
                 "gpuMemoryUsage": process_obj.task_gpu_memory >> 10 >> 10,
+
                 "worldSize": process_obj.world_size,
+                "localRank":process_obj.local_rank,
+                "condaEnv": process_obj.conda_env,
+
+                "command": process_obj.command,
             }
         )
 

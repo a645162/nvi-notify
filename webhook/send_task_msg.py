@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 from nvitop import Device
 
@@ -30,14 +30,21 @@ def start_gpu_monitor(gpu_id: int, all_process_info: Dict):
     gpu_status = None
     send_start_info = False
 
+    all_tasks_msg = ""
+
     for process in all_process_info.values():
         if (
                 process.running_time_in_seconds > delay_send_seconds
                 and not process.is_debug
         ):
-            send_start_info = True
+            if process.is_multi_gpu and process.local_rank != 0:
+                continue
+
             gpu_status = process.gpu_status
             all_tasks_msg = "".join(process.gpu_all_tasks_msg.values())
+
+            send_start_info = True
+
             break
 
     if send_start_info:

@@ -39,12 +39,12 @@ def gpu_name_filter(gpu_name: str):
             index = current_str_upper.index(keyword_upper)
             # 计算关键词在原始字符串中的起始位置
             index_original = current_str_upper[:index].count(" ") - current_str[
-                :index
-            ].count(" ")
+                                                                    :index
+                                                                    ].count(" ")
             # 删除原始字符串中的关键词
             current_str = (
-                current_str[:index_original]
-                + current_str[index_original + len(keyword) + 1 :]
+                    current_str[:index_original]
+                    + current_str[index_original + len(keyword) + 1:]
             )
             # 更新大写字符串
             current_str_upper = current_str.upper()
@@ -56,7 +56,7 @@ class NvidiaMonitor:
     def __init__(self, gpu_id: int):
         self.gpu_id = gpu_id
         self.thread: Optional[threading.Thread] = None
-        self.processes = {}
+        self.processes: dict = {}
         self.nvidia_i: Optional[Device] = None
         self.update_device()
         self.update_gpu_info()
@@ -93,7 +93,7 @@ class NvidiaMonitor:
         global_gpu_usage[self.gpu_id]["memoryUsage"] = cur_gpu_status["gpu_mem_percent"]
 
         global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = (
-            cur_gpu_status["gpu_mem_total_bytes"] >> 10 >> 10
+                cur_gpu_status["gpu_mem_total_bytes"] >> 10 >> 10
         )
 
         global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = cur_gpu_status[

@@ -44,19 +44,29 @@ class NvidiaMonitor:
 
     def update_gpu_status(self):
         cur_gpu_status = {
+            # Percent
             "gpu_usage": self.get_gpu_utl(),
+            "gpu_mem_percent": self.get_gpu_mem_percent(),
 
+            # Memory Bytes
+            "gpu_mem_total_bytes": self.get_gpu_mem_total_bytes(),
+
+            # Memory Human(String)
             "gpu_mem_usage": self.get_gpu_mem_usage(),
             "gpu_mem_free": self.get_gpu_mem_free(),
             "gpu_mem_total": self.get_gpu_mem_total(),
-            "gpu_mem_percent": self.get_gpu_mem_percent(),
 
+            # Power(Int)
             "gpuPowerUsage": self.get_gpu_power_usage(),
             "gpuTemperature": self.get_gpu_temperature(),
         }
 
         global_gpu_usage[self.gpu_id]["coreUsage"] = cur_gpu_status["gpu_usage"]
         global_gpu_usage[self.gpu_id]["memoryUsage"] = cur_gpu_status["gpu_mem_percent"]
+
+        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = (
+                cur_gpu_status["gpu_mem_total_bytes"] >> 10 >> 10
+        )
 
         global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = cur_gpu_status["gpu_mem_usage"]
         global_gpu_usage[self.gpu_id]["gpuMemoryTotal"] = cur_gpu_status["gpu_mem_total"]
@@ -90,6 +100,9 @@ class NvidiaMonitor:
     def get_gpu_mem_percent(self):
         return self.nvidia_i.memory_percent()
 
+    def get_gpu_mem_total_bytes(self):
+        return self.nvidia_i.memory_total()
+
     def get_gpu_mem_total(self):
         return self.nvidia_i.memory_total_human()
 
@@ -115,13 +128,13 @@ class NvidiaMonitor:
 
         return all_tasks_msg_dict
 
-    monitor_thread_work = False
+    monitor_thread_work: bool = False
 
     def start_monitor(self):
         def gpu_monitor_thread():
             print(f"GPU {self.gpu_id} monitor start")
             monitor_start_flag = True
-            while monitor_thread_work:
+            while self.monitor_thread_work:
                 # GPU线程周期开始
 
                 # Update Gpu Status
@@ -180,11 +193,11 @@ class NvidiaMonitor:
 
         if self.thread is None or not self.thread.is_alive():
             self.thread = threading.Thread(target=gpu_monitor_thread)
-        monitor_thread_work = True
+        self.monitor_thread_work = True
         self.thread.start()
 
     def stop_monitor(self):
-        monitor_thread_work = False
+        self.monitor_thread_work = False
         if self.thread is not None and self.thread.is_alive():
             self.thread.join()
 

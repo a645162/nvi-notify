@@ -1,4 +1,3 @@
-import contextlib
 from typing import Dict, List, Optional
 
 import psutil
@@ -27,6 +26,7 @@ class PythonGPUProcess:
         self.gpu_status: Optional[Dict] = None
         self.gpu_all_tasks_msg: Optional[Dict] = None
         self.num_task: int = 0
+        self.process_environ: Optional[dict[str, str]] = None
 
         # current process
         self.cwd: Optional[str] = None  # pwd
@@ -35,6 +35,7 @@ class PythonGPUProcess:
 
         self.is_debug: Optional[bool] = None
         self.running_time_human: Optional[str] = None
+        self.task_gpu_memory: Optional[int] = None
         self.task_gpu_memory_human: Optional[str] = None
         self.user: Optional[Dict] = None
         self.conda_env: Optional[str] = None
@@ -42,6 +43,12 @@ class PythonGPUProcess:
         self.python_file: Optional[str] = None
 
         self.start_time: Optional[float] = None
+
+        # Props get from env var
+        self.is_multi_gpu: Optional[bool] = None
+        self.world_size: Optional[int] = None
+        self.local_rank: Optional[int] = None
+        self.cuda_visible_devices: Optional[str] = None
 
         self._state: Optional[str] = None  # init
         self._running_time_in_seconds: int = 0  # init
@@ -56,10 +63,12 @@ class PythonGPUProcess:
             self.update_gpu_process_info()
             self.get_debug_flag()
             self.get_user()
-            self.get_conda_env_name()
+
             self.project_name = self.get_project_name()
             self.python_file = self.get_python_filename()
             self.start_time = self.gpu_process.create_time()
+
+            self.get_all_env()
 
     def update_cmd(self):
         self.get_cwd()
@@ -67,6 +76,7 @@ class PythonGPUProcess:
         self.get_cmdline()
 
     def update_gpu_process_info(self):
+        self.get_task_gpu_memory()
         self.get_task_gpu_memory_human()
         self.get_running_time_in_seconds()
         self.get_running_time_human()
@@ -91,6 +101,11 @@ class PythonGPUProcess:
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             # self.state = "death"
             pass
+
+    # Task Memory(Bytes)
+    def get_task_gpu_memory(self) -> int:
+        self.task_gpu_memory_human = self.gpu_process.gpu_memory()
+        return self.task_gpu_memory_human
 
     def get_task_gpu_memory_human(self):
         self.task_gpu_memory_human = self.gpu_process.gpu_memory_human()
@@ -155,17 +170,69 @@ class PythonGPUProcess:
         cwd = self.cwd + "/" if self.cwd is not None else ""
         self.user = find_user_by_path(all_valid_user_list, cwd) or default_user_dict
 
-    @contextlib.contextmanager
-    def process_environment(self):
+    def get_process_environ(self):
         try:
-            process = psutil.Process(self.pid)
-            yield process.environ()
-        except:
+            with psutil.Process(self.pid) as process:
+                self.process_environ = process.environ().copy()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
 
-    def get_conda_env_name(self):
-        with self.process_environment() as env_vars:
-            self.conda_env = env_vars.get("CONDA_DEFAULT_ENV", "")
+    def get_env_value(self, key: str, default_value: str):
+        if self.process_environ is None:
+            self.get_process_environ()
+
+        if self.process_environ is None:
+            return default_value
+
+        return self.process_environ.get(key, default_value)
+
+    def get_conda_env_name(self) -> str:
+        env_str = self.get_env_value("CONDA_DEFAULT_ENV", "")
+
+        self.conda_env = env_str
+        return env_str
+
+    # 多卡任务的进程数
+    def get_world_size(self) -> int:
+        env_str = self.get_env_value("WORLD_SIZE", "").strip()
+
+        return_value = 0
+        if env_str.isdigit():
+            return_value = int(env_str)
+
+        self.world_size = return_value
+        return return_value
+
+    # 多卡任务的卡号
+    def get_local_rank(self) -> int:
+        env_str = self.get_env_value("LOCAL_RANK", "").strip()
+
+        return_value = 0
+        if env_str.isdigit():
+            return_value = int(env_str)
+
+        self.local_rank = return_value
+        return return_value
+
+    def get_is_multi_gpu(self) -> bool:
+        self.is_multi_gpu = (
+                self.get_world_size() is not None
+                and
+                self.get_local_rank() != ""
+                and
+                int(self.get_world_size()) > 1
+        )
+        return self.is_multi_gpu
+
+    def get_cuda_visible_devices(self) -> str:
+        return self.get_env_value("CUDA_VISIBLE_DEVICES", "")
+
+    def get_all_env(self):
+        self.get_conda_env_name()
+        self.get_world_size()
+        self.get_local_rank()
+        self.get_is_multi_gpu()
+        self.get_cuda_visible_devices()
 
     def get_project_name(self) -> str:
         if self.cwd is not None:

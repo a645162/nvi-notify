@@ -104,8 +104,9 @@ class PythonGPUProcess:
 
     # Task Memory(Bytes)
     def get_task_gpu_memory(self) -> int:
-        self.task_gpu_memory_human = self.gpu_process.gpu_memory()
-        return self.task_gpu_memory_human
+        task_gpu_memory = self.gpu_process.gpu_memory()
+        self.task_gpu_memory = task_gpu_memory
+        return task_gpu_memory
 
     def get_task_gpu_memory_human(self):
         self.task_gpu_memory_human = self.gpu_process.gpu_memory_human()
@@ -172,8 +173,8 @@ class PythonGPUProcess:
 
     def get_process_environ(self):
         try:
-            with psutil.Process(self.pid) as process:
-                self.process_environ = process.environ().copy()
+            process = psutil.Process(self.pid)
+            self.process_environ = process.environ().copy()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
 

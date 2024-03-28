@@ -21,6 +21,37 @@ from global_variable.global_gpu import (
 num_gpu = Device.count()
 
 
+def gpu_name_filter(gpu_name: str):
+    current_str = gpu_name
+    current_str_upper = gpu_name.upper()
+    keywords = [
+        "NVIDIA",
+        "GeForce",
+        "Quadro",
+    ]
+
+    # 遍历关键词列表
+    for keyword in keywords:
+        keyword_upper = keyword.upper()
+        # 循环寻找大写字符串中的关键词
+        while keyword_upper in current_str_upper:
+            # 找到关键词在大写字符串中的位置
+            index = current_str_upper.index(keyword_upper)
+            # 计算关键词在原始字符串中的起始位置
+            index_original = current_str_upper[:index].count(" ") - current_str[
+                :index
+            ].count(" ")
+            # 删除原始字符串中的关键词
+            current_str = (
+                current_str[:index_original]
+                + current_str[index_original + len(keyword) + 1 :]
+            )
+            # 更新大写字符串
+            current_str_upper = current_str.upper()
+
+    return current_str.strip()
+
+
 class NvidiaMonitor:
     def __init__(self, gpu_id: int):
         self.gpu_id = gpu_id
@@ -33,7 +64,7 @@ class NvidiaMonitor:
 
     def update_gpu_info(self):
         cur_gpu_info = {
-            "gpuName": self.get_gpu_name(),
+            "gpuName": self.get_gpu_name_short(),
             "gpuTDP": self.get_gpu_tdp(),
         }
 
@@ -47,15 +78,12 @@ class NvidiaMonitor:
             # Percent
             "gpu_usage": self.get_gpu_utl(),
             "gpu_mem_percent": self.get_gpu_mem_percent(),
-
             # Memory Bytes
             "gpu_mem_total_bytes": self.get_gpu_mem_total_bytes(),
-
             # Memory Human(String)
             "gpu_mem_usage": self.get_gpu_mem_usage(),
             "gpu_mem_free": self.get_gpu_mem_free(),
             "gpu_mem_total": self.get_gpu_mem_total(),
-
             # Power(Int)
             "gpuPowerUsage": self.get_gpu_power_usage(),
             "gpuTemperature": self.get_gpu_temperature(),
@@ -65,14 +93,20 @@ class NvidiaMonitor:
         global_gpu_usage[self.gpu_id]["memoryUsage"] = cur_gpu_status["gpu_mem_percent"]
 
         global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = (
-                cur_gpu_status["gpu_mem_total_bytes"] >> 10 >> 10
+            cur_gpu_status["gpu_mem_total_bytes"] >> 10 >> 10
         )
 
-        global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = cur_gpu_status["gpu_mem_usage"]
-        global_gpu_usage[self.gpu_id]["gpuMemoryTotal"] = cur_gpu_status["gpu_mem_total"]
+        global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = cur_gpu_status[
+            "gpu_mem_usage"
+        ]
+        global_gpu_usage[self.gpu_id]["gpuMemoryTotal"] = cur_gpu_status[
+            "gpu_mem_total"
+        ]
 
         global_gpu_usage[self.gpu_id]["gpuPowerUsage"] = cur_gpu_status["gpuPowerUsage"]
-        global_gpu_usage[self.gpu_id]["gpuTemperature"] = cur_gpu_status["gpuTemperature"]
+        global_gpu_usage[self.gpu_id]["gpuTemperature"] = cur_gpu_status[
+            "gpuTemperature"
+        ]
 
         return cur_gpu_status
 
@@ -84,6 +118,9 @@ class NvidiaMonitor:
 
     def get_gpu_name(self) -> str:
         return self.nvidia_i.name()
+
+    def get_gpu_name_short(self) -> str:
+        return gpu_name_filter(self.get_gpu_name())
 
     def get_gpu_utl(self):
         return self.nvidia_i.gpu_utilization()
@@ -169,7 +206,7 @@ class NvidiaMonitor:
                         else:
                             continue
 
-                # get gpu staus info for webhook msg 
+                # Get gpu staus info for webhook msg
                 all_tasks_msg_dict = self.get_all_tasks_msg(self.processes)
                 for pid in self.processes:
                     self.processes[pid].gpu_all_tasks_msg = all_tasks_msg_dict
@@ -208,7 +245,6 @@ def start_gpu_monitor_all():
         global_gpu_info.append(
             {
                 "gpuName": "NVIDIA GeForce RTX",
-
                 "gpuTDP": "0W",
             }
         )
@@ -216,12 +252,9 @@ def start_gpu_monitor_all():
             {
                 "coreUsage": "0",
                 "memoryUsage": "0",
-
                 "gpuMemoryUsage": "0GiB",
                 "gpuMemoryTotal": "0GiB",
-
                 "gpuPowerUsage": "0",
-
                 "gpuTemperature": "0",
             }
         )

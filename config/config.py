@@ -11,7 +11,7 @@ all_valid_user_list = get_all_user_list(os.path.join(os.getcwd(), "config/users"
 
 web_host = ""  # "your domin" or None
 flask_server_host = "0.0.0.0"
-flask_server_port = 8081
+flask_server_port = 8080
 
 
 EMOJI_DICT = {

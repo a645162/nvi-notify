@@ -69,6 +69,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
         f"{get_emoji('呲牙') * (process_info['num_task'] - 1)}{gpu_name}上正在运行{process_info['num_task'] - 1}个任务：\n"
         f"{''.join(process_info['gpu_all_tasks_msg'].values())}"
     )
+
     if not process_info["is_debug"]:
         if task_status == "create":
             create_msg_header = f"{multi_gpu_idx}🚀{process_info['user']['name']}的({process_info['project_name']}-{process_info['python_file']})启动\n"
@@ -91,11 +92,11 @@ def log_task_info(process_info: Dict, task_type: str):
     if task_type is None:
         raise ValueError("task_type is None")
 
-    logfile_path = "./log"
-    if not os.path.exists(logfile_path):
-        os.makedirs(logfile_path)
+    logfile_dir_path = Path("./log")
+    if not os.path.exists(logfile_dir_path):
+        os.makedirs(logfile_dir_path)
 
-    with open(Path(logfile_path // "log.log"), "a") as log_writer:
+    with open(logfile_dir_path / "log.log", "a") as log_writer:
         if task_type == "create":
             output_log = f"[{get_now_time()}][GPU:{process_info['gpu_id']}] {process_info['user']['name']} create new {'debug ' if process_info['is_debug'] else ''}task: {process_info['pid']}\n"
         elif task_type == "finish":

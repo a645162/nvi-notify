@@ -3,12 +3,8 @@ from typing import Dict, List, Optional
 import psutil
 from nvitop import GpuProcess
 
-from config.config import all_valid_user_list, delay_send_seconds
-from webhook.send_task_msg import (
-    create_task_log,
-    finish_task_log,
-    send_gpu_task_message,
-)
+from config.settings import USER_LIST, WEBHOOK_DELAY_SEND_SECONDS
+from webhook.send_task_msg import log_task_info, send_gpu_task_message
 
 
 class PythonGPUProcess:
@@ -122,9 +118,7 @@ class PythonGPUProcess:
             gpu_process_name = self.gpu_process.name()
         except Exception as e:
             e_str = str(e)
-            if not (
-                    "process no longer exists" in e_str
-            ):
+            if not ("process no longer exists" in e_str):
                 print(e)
             return False
         return gpu_process_name in ["python", "yolo"] or any(
@@ -144,7 +138,7 @@ class PythonGPUProcess:
         self.user = next(
             (
                 user
-                for user in all_valid_user_list
+                for user in USER_LIST
                 if self.gpu_process.username == user["name"]
             ),
             None,
@@ -162,14 +156,14 @@ class PythonGPUProcess:
         def find_user_by_path(user_list: list, path: str):
             for user in user_list:
                 if any(
-                        keyword.lower().strip() in path.lower()
-                        for keyword in user["keywords"]
+                    keyword.lower().strip() in path.lower()
+                    for keyword in user["keywords"]
                 ):
                     return user
             return None
 
         cwd = self.cwd + "/" if self.cwd is not None else ""
-        self.user = find_user_by_path(all_valid_user_list, cwd) or default_user_dict
+        self.user = find_user_by_path(USER_LIST, cwd) or default_user_dict
 
     def get_process_environ(self):
         try:
@@ -217,11 +211,9 @@ class PythonGPUProcess:
 
     def get_is_multi_gpu(self) -> bool:
         self.is_multi_gpu = (
-                self.get_world_size() is not None
-                and
-                self.get_local_rank() != ""
-                and
-                int(self.get_world_size()) > 1
+            self.get_world_size() is not None
+            and self.get_local_rank() != ""
+            and int(self.get_world_size()) > 1
         )
         return self.is_multi_gpu
 
@@ -255,14 +247,14 @@ class PythonGPUProcess:
     @state.setter
     def state(self, new_state):
         if new_state == "newborn" and self._state is None:
-            create_task_log(self.__dict__)
+            log_task_info(self.__dict__, task_type="create")
         elif new_state == "working" and self._state == "newborn":
             send_gpu_task_message(self.__dict__, "create")
         elif new_state == "death" and self._state == "working":
-            finish_task_log(self.__dict__)
+            log_task_info(self.__dict__, task_type="finish")
             send_gpu_task_message(self.__dict__, "finish")
         elif new_state == "death" and self._state == "newborn":
-            finish_task_log(self.__dict__)
+            log_task_info(self.__dict__, task_type="finish")
         self._state = new_state
 
     @property
@@ -272,9 +264,9 @@ class PythonGPUProcess:
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
         if (
-                new_running_time_in_seconds
-                > delay_send_seconds
-                > self._running_time_in_seconds
+            new_running_time_in_seconds
+            > WEBHOOK_DELAY_SEND_SECONDS
+            > self._running_time_in_seconds
         ):
             self.state = "working"
         self._running_time_in_seconds = new_running_time_in_seconds

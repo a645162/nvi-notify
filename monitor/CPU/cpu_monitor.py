@@ -1,17 +1,18 @@
-import subprocess
 import threading
 import time
 from typing import Dict
 
 import psutil
 
-from config.config import gpu_monitor_sleep_time
+from config.settings import (
+    CPU_HIGH_TEMPERATURE_THRESHOLD,
+    GPU_MONITOR_SAMPLING_INTERVAL,
+    NUM_CPU,
+)
 from webhook.send_task_msg import (
     send_cpu_except_warning_msg,
     send_cpu_temperature_warning_msg,
 )
-
-HIGH_TEMPERATURE_THRESHOLD = 85
 
 
 class CPUMonitor:
@@ -33,7 +34,7 @@ class CPUMonitor:
                 if self.high_temperature_trigger:
                     send_cpu_temperature_warning_msg(self.cpu_id, self.temperature)
 
-                time.sleep(gpu_monitor_sleep_time)
+                time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
 
             print(f"CPU {self.cpu_id} monitor stop")
 
@@ -50,8 +51,8 @@ class CPUMonitor:
     @temperature.setter
     def temperature(self, new_temperature):
         self.high_temperature_trigger = (
-            new_temperature > HIGH_TEMPERATURE_THRESHOLD
-            and self._temperature < HIGH_TEMPERATURE_THRESHOLD
+            new_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD
+            and self._temperature < CPU_HIGH_TEMPERATURE_THRESHOLD
         )
 
         self._temperature = new_temperature
@@ -84,19 +85,8 @@ def get_cpu_temperature_info() -> Dict:
     return cpu_temperature_info
 
 
-def get_cpu_physics_num() -> int:
-    command = "cat /proc/cpuinfo | grep 'physical id' | sort -u | wc -l"
-    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, text=True)
-
-    if result.returncode == 0:
-        return int(result.stdout.strip())
-
-
 def start_cpu_monitor_all():
-    global num_cpu
-    num_cpu = get_cpu_physics_num()
-
-    for idx in range(num_cpu):
+    for idx in range(NUM_CPU):
         cpu_monitor_idx = CPUMonitor(idx)
         cpu_monitor_idx.start_monitor()
 

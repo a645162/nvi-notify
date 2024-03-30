@@ -22,7 +22,10 @@ global_gpu_task: List[List[PythonGPUProcess]] = []
 # global_gpu_usage.append({})
 # global_gpu_task.append([])
 
+
 def get_gpu_count():
     if len(global_gpu_usage) != len(global_gpu_task):
-        raise ValueError("global_gpu_usage and global_gpu_task should have the same length.")
+        raise ValueError(
+            "global_gpu_usage and global_gpu_task should have the same length."
+        )
     return len(global_gpu_task)

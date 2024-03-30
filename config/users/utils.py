@@ -1,8 +1,7 @@
 import os
 from typing import List
 
-from config.utils.get_files import get_files_with_extension
-from config.utils.yaml_parser import parse_yaml
+from config.utils import get_files_with_extension, parse_yaml
 
 
 def get_user(yaml_content: dict) -> List[dict]:

@@ -5,20 +5,22 @@ from typing import Dict, List, Optional
 
 from nvitop import Device
 
-from config.config import get_emoji, gpu_monitor_sleep_time, delay_send_seconds
+from config.settings import (
+    GPU_MONITOR_SAMPLING_INTERVAL,
+    NUM_GPU,
+    WEBHOOK_DELAY_SEND_SECONDS,
+    get_emoji,
+)
+from global_variable.global_gpu import (
+    global_gpu_info,
+    global_gpu_task,
+    global_gpu_usage,
+)
 from monitor.GPU.python_process import PythonGPUProcess
 from webhook.send_task_msg import (
     send_process_except_warning_msg,
-    start_gpu_monitor,
+    send_gpu_monitor_start_msg,
 )
-
-from global_variable.global_gpu import (
-    global_gpu_info,
-    global_gpu_usage,
-    global_gpu_task,
-)
-
-num_gpu = Device.count()
 
 
 def gpu_name_filter(gpu_name: str):
@@ -39,12 +41,12 @@ def gpu_name_filter(gpu_name: str):
             index = current_str_upper.index(keyword_upper)
             # 计算关键词在原始字符串中的起始位置
             index_original = current_str_upper[:index].count(" ") - current_str[
-                                                                    :index
-                                                                    ].count(" ")
+                :index
+            ].count(" ")
             # 删除原始字符串中的关键词
             current_str = (
-                    current_str[:index_original]
-                    + current_str[index_original + len(keyword) + 1:]
+                current_str[:index_original]
+                + current_str[index_original + len(keyword) + 1 :]
             )
             # 更新大写字符串
             current_str_upper = current_str.upper()
@@ -93,7 +95,7 @@ class NvidiaMonitor:
         global_gpu_usage[self.gpu_id]["memoryUsage"] = cur_gpu_status["gpu_mem_percent"]
 
         global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = (
-                cur_gpu_status["gpu_mem_total_bytes"] >> 10 >> 10
+            cur_gpu_status["gpu_mem_total_bytes"] >> 10 >> 10
         )
 
         global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = cur_gpu_status[
@@ -197,7 +199,10 @@ class NvidiaMonitor:
                     if pid not in self.processes:
                         new_process = PythonGPUProcess(pid, self.gpu_id, gpu_process)
                         if new_process.is_python:
-                            if new_process.running_time_in_seconds > delay_send_seconds:
+                            if (
+                                new_process.running_time_in_seconds
+                                > WEBHOOK_DELAY_SEND_SECONDS
+                            ):
                                 new_process.state = "working"
                             else:
                                 new_process.state = "newborn"
@@ -213,7 +218,7 @@ class NvidiaMonitor:
                     self.processes[pid].num_task = len(self.processes)
 
                 if monitor_start_flag and len(self.processes) > 0:
-                    start_gpu_monitor(self.gpu_id, self.processes)
+                    send_gpu_monitor_start_msg(self.gpu_id, self.processes)
                     monitor_start_flag = False
 
                 # 在监视线程中就进行处理，哪怕这里阻塞了，也就是相当于多加一点延时
@@ -223,7 +228,7 @@ class NvidiaMonitor:
                 global_gpu_task[self.gpu_id].clear()
                 global_gpu_task[self.gpu_id].extend(current_gpu_list)
 
-                time.sleep(gpu_monitor_sleep_time)
+                time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
                 # 线程周期结束
 
             print(f"GPU {self.gpu_id} monitor stop")
@@ -240,7 +245,7 @@ class NvidiaMonitor:
 
 
 def start_gpu_monitor_all():
-    for idx in range(num_gpu):
+    for idx in range(NUM_GPU):
         # Initialize global variables
         global_gpu_info.append(
             {

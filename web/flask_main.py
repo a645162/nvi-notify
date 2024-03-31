@@ -39,7 +39,7 @@ def get_result():
 @app.route("/get_gpu_count")
 def get_gpu_count():
     # For debug use
-    current_gpu_task = global_gpu_task
+    # current_gpu_task = global_gpu_task
     return Response(
         response=json.dumps({"result": len(global_gpu_task)}),
         status=200,

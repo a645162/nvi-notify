@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Dict
+from typing import Dict, Optional
 
 import psutil
 
@@ -50,10 +50,8 @@ class CPUMonitor:
 
     @temperature.setter
     def temperature(self, new_temperature):
-        self.high_temperature_trigger = (
-            new_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD
-            and self._temperature < CPU_HIGH_TEMPERATURE_THRESHOLD
-        )
+        self.high_temperature_trigger = \
+            new_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD > self._temperature
 
         self._temperature = new_temperature
 
@@ -67,7 +65,7 @@ def get_cpu_temperature(cpu_id: int) -> float:
         return -1.0
 
 
-def get_cpu_temperature_info() -> Dict:
+def get_cpu_temperature_info() -> Optional[Dict]:
     if not hasattr(psutil, "sensors_temperatures"):
         return None
     temps = psutil.sensors_temperatures()

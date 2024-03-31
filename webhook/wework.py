@@ -35,10 +35,10 @@ webhook_url_warning = get_wework_url(WEBHOOK_WEWORK_DEV)
 
 
 def direct_send_text_with_url(
-    webhook_url: str,
-    msg: str,
-    mentioned_id: List[str] = None,
-    mentioned_mobile: List[str] = None,
+        webhook_url: str,
+        msg: str,
+        mentioned_id: List[str] = None,
+        mentioned_mobile: List[str] = None,
 ) -> None:
     if mentioned_mobile is None:
         mentioned_mobile = []
@@ -48,13 +48,13 @@ def direct_send_text_with_url(
     if not isinstance(mentioned_id, List):
         try:
             mentioned_id = [str(mentioned_id)]
-        except:
+        except Exception:
             mentioned_id = []
 
     if not isinstance(mentioned_mobile, List):
         try:
             mentioned_mobile = [str(mentioned_mobile)]
-        except:
+        except Exception:
             mentioned_mobile = []
 
     if len(webhook_url) == 0:
@@ -74,10 +74,10 @@ def direct_send_text_with_url(
 
 
 def direct_send_text(
-    msg: str,
-    mentioned_id: List[str] = None,
-    mentioned_mobile: List[str] = None,
-    msg_type: str = "normal",
+        msg: str,
+        mentioned_id: List[str] = None,
+        mentioned_mobile: List[str] = None,
+        msg_type: str = "normal",
 ) -> None:
     """Send text message in any time.
 
@@ -93,6 +93,9 @@ def direct_send_text(
         webhook_url = webhook_url_main
     elif msg_type == "warning":
         webhook_url = webhook_url_warning
+    else:
+        print("msg_type must be 'normal' or 'warning'")
+        return
 
     direct_send_text_with_url(
         webhook_url=webhook_url,
@@ -121,15 +124,15 @@ def send_text_thread() -> None:
             msg_queue.pop(0)
             print(f"[{get_now_time()}]消息队列发送一条消息。")
 
-        except:
+        except Exception:
             time.sleep(60)
 
 
 def send_text(
-    msg: str,
-    mentioned_id=None,
-    mentioned_mobile=None,
-    msg_type: str = "normal",
+        msg: str,
+        mentioned_id=None,
+        mentioned_mobile=None,
+        msg_type: str = "normal",
 ) -> None:
     """Send text message in non-sleep time.
 
@@ -145,6 +148,9 @@ def send_text(
         webhook_url = webhook_url_main
     elif msg_type == "warning":
         webhook_url = webhook_url_warning
+    else:
+        print("msg_type must be 'normal' or 'warning'")
+        return
 
     webhook_url = webhook_url.strip()
     if len(webhook_url) == 0:

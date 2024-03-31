@@ -24,14 +24,15 @@ def get_env_time(time_str: str, default: datetime.time = None) -> datetime.time:
         return default
 
     time_str_1 = time_str[:index].strip()
-    time_str_2 = time_str[index + 1 :].strip()
+    time_str_2 = time_str[index + 1:].strip()
 
     try:
         int_1 = int(time_str_1)
         int_2 = int(time_str_2)
 
         return datetime.time(int_1, int_2)
-    except:
+    except Exception as e:
+        print(e)
         return default
 
 
@@ -43,7 +44,7 @@ def get_now_time():
 
 
 def is_within_time_range(
-    start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
+        start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
 ):
     current_time = datetime.datetime.now().time()
 
@@ -141,7 +142,6 @@ WEBHOOK_SLEEP_TIME_END = get_env_time(
 
 WEBHOOK_WEWORK_DEPLOY = os.getenv("WEBHOOK_WEWORK_DEPLOY", "")
 WEBHOOK_WEWORK_DEV = os.getenv("WEBHOOK_WEWORK_DEV", "")
-
 
 if __name__ == "__main__":
     # env_path = Path(".") / ".env"

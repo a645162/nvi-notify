@@ -10,6 +10,12 @@ from nvitop import Device
 from config.users.utils import get_all_user_list
 from config.utils import get_interface_ip_dict
 
+path_base = os.path.dirname(
+    os.path.dirname(
+        os.path.realpath(__file__)
+    )
+)
+
 
 def get_ip(ip_type: str = "v4"):
     assert ip_type in ["v4", "v6"]
@@ -83,7 +89,7 @@ def get_emoji(key: Union[int, str]) -> str:
 
 
 def load_env():
-    default_env_file = os.path.join(os.getcwd(), ".env")
+    default_env_file = os.path.join(path_base, ".env")
 
     if os.path.exists(default_env_file):
         load_dotenv(default_env_file, verbose=True)

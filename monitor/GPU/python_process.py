@@ -156,8 +156,8 @@ class PythonGPUProcess:
         def find_user_by_path(user_list: list, path: str):
             for user in user_list:
                 if any(
-                    keyword.lower().strip() in path.lower()
-                    for keyword in user["keywords"]
+                        keyword.lower().strip() in path.lower()
+                        for keyword in user["keywords"]
                 ):
                     return user
             return None
@@ -210,11 +210,11 @@ class PythonGPUProcess:
         return return_value
 
     def get_is_multi_gpu(self) -> bool:
-        self.is_multi_gpu = (
-            self.get_world_size() is not None
-            and self.get_local_rank() != ""
-            and int(self.get_world_size()) > 1
-        )
+        self.is_multi_gpu = \
+            (self.get_world_size() is not None) and \
+            self.get_local_rank() != "" and \
+            int(self.get_world_size()) > 1
+
         return self.is_multi_gpu
 
     def get_cuda_visible_devices(self) -> str:
@@ -264,9 +264,9 @@ class PythonGPUProcess:
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
         if (
-            new_running_time_in_seconds
-            > WEBHOOK_DELAY_SEND_SECONDS
-            > self._running_time_in_seconds
+                new_running_time_in_seconds >
+                WEBHOOK_DELAY_SEND_SECONDS >
+                self._running_time_in_seconds
         ):
             self.state = "working"
         self._running_time_in_seconds = new_running_time_in_seconds

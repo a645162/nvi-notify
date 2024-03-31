@@ -40,14 +40,13 @@ def gpu_name_filter(gpu_name: str):
             # 找到关键词在大写字符串中的位置
             index = current_str_upper.index(keyword_upper)
             # 计算关键词在原始字符串中的起始位置
-            index_original = current_str_upper[:index].count(" ") - current_str[
-                :index
-            ].count(" ")
+            index_original = \
+                current_str_upper[:index].count(" ") - \
+                current_str[:index].count(" ")
             # 删除原始字符串中的关键词
-            current_str = (
-                current_str[:index_original]
-                + current_str[index_original + len(keyword) + 1 :]
-            )
+            current_str = \
+                current_str[:index_original] + \
+                current_str[index_original + len(keyword) + 1:]
             # 更新大写字符串
             current_str_upper = current_str.upper()
 
@@ -94,9 +93,8 @@ class NvidiaMonitor:
         global_gpu_usage[self.gpu_id]["coreUsage"] = cur_gpu_status["gpu_usage"]
         global_gpu_usage[self.gpu_id]["memoryUsage"] = cur_gpu_status["gpu_mem_percent"]
 
-        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = (
+        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = \
             cur_gpu_status["gpu_mem_total_bytes"] >> 10 >> 10
-        )
 
         global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = cur_gpu_status[
             "gpu_mem_usage"
@@ -115,7 +113,8 @@ class NvidiaMonitor:
     def get_gpu_all_processes(self):
         try:
             return self.nvidia_i.processes()
-        except:
+        except Exception as e:
+            print(e)
             send_process_except_warning_msg()
 
     def get_gpu_name(self) -> str:
@@ -199,10 +198,7 @@ class NvidiaMonitor:
                     if pid not in self.processes:
                         new_process = PythonGPUProcess(pid, self.gpu_id, gpu_process)
                         if new_process.is_python:
-                            if (
-                                new_process.running_time_in_seconds
-                                > WEBHOOK_DELAY_SEND_SECONDS
-                            ):
+                            if new_process.running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS:
                                 new_process.state = "working"
                             else:
                                 new_process.state = "newborn"

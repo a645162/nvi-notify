@@ -170,11 +170,7 @@ def main():
     if hasattr(args, 'install') and args.install:
         print('Try to Install...')
         install(auto_start=True)
-    elif (
-            (hasattr(args, 'uninstall') and args.uninstall)
-            or
-            (hasattr(args, 'remove') and args.remove)
-    ):
+    elif (hasattr(args, 'uninstall') and args.uninstall) or (hasattr(args, 'remove') and args.remove):
         print('Try to Uninstall...')
         uninstall()
     else:

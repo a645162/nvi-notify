@@ -10,7 +10,7 @@ from flask_cors import CORS
 from config.settings import (
     FLASK_SERVER_HOST,
     FLASK_SERVER_PORT,
-    GPU_BOARD_URL,
+    GPU_BOARD_WEB_URL,
     SERVER_NAME,
 )
 from global_variable.global_gpu import (
@@ -126,11 +126,11 @@ def get_gpu_task():
 
 @app.route("/")
 def index():
-    if len(GPU_BOARD_URL) != 0:
+    if len(GPU_BOARD_WEB_URL) != 0:
         try:
-            response = requests.get(GPU_BOARD_URL)
+            response = requests.get(GPU_BOARD_WEB_URL)
             if response.status_code == 200:
-                return redirect(GPU_BOARD_URL)
+                return redirect(GPU_BOARD_WEB_URL)
         except requests.exceptions.RequestException:
             pass
     else:

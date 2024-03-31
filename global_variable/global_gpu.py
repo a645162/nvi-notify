@@ -4,10 +4,10 @@ from monitor.GPU.python_process import PythonGPUProcess
 
 """
 gpu_info:
-包括 GPU名称
+包括 GPU名称、TDP
 
 gpu_usage:
-包含 电源消耗、TDP、温度、核心使用率、显存使用率
+包含 当前功率、温度(摄氏度)、核心使用率、显存使用率、显存使用量、显存总量
 
 gpu_task为一个列表
 包括 用户名、是否为调试模式、工程名、py文件名、显存占用、运行时间

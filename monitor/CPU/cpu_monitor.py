@@ -15,6 +15,40 @@ from webhook.send_task_msg import (
 )
 
 
+class CpuUtils:
+
+    @staticmethod
+    def get_cpu_physics_num():
+        return psutil.cpu_count(logical=False)
+
+    @staticmethod
+    def get_cpu_logic_num():
+        return psutil.cpu_count(logical=True)
+
+    @staticmethod
+    def get_cpu_percent(interval=0):
+        if interval == 0:
+            return psutil.cpu_percent()
+        return psutil.cpu_percent(interval=interval)
+
+    @staticmethod
+    def convert_bytes_to_gb(bytes: int) -> float:
+        return bytes / (1024 ** 3)
+
+    @staticmethod
+    def convert_mem_to_str(mem_bytes: int) -> str:
+        mem_gb = CpuUtils.convert_bytes_to_gb(mem_bytes)
+        return f"{mem_gb:.1f}"
+
+    @staticmethod
+    def get_memory_info():
+        return psutil.virtual_memory()
+
+    @staticmethod
+    def get_swap_memory_info():
+        return psutil.swap_memory()
+
+
 class CPUMonitor:
     def __init__(self, cpu_id: int):
         self.cpu_id: int = cpu_id

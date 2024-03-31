@@ -36,9 +36,7 @@ def get_env_time(time_str: str, default: datetime.time = None) -> datetime.time:
 
 
 def get_now_time():
-    # 获取当前时间
     current_time = datetime.datetime.now()
-    # 将当前时间格式化为字符串
     formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
     return formatted_time
@@ -47,7 +45,6 @@ def get_now_time():
 def is_within_time_range(
     start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
 ):
-    # 获取当前时间
     current_time = datetime.datetime.now().time()
 
     if start_time <= end_time:
@@ -131,6 +128,7 @@ GPU_MONITOR_SAMPLING_INTERVAL = int(os.getenv("GPU_MONITOR_SAMPLING_INTERVAL", 5
 # flask
 FLASK_SERVER_HOST = os.getenv("FLASK_SERVER_HOST", "0,0,0,0")
 FLASK_SERVER_PORT = os.getenv("FLASK_SERVER_PORT", "3000")
+GPU_BOARD_URL = os.getenv("GPU_BOARD_WEB_URL", "")
 
 # webhook
 WEBHOOK_DELAY_SEND_SECONDS = int(os.getenv("WEBHOOK_DELAY_SEND_SECONDS", 60))

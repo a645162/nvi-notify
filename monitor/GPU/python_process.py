@@ -30,15 +30,19 @@ class PythonGPUProcess:
         self.cmdline: Optional[List] = None
 
         self.is_debug: Optional[bool] = None
-        self.running_time_human: Optional[str] = None
+
+        self.task_main_memory_mb: int = 0
+
         self.task_gpu_memory: Optional[int] = None
         self.task_gpu_memory_human: Optional[str] = None
+
         self.user: Optional[Dict] = None
         self.conda_env: Optional[str] = None
         self.project_name: Optional[str] = None
         self.python_file: Optional[str] = None
 
         self.start_time: Optional[float] = None
+        self.running_time_human: Optional[str] = None
 
         # Props get from env var
         self.is_multi_gpu: Optional[bool] = None
@@ -63,6 +67,8 @@ class PythonGPUProcess:
             self.project_name = self.get_project_name()
             self.python_file = self.get_python_filename()
             self.start_time = self.gpu_process.create_time()
+
+            self.get_task_main_memory_mb()
 
             self.get_all_env()
 
@@ -98,7 +104,16 @@ class PythonGPUProcess:
             # self.state = "death"
             pass
 
-    # Task Memory(Bytes)
+    # Task Main Memory(Bytes)
+    def get_task_main_memory(self) -> int:
+        return self.gpu_process.memory_info().rss
+
+    def get_task_main_memory_mb(self) -> int:
+        task_main_memory_mb = self.get_task_main_memory() // 1024 // 1024
+        self.task_main_memory_mb = task_main_memory_mb
+        return task_main_memory_mb
+
+    # Task Gpu Memory(Bytes)
     def get_task_gpu_memory(self) -> int:
         task_gpu_memory = self.gpu_process.gpu_memory()
         self.task_gpu_memory = task_gpu_memory

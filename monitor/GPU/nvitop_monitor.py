@@ -76,15 +76,17 @@ class NvidiaMonitor:
 
     def update_gpu_status(self):
         cur_gpu_status = {
-            # Percent
+            # GPU Percent
             "gpu_usage": self.get_gpu_utl(),
             "gpu_mem_percent": self.get_gpu_mem_percent(),
-            # Memory Bytes
+
+            # GPU Memory Bytes
             "gpu_mem_total_bytes": self.get_gpu_mem_total_bytes(),
-            # Memory Human(String)
+            # GPU Memory Human(String)
             "gpu_mem_usage": self.get_gpu_mem_usage(),
             "gpu_mem_free": self.get_gpu_mem_free(),
             "gpu_mem_total": self.get_gpu_mem_total(),
+
             # Power(Int)
             "gpuPowerUsage": self.get_gpu_power_usage(),
             "gpuTemperature": self.get_gpu_temperature(),

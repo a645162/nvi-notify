@@ -13,6 +13,11 @@ from config.settings import (
     GPU_BOARD_WEB_URL,
     SERVER_NAME,
 )
+
+from global_variable.global_system import (
+    global_system_info
+)
+
 from global_variable.global_gpu import (
     global_gpu_info,
     global_gpu_task,
@@ -31,6 +36,27 @@ def get_result():
     command_result = run_command("nvitop -U")
     return Response(
         response=json.dumps({"result": escape(command_result)}),
+        status=200,
+        mimetype="application/json",
+    )
+
+
+@app.route("/get_system_info")
+def get_system_info():
+    system_info: dict = {
+        "memory_physic_total_mb": 0,
+        "memory_physic_used_mb": 0,
+        "memory_physic_free_mb": 0,
+
+        "memory_swap_total_mb": 0,
+        "memory_swap_used_mb": 0,
+        "memory_swap_free_mb": 0,
+    }
+
+    system_info.update(global_system_info)
+
+    return Response(
+        response=json.dumps(system_info),
         status=200,
         mimetype="application/json",
     )

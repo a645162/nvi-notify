@@ -14,6 +14,10 @@ from webhook.send_task_msg import (
     send_cpu_temperature_warning_msg,
 )
 
+from global_variable.global_system import (
+    global_system_info
+)
+
 
 class CpuUtils:
 
@@ -67,6 +71,35 @@ class CPUMonitor:
 
                 if self.high_temperature_trigger:
                     send_cpu_temperature_warning_msg(self.cpu_id, self.temperature)
+
+                memory_physic = CpuUtils.get_memory_info()
+                memory_swap = CpuUtils.get_swap_memory_info()
+
+                global_system_info["memory_physic_total_mb"] = \
+                    CpuUtils.convert_bytes_to_gb(
+                        memory_physic.total
+                    )
+                global_system_info["memory_physic_used_mb"] = \
+                    CpuUtils.convert_bytes_to_gb(
+                        memory_physic.used
+                    )
+                global_system_info["memory_physic_free_mb"] = \
+                    CpuUtils.convert_bytes_to_gb(
+                        memory_physic.free
+                    )
+
+                global_system_info["memory_swap_total_mb"] = \
+                    CpuUtils.convert_bytes_to_gb(
+                        memory_swap.total
+                    )
+                global_system_info["memory_swap_used_mb"] = \
+                    CpuUtils.convert_bytes_to_gb(
+                        memory_swap.used
+                    )
+                global_system_info["memory_swap_free_mb"] = \
+                    CpuUtils.convert_bytes_to_gb(
+                        memory_swap.free
+                    )
 
                 time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
 

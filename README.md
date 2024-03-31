@@ -1,8 +1,10 @@
 # NVIDIA-SMI WebHook Notify
 
+NVIDIA显卡监控工具，支持Webhook通知。
+
 Auto monitor NVIDIA GPU auto sends a status message to webhook when GPU usage is changed.
 
-## Support Webhook
+## 支持的WebHook
 
 - WeWork
 
@@ -21,11 +23,39 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## Systemd Service
+
+### Install Service
+
+```bash
+sudo python systemd.py --install
+```
+
+### Uninstall Service
+
+```bash
+sudo python systemd.py --uninstall
+```
+
+## Log(Coming soon...)
+
+The log file is located at ``.
+
+If you want to view the log, you can use the following command:
+
+```bash
+sudo journalctl -u nvinotify
+```
+
 ## TODO
+
+- [ ] Log System
+- [ ] Support for Feishu
+
+## 思考中...
 
 - [ ] Support for DingTalk
 - [ ] Support for Bark
-- [ ] Support for Feishu
 - [ ] Support for PushDeer
 - [ ] Support for PushPlus
 

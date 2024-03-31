@@ -1,5 +1,10 @@
 # Nvidia Smi Webhook Notify
 /start-deploy.sh
+/config/users/.gitignore
+/.env.dev
+/.env.secure
+/start.sh
+/systemd.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -264,7 +269,3 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
-
-config/users/.gitignore
-.env.dev
-.env.secure

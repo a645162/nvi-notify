@@ -77,7 +77,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"{process_info['user']['name']}的"
                 f"({process_info['project_name']}-{process_info['python_file']})启动\n"
             )
-            gpu_task_status_info_msg= f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
+            gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
             handle_normal_text(msg=create_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg)
         elif task_status == "finish":
             num_tasks = process_info['num_task'] - 1
@@ -87,9 +87,9 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"({process_info['project_name']}-{process_info['python_file']})完成，"
                 f"用时{process_info['running_time_human']}\n"
             )
-            gpu_task_status_info_msg= f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
+            gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
             if num_tasks == 0:
-                gpu_task_status_info_msg= f"{gpu_name}空闲，无任务\n"
+                gpu_task_status_info_msg = f"{gpu_name}空闲，无任务\n"
 
             handle_normal_text(
                 msg=finish_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg,

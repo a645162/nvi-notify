@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional
+import re
 
 import psutil
 from nvitop import GpuProcess
@@ -197,7 +198,20 @@ class PythonGPUProcess:
         return self.process_environ.get(key, default_value)
 
     def get_conda_env_name(self) -> str:
-        env_str = self.get_env_value("CONDA_DEFAULT_ENV", "")
+        pattern = r"envs/(.*?)/bin/python "
+        match = re.search(pattern, self.command)
+        if match:
+            conda_env_name = match.group(1)
+            env_str = conda_env_name
+        else:
+            env_str = (
+                self.get_env_value("CONDA_DEFAULT_ENV", "")
+            )
+
+        env_str.strip()
+
+        if env_str == "":
+            env_str = "base"
 
         self.conda_env = env_str
         return env_str

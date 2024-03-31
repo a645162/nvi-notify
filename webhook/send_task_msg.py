@@ -58,34 +58,41 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
     :param task_status: 任务状态
     """
     gpu_name = f"GPU:{process_info['gpu_id']}" if NUM_GPU > 1 else "GPU"
-    multi_gpu_idx = f"[{gpu_name}]\n" if NUM_GPU > 1 else ""
+    gpu_idx = f"[{gpu_name}]\n" if NUM_GPU > 1 else ""
 
     gpu_info_msg = (
         f"🌀{gpu_name}核心占用: {process_info['gpu_status']['gpu_usage']}%\n"
         f"🌀{gpu_name}显存占用: "
-        f"{process_info['gpu_status']['gpu_mem_usage']}/{process_info['gpu_status']['gpu_mem_total']}"
-        f" ({process_info['gpu_status']['gpu_mem_percent']}%)，{process_info['gpu_status']['gpu_mem_free']}空闲\n\n"
-        f"{get_emoji('呲牙') * (process_info['num_task'] - 1)}{gpu_name}上正在运行{process_info['num_task'] - 1}个任务：\n"
-        f"{''.join(process_info['gpu_all_tasks_msg'].values())}"
+        f"{process_info['gpu_status']['gpu_mem_usage']}/{process_info['gpu_status']['gpu_mem_total']} "
+        f"({process_info['gpu_status']['gpu_mem_percent']}%)，{process_info['gpu_status']['gpu_mem_free']}空闲\n\n"
     )
+
+    gpu_all_task_info_msg = f"{''.join(process_info['gpu_all_tasks_msg'].values())}"
 
     if not process_info["is_debug"]:
         if task_status == "create":
+            num_tasks = process_info['num_task']
             create_msg_header = (
-                f"{multi_gpu_idx}🚀"
+                f"{gpu_idx}\n🚀"
                 f"{process_info['user']['name']}的"
                 f"({process_info['project_name']}-{process_info['python_file']})启动\n"
             )
-            handle_normal_text(msg=create_msg_header + gpu_info_msg)
+            gpu_task_status_info_msg= f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
+            handle_normal_text(msg=create_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg)
         elif task_status == "finish":
+            num_tasks = process_info['num_task'] - 1
             finish_msg_header = (
-                f"{multi_gpu_idx}☑️"
+                f"{gpu_idx}\n☑️"
                 f"{process_info['user']['name']}的"
-                f"({process_info['project_name']}-{process_info['python_file']})完成"
-                f"，用时{process_info['running_time_human']}\n"
+                f"({process_info['project_name']}-{process_info['python_file']})完成，"
+                f"用时{process_info['running_time_human']}\n"
             )
+            gpu_task_status_info_msg= f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
+            if num_tasks == 0:
+                gpu_task_status_info_msg= f"{gpu_name}空闲，无任务\n"
+
             handle_normal_text(
-                msg=finish_msg_header + gpu_info_msg,
+                msg=finish_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg,
                 mentioned_id=process_info["user"]["wework"]["mention_id"],
                 mentioned_mobile=process_info["user"]["wework"]["mention_mobile"],
             )
@@ -111,16 +118,16 @@ def log_task_info(process_info: Dict, task_type: str):
                 f"[GPU:{process_info['gpu_id']}]"
                 f" {process_info['user']['name']} "
                 f"create new {'debug ' if process_info['is_debug'] else ''}"
-                f"task: {process_info['pid']}\n"
+                f"task: {process_info['pid']}"
             )
         elif task_type == "finish":
             output_log = (
                 f"[{get_now_time()}]"
                 f"[GPU:{process_info['gpu_id']}]"
                 f" finish {process_info['user']['name']}'s {'debug ' if process_info['is_debug'] else ''}"
-                f"task: {process_info['pid']}，用时{process_info['running_time_human']}\n"
+                f"task: {process_info['pid']}，用时{process_info['running_time_human']}"
             )
-        log_writer.write(output_log)
+        log_writer.write(output_log + "\n")
         print(output_log)
 
 

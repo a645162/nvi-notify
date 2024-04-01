@@ -1,3 +1,9 @@
+from utils.logs import get_logger
+
+logger = get_logger()
+
+logger.info("Global Variable:global_system Initializing...")
+
 """
 global_system_info为一个Hashmap
 包括:

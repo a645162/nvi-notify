@@ -7,9 +7,13 @@ import chardet
 import psutil
 import yaml
 
+from utils.logs import get_logger
+
+logger = get_logger()
+
 
 def get_files_with_extension(
-    directory: str, extension: str, recursive: bool = False
+        directory: str, extension: str, recursive: bool = False
 ) -> List[str]:
     files = []
     if recursive:
@@ -55,7 +59,7 @@ def get_interface_ip_dict(ip_type: str = "v4") -> Dict:
             s.connect(("6.ipw.cn", 80))
         local_ip = s.getsockname()[0]
     except Exception as e:
-        print(f"Error getting local IP: {e}")
+        logger.error(f"Error getting local IP: {e}")
         local_ip = None
     finally:
         s.close()

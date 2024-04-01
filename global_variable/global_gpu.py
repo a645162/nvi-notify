@@ -2,6 +2,12 @@ from typing import List
 
 from monitor.GPU.python_process import PythonGPUProcess
 
+from utils.logs import get_logger
+
+logger = get_logger()
+
+logger.info("Global Variable:global_gpu Initializing...")
+
 """
 gpu_info:
 包括 GPU名称、TDP

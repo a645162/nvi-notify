@@ -10,6 +10,10 @@ from nvitop import Device
 from config.users.utils import get_all_user_list
 from config.utils import get_interface_ip_dict
 
+from utils.logs import get_logger
+
+logger = get_logger()
+
 path_base = os.path.dirname(
     os.path.dirname(
         os.path.realpath(__file__)
@@ -38,7 +42,7 @@ def get_env_time(time_str: str, default: datetime.time = None) -> datetime.time:
 
         return datetime.time(int_1, int_2)
     except Exception as e:
-        print(e)
+        logger.error(f"{time_str}=>\n\t{time_str_1}|{time_str_2}\n\t=>{e}")
         return default
 
 
@@ -50,7 +54,8 @@ def get_now_time():
 
 
 def is_within_time_range(
-        start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
+        start_time=datetime.time(11, 0),
+        end_time=datetime.time(7, 30)
 ):
     current_time = datetime.datetime.now().time()
 
@@ -95,7 +100,8 @@ def load_env():
         load_dotenv(default_env_file, verbose=True)
         env_vars = dotenv_values(default_env_file)
     else:
-        raise FileNotFoundError("default env file not found")
+        logger.error("default env file not found")
+        return
 
     if sys.gettrace():
         extend_env_file = os.path.join(os.getcwd(), ".env.dev")
@@ -107,10 +113,10 @@ def load_env():
         load_dotenv(extend_env_file, verbose=True, override=True)
         env_vars.update(new_env_vars)
 
-    print("=" * 40)
+    logger.info("=" * 40)
     for env_name, env in env_vars.items():
-        print(f"{env_name}: {env}")
-    print("=" * 40)
+        logger.info(f"{env_name}: {env}")
+    logger.info("=" * 40)
 
 
 load_env()

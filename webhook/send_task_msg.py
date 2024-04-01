@@ -21,8 +21,7 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: Dict):
     :param gpu_id: GPU ID
     :param all_process_info: 所有进程信息字典
     """
-    gpu_name = f"GPU:{gpu_id}" if NUM_GPU > 1 else "GPU"
-    gpu_server_info = f"[{gpu_name}]" if NUM_GPU > 1 else gpu_name
+    gpu_idx = f"[GPU:{gpu_id}]" if NUM_GPU > 1 else "GPU"
 
     gpu_status = None
     send_start_info = False
@@ -41,12 +40,12 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: Dict):
 
     if send_start_info:
         handle_normal_text(
-            f"{gpu_server_info}监控启动\n"
-            f"{get_emoji('呲牙') * len(all_process_info)}{gpu_name}"
-            f"上正在运行{len(all_process_info)}个任务：\n"
+            f"{gpu_idx}监控启动\n"
+            f"{get_emoji('呲牙') * len(all_process_info)}"
+            f"{gpu_idx}上正在运行{len(all_process_info)}个任务：\n"
             f"{all_tasks_msg}\n"
-            f"🌀{gpu_name}核心占用: {gpu_status['gpu_usage']}%\n"
-            f"🌀{gpu_name}显存占用: {gpu_status['gpu_mem_usage']}/{gpu_status['gpu_mem_total']} "
+            f"🌀{gpu_idx}核心占用: {gpu_status['gpu_usage']}%\n"
+            f"🌀{gpu_idx}显存占用: {gpu_status['gpu_mem_usage']}/{gpu_status['gpu_mem_total']} "
             f"({gpu_status['gpu_mem_percent']}%)，{gpu_status['gpu_mem_free']}空闲\n",
         )
 
@@ -57,12 +56,11 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
     :param process_info: 进程信息字典
     :param task_status: 任务状态
     """
-    gpu_name = f"GPU:{process_info['gpu_id']}" if NUM_GPU > 1 else "GPU"
-    gpu_idx = f"[{gpu_name}]\n" if NUM_GPU > 1 else ""
+    gpu_idx = f"[GPU:{process_info['gpu_id']}]" if NUM_GPU > 1 else "GPU"
 
     gpu_info_msg = (
-        f"🌀{gpu_name}核心占用: {process_info['gpu_status']['gpu_usage']}%\n"
-        f"🌀{gpu_name}显存占用: "
+        f"🌀{gpu_idx}核心占用: {process_info['gpu_status']['gpu_usage']}%\n"
+        f"🌀{gpu_idx}显存占用: "
         f"{process_info['gpu_status']['gpu_mem_usage']}/{process_info['gpu_status']['gpu_mem_total']} "
         f"({process_info['gpu_status']['gpu_mem_percent']}%)，{process_info['gpu_status']['gpu_mem_free']}空闲\n\n"
     )
@@ -77,7 +75,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"{process_info['user']['name']}的"
                 f"({process_info['project_name']}-{process_info['python_file']})启动\n"
             )
-            gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
+            gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_idx}上正在运行{num_tasks}个任务：\n"
             handle_normal_text(msg=create_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg)
         elif task_status == "finish":
             num_tasks = process_info['num_task'] - 1
@@ -87,9 +85,9 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"({process_info['project_name']}-{process_info['python_file']})完成，"
                 f"用时{process_info['running_time_human']}\n"
             )
-            gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
+            gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_idx}上正在运行{num_tasks}个任务：\n"
             if num_tasks == 0:
-                gpu_task_status_info_msg = f"{gpu_name}空闲，无任务\n"
+                gpu_task_status_info_msg = f"{gpu_idx}当前无任务\n"
 
             handle_normal_text(
                 msg=finish_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg,

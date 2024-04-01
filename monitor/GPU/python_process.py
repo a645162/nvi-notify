@@ -293,8 +293,8 @@ class PythonGPUProcess:
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
         if (
-                new_running_time_in_seconds >
-                WEBHOOK_DELAY_SEND_SECONDS >
+                new_running_time_in_seconds >=
+                WEBHOOK_DELAY_SEND_SECONDS >=
                 self._running_time_in_seconds
         ):
             self.state = "working"

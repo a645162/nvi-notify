@@ -75,19 +75,19 @@ class CPUMonitor:
                 memory_physic = CpuUtils.get_memory_info()
                 memory_swap = CpuUtils.get_swap_memory_info()
 
-                global_system_info["memory_physic_total_mb"] = \
+                global_system_info["memoryPhysicTotalMb"] = \
                     CpuUtils.convert_bytes_to_gb(memory_physic.total)
-                global_system_info["memory_physic_used_mb"] = \
+                global_system_info["memoryPhysicUsedMb"] = \
                     CpuUtils.convert_bytes_to_gb(memory_physic.used)
-                global_system_info["memory_physic_free_mb"] = \
-                    CpuUtils.convert_bytes_to_gb(memory_physic.free)
+                # global_system_info["memory_physic_free_mb"] = \
+                #     CpuUtils.convert_bytes_to_gb(memory_physic.free)
 
-                global_system_info["memory_swap_total_mb"] = \
+                global_system_info["memorySwapTotalMb"] = \
                     CpuUtils.convert_bytes_to_gb(memory_swap.total)
-                global_system_info["memory_swap_used_mb"] = \
+                global_system_info["memorySwapUsedMb"] = \
                     CpuUtils.convert_bytes_to_gb(memory_swap.used)
-                global_system_info["memory_swap_free_mb"] = \
-                    CpuUtils.convert_bytes_to_gb(memory_swap.free)
+                # global_system_info["memory_swap_free_mb"] = \
+                #     CpuUtils.convert_bytes_to_gb(memory_swap.free)
 
                 time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
 

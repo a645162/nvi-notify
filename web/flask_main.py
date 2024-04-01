@@ -44,13 +44,11 @@ def get_result():
 @app.route("/get_system_info")
 def get_system_info():
     system_info: dict = {
-        "memory_physic_total_mb": 0,
-        "memory_physic_used_mb": 0,
-        "memory_physic_free_mb": 0,
+        "memoryPhysicTotalMb": 4096,
+        "memoryPhysicUsedMb": 2048,
 
-        "memory_swap_total_mb": 0,
-        "memory_swap_used_mb": 0,
-        "memory_swap_free_mb": 0,
+        "memorySwapTotalMb": 4096,
+        "memorySwapUsedMb": 2048,
     }
 
     system_info.update(global_system_info)

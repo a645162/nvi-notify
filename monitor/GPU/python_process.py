@@ -1,5 +1,5 @@
-from typing import Dict, List, Optional
 import re
+from typing import Dict, List, Optional
 
 import psutil
 from nvitop import GpuProcess
@@ -134,7 +134,7 @@ class PythonGPUProcess:
             gpu_process_name = self.gpu_process.name()
         except Exception as e:
             e_str = str(e)
-            if not ("process no longer exists" in e_str):
+            if "process no longer exists" not in e_str:
                 print(e)
             return False
         return gpu_process_name in ["python", "yolo"] or any(

@@ -18,6 +18,10 @@ from global_variable.global_system import (
     global_system_info
 )
 
+from utils.logs import get_logger
+
+logger = get_logger()
+
 
 class CpuUtils:
 
@@ -143,6 +147,10 @@ def get_cpu_temperature_info() -> Optional[Dict]:
 
 
 def start_cpu_monitor_all():
+    if NUM_CPU is None:
+        logger.error("Cannot get the number of CPU.")
+        return
+
     for idx in range(NUM_CPU):
         cpu_monitor_idx = CPUMonitor(idx)
         cpu_monitor_idx.start_monitor()

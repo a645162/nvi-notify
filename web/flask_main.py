@@ -25,10 +25,16 @@ from global_variable.global_gpu import (
 )
 from monitor.GPU.python_process import PythonGPUProcess
 
+from utils.logs import get_logger
+
+logger = get_logger()
+
+logger.info("Flask server is starting...")
 app = Flask(__name__)
 
 # 允许所有域进行跨源请求
 CORS(app)
+logger.info("Set CORS for Flask server.")
 
 
 @app.route("/get_result")
@@ -166,25 +172,36 @@ def index():
         except requests.exceptions.RequestException:
             pass
     else:
-        print("GPU board URL is not set or cannot be accessed.")
+        logger.info("GPU board URL is not set or cannot be accessed.")
 
     command_result = run_command("nvitop -U")
-    return render_template("index.html", result=command_result, page_title=SERVER_NAME)
+    return render_template(
+        "index.html",
+        result=command_result,
+        page_title=SERVER_NAME
+    )
 
 
 def run_command(command):
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True
+        )
         return result.stdout
     except Exception as e:
         return str(e), 500
 
 
 def start_web_server_ipv4():
+    logger.info("Starting Flask server(IPV4)...")
     app.run(host=FLASK_SERVER_HOST, port=FLASK_SERVER_PORT, debug=False)
 
 
 def start_web_server_both():
+    logger.info("Starting Flask server(Both IPV4 and IPV6)...")
     app.run(host="::", port=FLASK_SERVER_PORT, threaded=True)
 
 

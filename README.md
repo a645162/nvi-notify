@@ -8,6 +8,13 @@ Auto monitor NVIDIA GPU auto sends a status message to webhook when GPU usage is
 
 - WeWork
 
+## 环境要求
+
+大部分代码仅支持Linux系统.
+
+经测试:
+CPU监控部分仅支持Linux系统.
+
 ## Usage
 
 Please set environment variable GPU_MONITOR_WEBHOOK_WEWORK

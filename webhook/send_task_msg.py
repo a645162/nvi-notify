@@ -14,6 +14,10 @@ from config.settings import (
 )
 from webhook.wework import send_text
 
+from utils.logs import get_logger
+
+logger = get_logger()
+
 
 def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: Dict):
     """
@@ -110,7 +114,7 @@ def log_task_info(process_info: Dict, task_type: str):
     if not os.path.exists(logfile_dir_path):
         os.makedirs(logfile_dir_path)
 
-    with open(logfile_dir_path / "log.log", "a") as log_writer:
+    with open(logfile_dir_path / "user_task.log", "a") as log_writer:
         if task_type == "create":
             output_log = (
                 f"[{get_now_time()}]"
@@ -127,6 +131,7 @@ def log_task_info(process_info: Dict, task_type: str):
                 f"task: {process_info['pid']}，用时{process_info['running_time_human']}"
             )
         log_writer.write(output_log + "\n")
+        logger.info(output_log)
         print(output_log)
 
 

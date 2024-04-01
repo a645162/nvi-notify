@@ -14,12 +14,16 @@ from config.settings import (
     is_within_time_range,
 )
 
+from utils.logs import get_logger
+
+logger = get_logger()
+
 
 def get_wework_url(wework_webhook: str) -> str:
     wework_webhook = wework_webhook.strip()
 
     if len(wework_webhook) == 0:
-        print("Illegal WeWork Webhook!")
+        logger.error("Illegal WeWork Webhook!")
         return ""
 
     webhook_header = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
@@ -58,7 +62,7 @@ def direct_send_text_with_url(
             mentioned_mobile = []
 
     if len(webhook_url) == 0:
-        print("Illegal WeWork Webhook!")
+        logger.error("Illegal WeWork Webhook!")
         return
 
     headers = {"Content-Type": "application/json"}
@@ -70,7 +74,7 @@ def direct_send_text_with_url(
         data["text"]["mentioned_mobile_list"] = mentioned_mobile
 
     r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
-    print("WeWork", "text", r.text)
+    logger.info(f"WeWork[text]{r.text}")
 
 
 def direct_send_text(
@@ -87,14 +91,14 @@ def direct_send_text(
     Raises:
         ValueError: "msg_type must be 'normal' or 'warning'"
     """
-    assert msg_type in ["normal", "warning"]
+    # assert msg_type in ["normal", "warning"]
 
     if msg_type == "normal":
         webhook_url = webhook_url_main
     elif msg_type == "warning":
         webhook_url = webhook_url_warning
     else:
-        print("msg_type must be 'normal' or 'warning'")
+        logger.error("msg_type must be 'normal' or 'warning'.")
         return
 
     direct_send_text_with_url(
@@ -122,7 +126,7 @@ def send_text_thread() -> None:
             current_msg = msg_queue[0]
             direct_send_text_with_url(*current_msg)
             msg_queue.pop(0)
-            print(f"[{get_now_time()}]消息队列发送一条消息。")
+            logger.info(f"[{get_now_time()}]消息队列发送一条消息。")
 
         except Exception:
             time.sleep(60)
@@ -142,14 +146,14 @@ def send_text(
     Raises:
         ValueError: "msg_type must be 'normal' or 'warning'"
     """
-    assert msg_type in ["normal", "warning"]
+    # assert msg_type in ["normal", "warning"]
 
     if msg_type == "normal":
         webhook_url = webhook_url_main
     elif msg_type == "warning":
         webhook_url = webhook_url_warning
     else:
-        print("msg_type must be 'normal' or 'warning'")
+        logger.error("msg_type must be 'normal' or 'warning'")
         return
 
     webhook_url = webhook_url.strip()
@@ -157,7 +161,7 @@ def send_text(
         return
 
     msg_queue.append((webhook_url, msg, mentioned_id, mentioned_mobile))
-    print(f"[{get_now_time()}]消息队列添加一条消息。")
+    logger.info(f"[{get_now_time()}]消息队列添加一条消息。")
     global thread_is_start
     if not thread_is_start:
         thread_is_start = True

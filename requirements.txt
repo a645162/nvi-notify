@@ -1,11 +1,14 @@
 nvitop
+psutil
 
 flask
 flask-socketio
 flask-cors
 
 requests
-psutil
+
 chardet
 pyyaml
 python-dotenv
+
+loguru

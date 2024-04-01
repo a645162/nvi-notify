@@ -36,6 +36,10 @@ class CpuUtils:
         return psutil.cpu_percent(interval=interval)
 
     @staticmethod
+    def convert_bytes_to_mb(bytes: int) -> int:
+        return bytes // (1024 ** 2)
+
+    @staticmethod
     def convert_bytes_to_gb(bytes: int) -> float:
         return bytes / (1024 ** 3)
 
@@ -76,16 +80,16 @@ class CPUMonitor:
                 memory_swap = CpuUtils.get_swap_memory_info()
 
                 global_system_info["memoryPhysicTotalMb"] = \
-                    CpuUtils.convert_bytes_to_gb(memory_physic.total)
+                    CpuUtils.convert_bytes_to_mb(memory_physic.total)
                 global_system_info["memoryPhysicUsedMb"] = \
-                    CpuUtils.convert_bytes_to_gb(memory_physic.used)
+                    CpuUtils.convert_bytes_to_mb(memory_physic.used)
                 # global_system_info["memory_physic_free_mb"] = \
                 #     CpuUtils.convert_bytes_to_gb(memory_physic.free)
 
                 global_system_info["memorySwapTotalMb"] = \
-                    CpuUtils.convert_bytes_to_gb(memory_swap.total)
+                    CpuUtils.convert_bytes_to_mb(memory_swap.total)
                 global_system_info["memorySwapUsedMb"] = \
-                    CpuUtils.convert_bytes_to_gb(memory_swap.used)
+                    CpuUtils.convert_bytes_to_mb(memory_swap.used)
                 # global_system_info["memory_swap_free_mb"] = \
                 #     CpuUtils.convert_bytes_to_gb(memory_swap.free)
 

@@ -170,13 +170,16 @@ class PythonGPUProcess:
         }
 
         def find_user_by_path(user_list: list, path: str):
-            for user in user_list:
-                if any(
-                        keyword.lower().strip() in path.lower()
-                        for keyword in user["keywords"]
-                ):
-                    return user
-            return None
+            for path_unit in reversed(path.split("data")[1].split("/")):
+                if len(path_unit) == 0:
+                    continue
+                for user in user_list:
+                    if any(
+                            path_unit.lower() == keyword.lower().strip()
+                            for keyword in user["keywords"]
+                    ):
+                        return user
+                return None
 
         cwd = self.cwd + "/" if self.cwd is not None else ""
         self.user = find_user_by_path(USER_LIST, cwd) or default_user_dict

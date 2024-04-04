@@ -148,7 +148,7 @@ class PythonGPUProcess:
 
         cmdline = [line for line in self.cmdline if not line.endswith("python")]
         debug_cmd_keywords = ["vscode-server", "debugpy", "pydev/pydevd.py"]
-        self.is_debug = any(keyword in cmdline[0] for keyword in debug_cmd_keywords)
+        self.is_debug = any(any(keyword in _unit for _unit in cmdline) for keyword in debug_cmd_keywords)
 
     def get_user(self):
         self.user = next(

@@ -117,7 +117,6 @@ def log_task_info(process_info: Dict, task_type: str):
     with open(logfile_dir_path / "user_task.log", "a") as log_writer:
         if task_type == "create":
             output_log = (
-                f"[{get_now_time()}]"
                 f"[GPU:{process_info['gpu_id']}]"
                 f" {process_info['user']['name']} "
                 f"create new {'debug ' if process_info['is_debug'] else ''}"
@@ -125,12 +124,11 @@ def log_task_info(process_info: Dict, task_type: str):
             )
         elif task_type == "finish":
             output_log = (
-                f"[{get_now_time()}]"
                 f"[GPU:{process_info['gpu_id']}]"
                 f" finish {process_info['user']['name']}'s {'debug ' if process_info['is_debug'] else ''}"
                 f"task: {process_info['pid']}，用时{process_info['running_time_human']}"
             )
-        log_writer.write(output_log + "\n")
+        log_writer.write(f"[{get_now_time()}]+{output_log} + \n")
         logger.info(output_log)
         print(output_log)
 

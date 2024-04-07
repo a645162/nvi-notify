@@ -12,7 +12,8 @@ Auto monitor NVIDIA GPU auto sends a status message to webhook when GPU usage is
 
 大部分代码仅支持Linux系统.
 
-经测试:
+**经测试:**
+
 CPU监控部分仅支持Linux系统.
 
 ## Usage
@@ -58,6 +59,20 @@ sudo journalctl -u nvinotify
 
 - [ ] Log System
 - [ ] Support for Feishu
+
+## 系列项目
+
+### GPU看板
+
+https://github.com/a645162/web-gpu-dashboard
+
+### GPU监控脚本
+
+https://github.com/a645162/nvi-notify
+
+### 测试数据后端
+
+https://github.com/a645162/backend-gpu-dashboard-test
 
 ## 思考中...
 

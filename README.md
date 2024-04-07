@@ -1,6 +1,6 @@
-# NVIDIA-SMI WebHook Notify
+# NVI-Notify
 
-NVIDIA显卡监控工具，支持Webhook通知。
+NVIDIA GPU监控工具，支持常见的Webhook通知。
 
 Auto monitor NVIDIA GPU auto sends a status message to webhook when GPU usage is changed.
 
@@ -58,15 +58,20 @@ sudo journalctl -u nvinotify
 ## TODO
 
 - [ ] Log System
+- [ ] Message Center
 - [ ] Support for Feishu
 
 ## 系列项目
 
-### GPU看板
+### GPU看板(前端)
+
+* 可以部署在中心服务器节点，也可以部署在本地节点。
+
+* 推荐使用`npm run build`构建后使用`NGINX`进行部署。
 
 https://github.com/a645162/web-gpu-dashboard
 
-### GPU监控脚本
+### GPU监控脚本(本项目)
 
 https://github.com/a645162/nvi-notify
 

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import json
 import subprocess
 from html import escape

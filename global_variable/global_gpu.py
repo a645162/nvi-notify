@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from typing import List
 
 from monitor.GPU.python_process import PythonGPUProcess

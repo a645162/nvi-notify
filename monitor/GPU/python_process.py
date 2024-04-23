@@ -251,10 +251,13 @@ class PythonGPUProcess:
         return self.is_multi_gpu
 
     def get_cuda_visible_devices(self) -> str:
-        return self.get_env_value("CUDA_VISIBLE_DEVICES", "")
+        self.cuda_visible_devices = \
+            self.get_env_value("CUDA_VISIBLE_DEVICES", "")
+        return self.cuda_visible_devices
 
     def get_screen_session_name(self) -> str:
-        return self.get_env_value("STY", "")
+        self.screen_session_name = self.get_env_value("STY", "")
+        return self.screen_session_name
 
     def get_all_env(self):
         self.get_conda_env_name()

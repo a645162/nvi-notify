@@ -256,7 +256,17 @@ class PythonGPUProcess:
         return self.cuda_visible_devices
 
     def get_screen_session_name(self) -> str:
-        self.screen_session_name = self.get_env_value("STY", "")
+        self.screen_session_name = \
+            self.get_env_value("STY", "").strip()
+
+        if self.screen_session_name == "":
+            return ""
+
+        if self.screen_session_name.find(".") != -1:
+            name_spilt_list = self.screen_session_name.split(".")
+            if len(name_spilt_list) == 2 and name_spilt_list[0].isdigit():
+                self.screen_session_name = name_spilt_list[1]
+
         return self.screen_session_name
 
     def get_all_env(self):

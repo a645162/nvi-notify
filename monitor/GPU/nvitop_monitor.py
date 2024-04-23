@@ -236,11 +236,18 @@ class NvidiaMonitor:
             print(f"GPU {self.gpu_id} monitor stop")
 
         def thread_worker():
+            restart_times = 0
+
             while self.monitor_thread_work:
+                if restart_times > 0:
+                    logger.debug(f"GPU {self.gpu_id} monitor restart times: {restart_times}")
+
                 try:
                     gpu_monitor_thread()
                 except Exception as e:
                     logger.error(f"GPU {self.gpu_id} monitor error: {e}")
+
+                restart_times += 1
 
         if self.thread is None or not self.thread.is_alive():
             self.thread = threading.Thread(target=thread_worker)

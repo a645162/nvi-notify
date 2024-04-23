@@ -120,7 +120,7 @@ class NvidiaMonitor:
         try:
             return self.nvidia_i.processes()
         except Exception as e:
-            print(e)
+            logger.error(e)
             send_process_except_warning_msg()
 
     def get_gpu_name(self) -> str:
@@ -176,7 +176,7 @@ class NvidiaMonitor:
 
     def start_monitor(self):
         def gpu_monitor_thread():
-            print(f"GPU {self.gpu_id} monitor start")
+            logger.info(f"GPU {self.gpu_id} monitor start")
             monitor_start_flag = True
             while self.monitor_thread_work:
                 # GPU线程周期开始
@@ -233,7 +233,7 @@ class NvidiaMonitor:
                 time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
                 # 线程周期结束
 
-            print(f"GPU {self.gpu_id} monitor stop")
+            logger.info(f"GPU {self.gpu_id} monitor stop")
 
         def thread_worker():
             restart_times = 0
@@ -282,7 +282,6 @@ def start_gpu_monitor_all():
         global_gpu_task.append([])
 
         nvidia_monitor_idx = NvidiaMonitor(idx)
-        # print(NvidiaMonitor_i.get_gpu_usage())
         nvidia_monitor_idx.start_monitor()
 
 

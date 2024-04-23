@@ -19,6 +19,19 @@ from utils.logs import get_logger
 logger = get_logger()
 
 
+def handle_project_main_name(
+        project_name: str,
+        screen_name: str,
+) -> str:
+    if screen_name is None or screen_name.strip() == "":
+        return project_name
+
+    project_name = project_name.strip()
+    screen_name = screen_name.strip()
+
+    return f"[{screen_name}]{project_name}"
+
+
 def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: Dict):
     """
     启动GPU监控函数

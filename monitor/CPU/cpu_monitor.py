@@ -73,7 +73,7 @@ class CPUMonitor:
 
     def start_monitor(self):
         def cpu_monitor_thread():
-            print(f"CPU {self.cpu_id} monitor start")
+            logger.info(f"CPU {self.cpu_id} monitor start")
             while monitor_thread_work:
                 self.temperature = get_cpu_temperature(self.cpu_id)
 
@@ -99,7 +99,7 @@ class CPUMonitor:
 
                 time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
 
-            print(f"CPU {self.cpu_id} monitor stop")
+            logger.info(f"CPU {self.cpu_id} monitor stop")
 
         if self.thread is None or not self.thread.is_alive():
             self.thread = threading.Thread(target=cpu_monitor_thread)

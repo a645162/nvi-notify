@@ -7,6 +7,10 @@ from nvitop import GpuProcess
 from config.settings import USER_LIST, WEBHOOK_DELAY_SEND_SECONDS
 from webhook.send_task_msg import log_task_info, send_gpu_task_message
 
+from utils.logs import get_logger
+
+logger = get_logger()
+
 
 class PythonGPUProcess:
     # Enum
@@ -136,7 +140,7 @@ class PythonGPUProcess:
         except Exception as e:
             e_str = str(e)
             if "process no longer exists" not in e_str:
-                print(e)
+                logger.warn(e)
             return False
         return gpu_process_name in ["python", "yolo"] or any(
             "python" in cmd for cmd in self.cmdline
@@ -149,7 +153,13 @@ class PythonGPUProcess:
 
         cmdline = [line for line in self.cmdline if not line.endswith("python")]
         debug_cmd_keywords = ["vscode-server", "debugpy", "pydev/pydevd.py"]
-        self.is_debug = any(any(keyword in _unit for _unit in cmdline) for keyword in debug_cmd_keywords)
+        self.is_debug = any(
+            any(
+                keyword in _unit
+                for _unit in cmdline
+            )
+            for keyword in debug_cmd_keywords
+        )
 
     def get_user(self):
         self.user = next(

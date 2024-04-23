@@ -7,5 +7,5 @@
 - [ ] systemd.py
 - [x] config
 - [x] global_variable
-- [ ] monitor/CPU
-- [ ] monitor/GPU
+- [x] monitor/CPU
+- [x] monitor/GPU

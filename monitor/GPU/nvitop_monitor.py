@@ -22,6 +22,10 @@ from webhook.send_task_msg import (
     send_gpu_monitor_start_msg,
 )
 
+from utils.logs import get_logger
+
+logger = get_logger()
+
 
 def gpu_name_filter(gpu_name: str):
     current_str = gpu_name
@@ -231,8 +235,15 @@ class NvidiaMonitor:
 
             print(f"GPU {self.gpu_id} monitor stop")
 
+        def thread_worker():
+            while self.monitor_thread_work:
+                try:
+                    gpu_monitor_thread()
+                except Exception as e:
+                    logger.error(f"GPU {self.gpu_id} monitor error: {e}")
+
         if self.thread is None or not self.thread.is_alive():
-            self.thread = threading.Thread(target=gpu_monitor_thread)
+            self.thread = threading.Thread(target=thread_worker)
         self.monitor_thread_work = True
         self.thread.start()
 

@@ -146,6 +146,7 @@ def get_gpu_task():
                 "worldSize": process_obj.world_size,
                 "localRank": process_obj.local_rank,
                 "condaEnv": process_obj.conda_env,
+                "screenSessionName": process_obj.screen_session_name,
 
                 "command": process_obj.command,
 

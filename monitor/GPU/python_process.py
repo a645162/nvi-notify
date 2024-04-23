@@ -50,6 +50,7 @@ class PythonGPUProcess:
         self.world_size: Optional[int] = None
         self.local_rank: Optional[int] = None
         self.cuda_visible_devices: Optional[str] = None
+        self.screen_session_name: Optional[str] = None
 
         self._state: Optional[str] = None  # init
         self._running_time_in_seconds: int = 0  # init
@@ -252,12 +253,16 @@ class PythonGPUProcess:
     def get_cuda_visible_devices(self) -> str:
         return self.get_env_value("CUDA_VISIBLE_DEVICES", "")
 
+    def get_screen_session_name(self) -> str:
+        return self.get_env_value("STY", "")
+
     def get_all_env(self):
         self.get_conda_env_name()
         self.get_world_size()
         self.get_local_rank()
         self.get_is_multi_gpu()
         self.get_cuda_visible_devices()
+        self.get_screen_session_name()
 
     def get_project_name(self) -> str:
         if self.cwd is not None:

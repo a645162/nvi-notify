@@ -274,10 +274,12 @@ class PythonGPUProcess:
         if self.screen_session_name == "":
             return ""
 
-        if self.screen_session_name.find(".") != -1:
+        dot_index = self.screen_session_name.find(".")
+        if dot_index != -1:
             name_spilt_list = self.screen_session_name.split(".")
-            if len(name_spilt_list) == 2 and name_spilt_list[0].isdigit():
-                self.screen_session_name = name_spilt_list[1]
+            if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
+                self.screen_session_name = \
+                    self.screen_session_name[dot_index + 1:]
 
         return self.screen_session_name
 

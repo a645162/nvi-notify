@@ -5,6 +5,7 @@ flask
 flask-socketio
 flask-cors
 
+urllib3<2
 requests
 
 chardet

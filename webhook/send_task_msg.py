@@ -91,7 +91,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
     gpu_all_task_info_msg = f"{''.join(process_info['gpu_all_tasks_msg'].values())}"
 
     if not process_info["is_debug"]:
-
+        # 工程名
         project_name = ""
         screen_session_name = ""
 
@@ -105,6 +105,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
             screen_name=screen_session_name
         )
 
+        # Python文件名
         py_file = ""
         if "python_file" in process_info.keys():
             py_file = process_info['python_file']
@@ -114,12 +115,27 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
             if len(py_file) > 0:
                 py_file = "-" + py_file
 
+        # 多卡
+        multi_gpu_msg = ""
+        if "is_multi_gpu" in process_info.keys() and process_info["is_multi_gpu"]:
+            local_rank: int = int(process_info["local_rank"])
+            world_size: int = int(process_info["world_size"])
+
+            if world_size > 1:
+                if local_rank == 0:
+                    multi_gpu_msg = f"{world_size}卡任务"
+                else:
+                    # 非第一个使用的GPU不发送消息
+                    return
+
         if task_status == "create":
             num_tasks = process_info['num_task']
             create_msg_header = (
                 f"{gpu_name_for_msg_header}🚀"
                 f"{process_info['user']['name']}的"
-                f"({project_main_name}{py_file})启动\n"
+                f"{multi_gpu_msg}"
+                f"({project_main_name}{py_file})启动"
+                "\n"
             )
             gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
             handle_normal_text(msg=create_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg)
@@ -128,8 +144,10 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
             finish_msg_header = (
                 f"{gpu_name_for_msg_header}☑️"
                 f"{process_info['user']['name']}的"
+                f"{multi_gpu_msg}"
                 f"({project_main_name}{py_file})完成，"
-                f"用时{process_info['running_time_human']}\n"
+                f"用时{process_info['running_time_human']}"
+                "\n"
             )
             gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
             if num_tasks == 0:

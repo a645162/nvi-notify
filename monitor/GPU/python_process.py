@@ -56,11 +56,11 @@ class PythonGPUProcess:
         self.running_time_human: Optional[str] = None
 
         # Props get from env var
-        self.is_multi_gpu: Optional[bool] = None
-        self.world_size: Optional[int] = None
-        self.local_rank: Optional[int] = None
-        self.cuda_visible_devices: Optional[str] = None
-        self.screen_session_name: Optional[str] = None
+        self.is_multi_gpu: bool = False
+        self.world_size: int = 0
+        self.local_rank: int = 0
+        self.cuda_visible_devices: str = ""
+        self.screen_session_name: str = ""
 
         self._state: Optional[str] = None  # init
         self._running_time_in_seconds: int = 0  # init

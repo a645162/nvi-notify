@@ -3,6 +3,7 @@
 import re
 from typing import Dict, List, Optional
 
+import subprocess
 import psutil
 from nvitop import GpuProcess
 
@@ -47,6 +48,8 @@ class PythonGPUProcess:
         self.conda_env: Optional[str] = None
         self.project_name: Optional[str] = None
         self.python_file: Optional[str] = None
+
+        self.python_version: str = ""
 
         self.start_time: Optional[float] = None
         self.running_time_human: Optional[str] = None
@@ -213,6 +216,18 @@ class PythonGPUProcess:
 
         return self.process_environ.get(key, default_value)
 
+    @staticmethod
+    def get_conda_python_version(conda_env: str) -> str:
+        try:
+            command = f"conda run -n {conda_env} python --version"
+            result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            result = result.stdout.replace("Python", "").strip()
+            if "." in result:
+                return result
+            return ""
+        except Exception:
+            return ""
+
     def get_conda_env_name(self) -> str:
         pattern = r"envs/(.*?)/bin/python "
         match = re.search(pattern, self.command)
@@ -224,10 +239,13 @@ class PythonGPUProcess:
                 self.get_env_value("CONDA_DEFAULT_ENV", "")
             )
 
-        env_str.strip()
+        env_str = env_str.strip()
 
         if env_str == "":
             env_str = "base"
+
+        python_version = self.get_conda_python_version(env_str)
+        self.python_version = python_version
 
         self.conda_env = env_str
         return env_str

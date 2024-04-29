@@ -150,6 +150,8 @@ def get_gpu_task():
                 "condaEnv": process_obj.conda_env,
                 "screenSessionName": process_obj.screen_session_name,
 
+                "pythonVersion": process_obj.python_version,
+
                 "command": process_obj.command,
 
                 "taskMainMemoryMB": process_obj.task_main_memory_mb,

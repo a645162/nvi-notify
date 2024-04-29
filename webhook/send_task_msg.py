@@ -26,7 +26,10 @@ def handle_project_main_name(
         screen_name: str,
 ) -> str:
     if screen_name is None or screen_name.strip() == "":
-        return project_name
+        if project_name is None or project_name.strip() == "":
+            return "Unknown"
+
+        return project_name.strip()
 
     project_name = project_name.strip()
     screen_name = screen_name.strip()
@@ -88,12 +91,18 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
     gpu_all_task_info_msg = f"{''.join(process_info['gpu_all_tasks_msg'].values())}"
 
     if not process_info["is_debug"]:
+
+        project_main_name = handle_project_main_name(
+            project_name=process_info["project_name"],
+            screen_name=""
+        )
+
         if task_status == "create":
             num_tasks = process_info['num_task']
             create_msg_header = (
                 f"{gpu_name_for_msg_header}🚀"
                 f"{process_info['user']['name']}的"
-                f"({process_info['project_name']}-{process_info['python_file']})启动\n"
+                f"({project_main_name}-{process_info['python_file']})启动\n"
             )
             gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
             handle_normal_text(msg=create_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg)
@@ -102,7 +111,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
             finish_msg_header = (
                 f"{gpu_name_for_msg_header}☑️"
                 f"{process_info['user']['name']}的"
-                f"({process_info['project_name']}-{process_info['python_file']})完成，"
+                f"({project_main_name}-{process_info['python_file']})完成，"
                 f"用时{process_info['running_time_human']}\n"
             )
             gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"

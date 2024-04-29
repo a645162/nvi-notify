@@ -1,12 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>NVIDIA GPU Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{page_title}}</title>
+    <!-- ... -->
+    <script>
+        function getResult() {
+            fetch('/get_result')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('result').textContent = data.result;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // 初始加载和每秒刷新一次
+        document.addEventListener('DOMContentLoaded', function () {
+            getResult();
+            setInterval(getResult, 2000);
+        });
+    </script>
 </head>
 <body>
-<h1>NVIDIA GPU Monitor</h1>
-<!--<p>Click <a href="{{ url_for('nvitop') }}">here</a> to go to realtime NVITOP.</p>-->
-<p>Click <a href="{{ url_for('nvidiasmi') }}">here</a> to go to NVIDIA-SMI once.</p>
-<p>Click <a href="{{ url_for('nvitop1') }}">here</a> to go to NVITOP once.</p>
+    <h3><style>p {color: rgba(10, 146, 71, 0.77);}</style> <p>{{ page_title }}服务器</p></h3>
+    <!-- <h1>Command Output</h1> -->
+    <pre id="result"></pre>
 </body>
 </html>

@@ -6,3 +6,5 @@ flask-socketio
 
 requests
 psutil
+chardet
+yaml

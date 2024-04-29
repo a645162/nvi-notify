@@ -1,97 +1,47 @@
-from flask import Flask, render_template
-from flask_socketio import SocketIO
-
+import json
 import subprocess
-import html
-import time
+from html import escape
 
-import threading
+from flask import Flask, Response, render_template
 
-from config import config
+from config.config import flask_server_host, flask_server_port, server_name
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret_key'
-async_mode = 'threading'
-socketio = SocketIO(app, async_mode=async_mode)
 
 
-@app.route('/')
+@app.route("/get_result")
+def get_result():
+    command_result = run_command("nvitop -U")
+    return Response(
+        response=json.dumps({"result": escape(command_result)}),
+        status=200,
+        mimetype="application/json",
+    )
+
+
+@app.route("/")
 def index():
-    # return redirect('/nvidiasmi')
-    return render_template('index.html')
+    command_result = run_command("nvitop -U")
+    return render_template("index.html", result=command_result, page_title=server_name)
 
 
-@app.route('/nvidiasmi')
-def nvidiasmi():
+def run_command(command):
     try:
-        result = subprocess.run(['nvidia-smi'], capture_output=True, text=True)
-        output = result.stdout.strip()
-        escaped_output = html.escape(output)
-        formatted_output = f'<pre>{escaped_output}</pre>'
-        return formatted_output
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        return result.stdout
     except Exception as e:
         return str(e), 500
 
 
-@app.route('/nvitop')
-def nvitop1():
-    try:
-        result = subprocess.run(
-            ['nvitop', '-1'],
-            capture_output=True, text=True
-        )
-        output = result.stdout.strip()
-        escaped_output = html.escape(output)
-        formatted_output = f'<pre>{escaped_output}</pre>'
-        # print(formatted_output)
-        return formatted_output
-    except Exception as e:
-        return str(e), 500
+def start_web_server_ipv4():
+    app.run(host=flask_server_host, port=flask_server_port, debug=False)
 
 
-running = False
+def start_web_server_both():
+    app.run(host="::", port=flask_server_port, threaded=True)
 
 
-def run_nvitop():
-    while running:
-        try:
-            process = subprocess.Popen(
-                ['nvitop', '-1'],
-                stdout=subprocess.PIPE, universal_newlines=True
-            )
-
-            output = process.stdout.read().strip()
-            socketio.emit('nvitop_output', {'output': output})
-        except Exception as e:
-            socketio.emit('nvitop_output', {'output': str(e)})
-
-        time.sleep(1)
-
-
-@app.route('/nvitop')
-def nvitop():
-    return render_template('nvitop.html')
-
-
-@socketio.on('connect')
-def handle_connect():
-    global running
-    if not running:
-        running = True
-        print('Client connected.')
-        threading.Thread(target=run_nvitop).start()
-
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    global running
-    print('Client disconnected.')
-    running = False
-
-
-def start_web_server():
-    app.run(host=config.web_server_host, port=config.web_server_port)
-
-
-if __name__ == '__main__':
-    start_web_server()
+if __name__ == "__main__":
+    # app.run(debug=True)
+    # start_web_server()
+    start_web_server_both()

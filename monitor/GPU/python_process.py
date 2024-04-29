@@ -226,8 +226,16 @@ class PythonGPUProcess:
     def get_conda_python_version(conda_env: str) -> str:
         try:
             command = f"conda run -n {conda_env} python --version"
-            result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            result = result.stdout.replace("Python", "").strip()
+            result = subprocess.run(
+                command, shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            result = str(result.stdout)
+            if "Python" not in result:
+                return ""
+            result = result.replace("Python", "").strip()
             if "." in result:
                 return result
             return ""
@@ -241,8 +249,16 @@ class PythonGPUProcess:
 
         try:
             command = f"'{binary_path}' --version"
-            result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            result = result.stdout.replace("Python", "").strip()
+            result = subprocess.run(
+                command, shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            result = str(result.stdout)
+            if "Python" not in result:
+                return ""
+            result = result.replace("Python", "").strip()
             if "." in result:
                 return result
             return ""

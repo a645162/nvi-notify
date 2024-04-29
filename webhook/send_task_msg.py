@@ -22,17 +22,17 @@ logger = get_logger()
 
 
 def handle_project_main_name(
-        project_name: str,
-        screen_name: str,
+        project_name: str = "",
+        screen_name: str = ""
 ) -> str:
-    if screen_name is None or screen_name.strip() == "":
-        if project_name is None or project_name.strip() == "":
-            return "Unknown"
-
-        return project_name.strip()
-
     project_name = project_name.strip()
     screen_name = screen_name.strip()
+
+    if len(screen_name) == 0:
+        if len(project_name) == 0:
+            return "Unknown"
+
+        return project_name
 
     return f"[{screen_name}]{project_name}"
 
@@ -92,9 +92,17 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
 
     if not process_info["is_debug"]:
 
+        project_name = ""
+        screen_session_name = ""
+
+        if "project_name" in process_info.keys():
+            project_name = process_info["project_name"]
+        if "screen_session_name" in process_info.keys():
+            screen_session_name = process_info["screen_session_name"]
+
         project_main_name = handle_project_main_name(
-            project_name=process_info["project_name"],
-            screen_name=""
+            project_name=project_name,
+            screen_name=screen_session_name
         )
 
         if task_status == "create":

@@ -50,6 +50,7 @@ class PythonGPUProcess:
         self.python_file: Optional[str] = None
 
         self.python_version: str = ""
+        self.binary_path: str = ""
 
         self.start_time: Optional[float] = None
         self.running_time_human: Optional[str] = None
@@ -82,6 +83,11 @@ class PythonGPUProcess:
             self.get_task_main_memory_mb()
 
             self.get_all_env()
+
+            psu_process = psutil.Process(self.pid)
+            self.binary_path = psu_process.exe()
+
+            self.update_python_version()
 
     def update_cmd(self):
         self.get_cwd()
@@ -228,6 +234,21 @@ class PythonGPUProcess:
         except Exception:
             return ""
 
+    @staticmethod
+    def get_python_version_by_path(binary_path: str) -> str:
+        if "python" not in binary_path:
+            return ""
+
+        try:
+            command = f"'{binary_path}' --version"
+            result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            result = result.stdout.replace("Python", "").strip()
+            if "." in result:
+                return result
+            return ""
+        except Exception:
+            return ""
+
     def get_conda_env_name(self) -> str:
         pattern = r"envs/(.*?)/bin/python "
         match = re.search(pattern, self.command)
@@ -244,11 +265,12 @@ class PythonGPUProcess:
         if env_str == "":
             env_str = "base"
 
-        python_version = self.get_conda_python_version(env_str)
-        self.python_version = python_version
-
         self.conda_env = env_str
         return env_str
+
+    def update_python_version(self):
+        python_version = self.get_python_version_by_path(self.binary_path)
+        self.python_version = python_version
 
     # 多卡任务的进程数
     def get_world_size(self) -> int:

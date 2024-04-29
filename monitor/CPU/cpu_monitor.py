@@ -1,17 +1,66 @@
-import subprocess
+# -*- coding: utf-8 -*-
+
 import threading
 import time
-from typing import Dict
+from typing import Dict, Optional
 
 import psutil
 
-from config.config import gpu_monitor_sleep_time
+from config.settings import (
+    CPU_HIGH_TEMPERATURE_THRESHOLD,
+    GPU_MONITOR_SAMPLING_INTERVAL,
+    NUM_CPU,
+)
 from webhook.send_task_msg import (
     send_cpu_except_warning_msg,
     send_cpu_temperature_warning_msg,
 )
 
-HIGH_TEMPERATURE_THRESHOLD = 85
+from global_variable.global_system import (
+    global_system_info
+)
+
+from utils.logs import get_logger
+
+logger = get_logger()
+
+
+class CpuUtils:
+
+    @staticmethod
+    def get_cpu_physics_num():
+        return psutil.cpu_count(logical=False)
+
+    @staticmethod
+    def get_cpu_logic_num():
+        return psutil.cpu_count(logical=True)
+
+    @staticmethod
+    def get_cpu_percent(interval=0):
+        if interval == 0:
+            return psutil.cpu_percent()
+        return psutil.cpu_percent(interval=interval)
+
+    @staticmethod
+    def convert_bytes_to_mb(bytes: int) -> int:
+        return bytes // (1024 ** 2)
+
+    @staticmethod
+    def convert_bytes_to_gb(bytes: int) -> float:
+        return bytes / (1024 ** 3)
+
+    @staticmethod
+    def convert_mem_to_str(mem_bytes: int) -> str:
+        mem_gb = CpuUtils.convert_bytes_to_gb(mem_bytes)
+        return f"{mem_gb:.1f}"
+
+    @staticmethod
+    def get_memory_info():
+        return psutil.virtual_memory()
+
+    @staticmethod
+    def get_swap_memory_info():
+        return psutil.swap_memory()
 
 
 class CPUMonitor:
@@ -25,20 +74,37 @@ class CPUMonitor:
     monitor_thread_work = False
 
     def start_monitor(self):
-        def monitor_thread():
-            print(f"CPU {self.cpu_id} monitor start")
+        def cpu_monitor_thread():
+            logger.info(f"CPU {self.cpu_id} monitor start")
             while monitor_thread_work:
                 self.temperature = get_cpu_temperature(self.cpu_id)
 
                 if self.high_temperature_trigger:
                     send_cpu_temperature_warning_msg(self.cpu_id, self.temperature)
 
-                time.sleep(gpu_monitor_sleep_time)
+                memory_physic = CpuUtils.get_memory_info()
+                memory_swap = CpuUtils.get_swap_memory_info()
 
-            print(f"CPU {self.cpu_id} monitor stop")
+                global_system_info["memoryPhysicTotalMb"] = \
+                    CpuUtils.convert_bytes_to_mb(memory_physic.total)
+                global_system_info["memoryPhysicUsedMb"] = \
+                    CpuUtils.convert_bytes_to_mb(memory_physic.used)
+                # global_system_info["memory_physic_free_mb"] = \
+                #     CpuUtils.convert_bytes_to_gb(memory_physic.free)
+
+                global_system_info["memorySwapTotalMb"] = \
+                    CpuUtils.convert_bytes_to_mb(memory_swap.total)
+                global_system_info["memorySwapUsedMb"] = \
+                    CpuUtils.convert_bytes_to_mb(memory_swap.used)
+                # global_system_info["memory_swap_free_mb"] = \
+                #     CpuUtils.convert_bytes_to_gb(memory_swap.free)
+
+                time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
+
+            logger.info(f"CPU {self.cpu_id} monitor stop")
 
         if self.thread is None or not self.thread.is_alive():
-            self.thread = threading.Thread(target=monitor_thread)
+            self.thread = threading.Thread(target=cpu_monitor_thread)
         monitor_thread_work = True
         self.thread.start()
         # self.thread.join()
@@ -49,10 +115,8 @@ class CPUMonitor:
 
     @temperature.setter
     def temperature(self, new_temperature):
-        self.high_temperature_trigger = (
-            new_temperature > HIGH_TEMPERATURE_THRESHOLD
-            and self._temperature < HIGH_TEMPERATURE_THRESHOLD
-        )
+        self.high_temperature_trigger = \
+            new_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD > self._temperature
 
         self._temperature = new_temperature
 
@@ -66,7 +130,7 @@ def get_cpu_temperature(cpu_id: int) -> float:
         return -1.0
 
 
-def get_cpu_temperature_info() -> Dict:
+def get_cpu_temperature_info() -> Optional[Dict]:
     if not hasattr(psutil, "sensors_temperatures"):
         return None
     temps = psutil.sensors_temperatures()
@@ -84,19 +148,12 @@ def get_cpu_temperature_info() -> Dict:
     return cpu_temperature_info
 
 
-def get_cpu_physics_num() -> int:
-    command = "cat /proc/cpuinfo | grep 'physical id' | sort -u | wc -l"
-    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, text=True)
-
-    if result.returncode == 0:
-        return int(result.stdout.strip())
-
-
 def start_cpu_monitor_all():
-    global num_cpu
-    num_cpu = get_cpu_physics_num()
+    if NUM_CPU is None:
+        logger.error("Cannot get the number of CPU.")
+        return
 
-    for idx in range(num_cpu):
+    for idx in range(NUM_CPU):
         cpu_monitor_idx = CPUMonitor(idx)
         cpu_monitor_idx.start_monitor()
 

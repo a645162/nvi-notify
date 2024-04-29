@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
+
 import os
 from typing import List
 
-from config.utils.get_files import get_files_with_extension
-from config.utils.yaml_parser import parse_yaml
+from config.utils import get_files_with_extension, parse_yaml
 
 
 def get_user(yaml_content: dict) -> List[dict]:
@@ -47,9 +48,8 @@ def get_all_user_list(directory_path: str = "") -> List[dict]:
 if __name__ == "__main__":
     # yaml_file_path = os.path.join(os.getcwd(), "config/users/master/2023.yaml")
     # yaml_content: dict = parse_yaml(yaml_file_path)
-    
     yaml_file_path = os.path.join(os.getcwd(), "config/users")
-    users_list: dict = get_all_user_list(yaml_file_path)
+    users_list: List[dict] = get_all_user_list(yaml_file_path)
 
     for user in users_list:
         print(user['name'])

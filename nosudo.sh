@@ -8,4 +8,4 @@ fi
 
 echo "Python path: $python_path"
 
-sudo "$python_path" main.py
+"$python_path" main.py

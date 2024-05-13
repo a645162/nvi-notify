@@ -42,6 +42,7 @@ class PythonGPUProcess:
         self.task_main_memory_mb: int = 0
 
         self.task_gpu_memory: Optional[int] = None
+        self.task_gpu_memory_max: Optional[int] = None
         self.task_gpu_memory_human: Optional[str] = None
 
         self.user: Optional[Dict] = None
@@ -134,6 +135,13 @@ class PythonGPUProcess:
     def get_task_gpu_memory(self) -> int:
         task_gpu_memory = self.gpu_process.gpu_memory()
         self.task_gpu_memory = task_gpu_memory
+
+        if (
+                self.task_gpu_memory_max is None or
+                self.task_gpu_memory_max < task_gpu_memory
+        ):
+            self.task_gpu_memory_max = task_gpu_memory
+
         return task_gpu_memory
 
     def get_task_gpu_memory_human(self):

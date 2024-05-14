@@ -150,6 +150,7 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"用时{process_info['running_time_human']}，"
                 f"最大显存{unit_convert.get_human_str_from_byte(process_info['task_gpu_memory_max'])}"
                 "\n"
+                "\n"
             )
             gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
             if num_tasks == 0:

@@ -15,6 +15,7 @@ from config.settings import (
     get_now_time,
 )
 from webhook.wework import send_text
+from utils import unit_convert
 
 from utils.logs import get_logger
 
@@ -146,7 +147,8 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"{process_info['user']['name']}的"
                 f"{multi_gpu_msg}"
                 f"({project_main_name}{py_file})完成，"
-                f"用时{process_info['running_time_human']}"
+                f"用时{process_info['running_time_human']}，"
+                f"最大显存{unit_convert.get_human_str_from_byte(process_info['task_gpu_memory_max'])}"
                 "\n"
             )
             gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"

@@ -23,6 +23,7 @@ from webhook.send_task_msg import (
     send_process_except_warning_msg,
     send_gpu_monitor_start_msg,
 )
+from utils import unit_convert
 
 from utils.logs import get_logger
 
@@ -167,7 +168,7 @@ class NvidiaMonitor:
             task_msg = (
                 f"{get_emoji(idx)}{'🐞' if info.is_debug else ''}"
                 f"用户: {info.user['name']}  "
-                f"显存占用: {info.task_gpu_memory_human}  "
+                f"最大显存: {unit_convert.get_human_str_from_byte(info.task_gpu_memory_max)}  "
                 f"运行时长: {info.running_time_human}\n"
             )
             all_tasks_msg_dict.update({info.pid: task_msg})

@@ -143,8 +143,8 @@ def get_gpu_task():
                 "runTime": process_obj.running_time_human,
                 "startTimestamp": int(process_obj.start_time) * 1000,
 
-                "gpuMemoryUsage": process_obj.task_gpu_memory >> 10 >> 10,
-                "gpuMemoryUsageMax": process_obj.task_gpu_memory_max >> 10 >> 10,
+                "gpuMemoryUsage": int(process_obj.task_gpu_memory >> 10 >> 10),
+                "gpuMemoryUsageMax": int(process_obj.task_gpu_memory_max >> 10 >> 10),
 
                 "worldSize": process_obj.world_size,
                 "localRank": process_obj.local_rank,
@@ -155,7 +155,7 @@ def get_gpu_task():
 
                 "command": process_obj.command,
 
-                "taskMainMemoryMB": process_obj.task_main_memory_mb,
+                "taskMainMemoryMB": int(process_obj.task_main_memory_mb),
             }
         )
 

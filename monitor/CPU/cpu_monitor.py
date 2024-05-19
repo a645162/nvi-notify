@@ -8,7 +8,7 @@ import psutil
 
 from config.settings import (
     CPU_HIGH_TEMPERATURE_THRESHOLD,
-    GPU_MONITOR_SAMPLING_INTERVAL,
+    TEMPERATURE_MONITOR_SAMPLING_INTERVAL,
     NUM_CPU,
 )
 from webhook.send_task_msg import (
@@ -99,7 +99,7 @@ class CPUMonitor:
                 # global_system_info["memory_swap_free_mb"] = \
                 #     CpuUtils.convert_bytes_to_gb(memory_swap.free)
 
-                time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
+                time.sleep(TEMPERATURE_MONITOR_SAMPLING_INTERVAL)
 
             logger.info(f"CPU {self.cpu_id} monitor stop")
 

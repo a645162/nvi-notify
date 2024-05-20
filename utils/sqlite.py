@@ -158,7 +158,7 @@ class SQLite:
             ):
                 update_sql_text = (
                     "UPDATE {} "
-                    "SET task_state = 'death', "
+                    "SET task_state = 'death' "
                     "WHERE process_id = ? AND gpu_id = ? AND finish_timestamp= 0;"
                 )
                 self.cur.execute(

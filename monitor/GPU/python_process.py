@@ -379,11 +379,11 @@ class PythonGPUProcess:
             send_gpu_task_message(self.__dict__, "create")
         elif new_state == "death" and self._state == "working":
             log_task_info(self.__dict__, task_type="finish")
-            sql.update_fininsh_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
+            sql.update_finish_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
             send_gpu_task_message(self.__dict__, "finish")
         elif new_state == "death" and self._state == "newborn":
             log_task_info(self.__dict__, task_type="finish")
-            sql.update_fininsh_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
+            sql.update_finish_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
         self._state = new_state
 
     @property

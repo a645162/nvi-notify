@@ -170,7 +170,7 @@ class NvidiaMonitor:
                 for pid in tmp_process:
                     if pid not in cur_gpu_all_processes:
                         del self.processes[pid].gpu_all_tasks_msg[pid]
-                        self.processes[pid].finish_time = datetime.timestamp(datetime.now())
+                        self.processes[pid].set_finish_time()
                         self.processes[pid].state = "death"
                         del self.processes[pid]
                 del tmp_process

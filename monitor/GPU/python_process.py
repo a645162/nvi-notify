@@ -164,6 +164,9 @@ class PythonGPUProcess:
     def get_running_time_human(self):
         self.running_time_human = self.gpu_process.running_time_human()
 
+    def set_finish_time(self):
+        self.finish_time = datetime.timestamp(datetime.now())
+
     def judge_is_python(self):
         try:
             gpu_process_name = self.gpu_process.name()

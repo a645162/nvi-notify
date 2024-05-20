@@ -25,7 +25,9 @@ class PythonGPUProcess:
     DEATH = "death"
 
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
-        self.task_task_id: str = datetime.now().strftime("%Y%m%d%H") + str(pid)
+        self.task_task_id: str = (
+            datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
+        )
         self.pid: int = pid
 
         # current GPU

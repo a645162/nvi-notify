@@ -15,7 +15,8 @@ class SQLite:
 
     def connect(self, db_file_path):
         try:
-            self.conn = sqlite3.connect(db_file_path)
+            # TODO: 安全的多线程连接数据库
+            self.conn = sqlite3.connect(db_file_path, check_same_thread=False)
             self.cur = self.conn.cursor()
         except sqlite3.Error as e:
             logger.error(f"连接数据库失败: {e}")

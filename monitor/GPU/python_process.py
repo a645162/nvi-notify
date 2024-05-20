@@ -60,6 +60,7 @@ class PythonGPUProcess:
         self.binary_path: str = ""
 
         self.start_time: Optional[float] = None  # timestamp
+        self.finish_time: Optional[float] = None  # timestamp
         self.running_time_human: Optional[str] = None
 
         # Props get from env var

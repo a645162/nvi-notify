@@ -96,7 +96,7 @@ class PythonGPUProcess:
             self.binary_path = psu_process.exe()
 
             self.update_python_version()
-            sql.insert_task_data(TASK_INFO_FOR_SQL(self.__dict__, "newborn"))
+            sql.insert_task_data(TASK_INFO_FOR_SQL(self.__dict__))
 
     def update_cmd(self):
         self.get_cwd()

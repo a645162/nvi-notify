@@ -31,10 +31,11 @@ class TASK_INFO_FOR_SQL:
         self.running_time_in_seconds = int(info.get("_running_time_in_seconds", 0))
         self.gpu_mem_usage_max: str = info.get("task_gpu_memory_max_human", "0MiB")
 
-        if new_state:
-            self.task_state: str = new_state
-        else:
+        if new_state is None:
             self.task_state = info.get("_state", "Unknown")
+        else:
+            self.task_state: str = new_state
+
         self.is_debug: bool = info.get("is_debug", True)
         self.is_multi_gpu: bool = info.get("is_multi_gpu", False)
         self.conda_env: str = info.get("conda_env", "Unknown")

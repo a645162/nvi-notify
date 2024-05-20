@@ -265,6 +265,7 @@ def start_gpu_monitor_all():
 
         nvidia_monitor_idx = NvidiaMonitor(idx)
         nvidia_monitor_idx.start_monitor()
+        time.sleep(0.5)  # waiting
 
 
 if __name__ == "__main__":

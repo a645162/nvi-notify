@@ -26,13 +26,21 @@ class TASK_INFO_FOR_SQL:
         if user_dict:
             self.user = user_dict.get("name", "Unknown")
 
-        self.create_timestamp = int(info.get("start_time", 0))
-        self.finish_timestamp = int(info.get("gpu_mem_usage", 0))
-        self.running_time_in_seconds = int(info.get("_running_time_in_seconds", 0))
+        self.create_timestamp = round(info.get("start_time", 0.))
+
+        try:
+            self.finish_timestamp = round(info.get("finish_time", 0.))
+        except:  # noqa: E722
+            self.finish_timestamp = 0
+
+        self.running_time_in_seconds = round(info.get("_running_time_in_seconds", 0.))
         self.gpu_mem_usage_max: str = info.get("task_gpu_memory_max_human", "0MiB")
 
         if new_state is None:
-            self.task_state = info.get("_state", "Unknown")
+            if info.get("_state"):
+                self.task_state = info.get("_state")
+            else:
+                self.task_state = "newborn"
         else:
             self.task_state: str = new_state
 

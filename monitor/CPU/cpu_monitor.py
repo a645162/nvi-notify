@@ -8,19 +8,15 @@ import psutil
 
 from config.settings import (
     CPU_HIGH_TEMPERATURE_THRESHOLD,
-    TEMPERATURE_MONITOR_SAMPLING_INTERVAL,
     NUM_CPU,
+    TEMPERATURE_MONITOR_SAMPLING_INTERVAL,
 )
+from global_variable.global_system import global_system_info
+from utils.logs import get_logger
 from webhook.send_task_msg import (
     send_cpu_except_warning_msg,
     send_cpu_temperature_warning_msg,
 )
-
-from global_variable.global_system import (
-    global_system_info
-)
-
-from utils.logs import get_logger
 
 logger = get_logger()
 
@@ -43,11 +39,11 @@ class CpuUtils:
 
     @staticmethod
     def convert_bytes_to_mb(bytes: int) -> int:
-        return bytes // (1024 ** 2)
+        return bytes // (1024**2)
 
     @staticmethod
     def convert_bytes_to_gb(bytes: int) -> float:
-        return bytes / (1024 ** 3)
+        return bytes / (1024**3)
 
     @staticmethod
     def convert_mem_to_str(mem_bytes: int) -> str:

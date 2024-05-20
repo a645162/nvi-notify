@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+
 import loguru
 
 log_dir = "./log"

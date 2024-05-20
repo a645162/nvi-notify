@@ -14,28 +14,11 @@ from config.settings import (
     get_emoji,
     get_now_time,
 )
-from webhook.wework import send_text
-from utils import unit_convert
-
+from monitor.GPU.info import get_human_str_from_byte
 from utils.logs import get_logger
+from webhook.wework import send_text
 
 logger = get_logger()
-
-
-def handle_project_main_name(
-        project_name: str = "",
-        screen_name: str = ""
-) -> str:
-    project_name = project_name.strip()
-    screen_name = screen_name.strip()
-
-    if len(screen_name) == 0:
-        if len(project_name) == 0:
-            return "Unknown"
-
-        return project_name
-
-    return f"[{screen_name}]{project_name}"
 
 
 def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: Dict):
@@ -52,7 +35,10 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: Dict):
     all_tasks_msg = ""
 
     for process in all_process_info.values():
-        if process.running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS and not process.is_debug:
+        if (
+            process.running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS
+            and not process.is_debug
+        ):
             if process.is_multi_gpu and process.local_rank != 0:
                 continue
 
@@ -67,9 +53,9 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: Dict):
             f"{get_emoji('呲牙') * len(all_process_info)}"
             f"{gpu_idx}上正在运行{len(all_process_info)}个任务：\n"
             f"{all_tasks_msg}\n"
-            f"🌀{gpu_idx}核心占用: {gpu_status['gpu_usage']}%\n"
-            f"🌀{gpu_idx}显存占用: {gpu_status['gpu_mem_usage']}/{gpu_status['gpu_mem_total']} "
-            f"({gpu_status['gpu_mem_percent']}%)，{gpu_status['gpu_mem_free']}空闲\n",
+            f"🌀{gpu_idx}核心占用: {gpu_status.utl}%\n"
+            f"🌀{gpu_idx}显存占用: {gpu_status.mem_usage}/{gpu_status.mem_total} "
+            f"({gpu_status.mem_percent}%)，{gpu_status.mem_free}空闲\n",
         )
 
 
@@ -82,35 +68,25 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
     gpu_name = f"[GPU:{process_info['gpu_id']}]" if NUM_GPU > 1 else "GPU"
     gpu_name_for_msg_header = gpu_name + "\n" if NUM_GPU > 1 else ""
 
+    gpu_status = process_info.get("gpu_status")
     gpu_info_msg = (
-        f"🌀{gpu_name}核心占用: {process_info['gpu_status']['gpu_usage']}%\n"
-        f"🌀{gpu_name}显存占用: "
-        f"{process_info['gpu_status']['gpu_mem_usage']}/{process_info['gpu_status']['gpu_mem_total']} "
-        f"({process_info['gpu_status']['gpu_mem_percent']}%)，{process_info['gpu_status']['gpu_mem_free']}空闲\n\n"
+        f"🌀{gpu_name}核心占用: {gpu_status.utl}%\n"
+        f"🌀{gpu_name}显存占用: {gpu_status.mem_usage}/{gpu_status.mem_total} "
+        f"({gpu_status.mem_percent}%)，{gpu_status.mem_free}空闲\n\n"
     )
 
     gpu_all_task_info_msg = f"{''.join(process_info['gpu_all_tasks_msg'].values())}"
 
     if not process_info["is_debug"]:
         # 工程名
-        project_name = ""
-        screen_session_name = ""
-
-        if "project_name" in process_info.keys():
-            project_name = process_info["project_name"]
-        if "screen_session_name" in process_info.keys():
-            screen_session_name = process_info["screen_session_name"]
-
         project_main_name = handle_project_main_name(
-            project_name=project_name,
-            screen_name=screen_session_name
+            project_name=process_info.get("project_name", ""),
+            screen_name=process_info.get("screen_session_name", ""),
         )
 
         # Python文件名
-        py_file = ""
-        if "python_file" in process_info.keys():
-            py_file = process_info['python_file']
-        if py_file is not None:
+        py_file = process_info.get("python_file", "")
+        if py_file != "":
             py_file = str(py_file).strip()
 
             if len(py_file) > 0:
@@ -119,18 +95,18 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
         # 多卡
         multi_gpu_msg = ""
         if "is_multi_gpu" in process_info.keys() and process_info["is_multi_gpu"]:
-            local_rank: int = int(process_info["local_rank"])
-            world_size: int = int(process_info["world_size"])
+            local_rank = int(process_info["local_rank"])
+            world_size = int(process_info["world_size"])
 
             if world_size > 1:
                 if local_rank == 0:
                     multi_gpu_msg = f"{world_size}卡任务"
-                else:
-                    # 非第一个使用的GPU不发送消息
+                else:  # 非第一个使用的GPU不发送消息
                     return
 
         if task_status == "create":
-            num_tasks = process_info['num_task']
+            num_tasks = process_info["num_task"]
+            emoji_num_task = get_emoji("呲牙") * (num_tasks)
             create_msg_header = (
                 f"{gpu_name_for_msg_header}🚀"
                 f"{process_info['user']['name']}的"
@@ -138,26 +114,39 @@ def send_gpu_task_message(process_info: Dict, task_status: str):
                 f"({project_main_name}{py_file})启动"
                 "\n"
             )
-            gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
-            handle_normal_text(msg=create_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg)
+            gpu_task_status_info_msg = (
+                f"{emoji_num_task}{gpu_name}上正在运行{num_tasks}个任务：\n"
+            )
+            handle_normal_text(
+                msg=create_msg_header
+                + gpu_info_msg
+                + gpu_task_status_info_msg
+                + gpu_all_task_info_msg
+            )
         elif task_status == "finish":
-            num_tasks = process_info['num_task'] - 1
+            num_tasks = process_info["num_task"] - 1
+            emoji_num_task = get_emoji("呲牙") * (num_tasks)
             finish_msg_header = (
                 f"{gpu_name_for_msg_header}☑️"
                 f"{process_info['user']['name']}的"
                 f"{multi_gpu_msg}"
                 f"({project_main_name}{py_file})完成，"
                 f"用时{process_info['running_time_human']}，"
-                f"最大显存{unit_convert.get_human_str_from_byte(process_info['task_gpu_memory_max'])}"
+                f"最大显存{get_human_str_from_byte(process_info['task_gpu_memory_max'])}"
                 "\n"
                 "\n"
             )
-            gpu_task_status_info_msg = f"{get_emoji('呲牙') * (num_tasks)}{gpu_name}上正在运行{num_tasks}个任务：\n"
+            gpu_task_status_info_msg = (
+                f"{emoji_num_task}{gpu_name}上正在运行{num_tasks}个任务：\n"
+            )
             if num_tasks == 0:
                 gpu_task_status_info_msg = f"{gpu_name}当前无任务\n"
 
             handle_normal_text(
-                msg=finish_msg_header + gpu_info_msg + gpu_task_status_info_msg + gpu_all_task_info_msg,
+                msg=finish_msg_header
+                + gpu_info_msg
+                + gpu_task_status_info_msg
+                + gpu_all_task_info_msg,
                 mentioned_id=process_info["user"]["wework"]["mention_id"],
                 mentioned_mobile=process_info["user"]["wework"]["mention_mobile"],
             )
@@ -193,6 +182,19 @@ def log_task_info(process_info: Dict, task_type: str):
         log_writer.write(f"[{get_now_time()}]+{output_log} + \n")
         logger.info(output_log)
         print(output_log)
+
+
+def handle_project_main_name(project_name: str = "", screen_name: str = "") -> str:
+    project_name = project_name.strip()
+    screen_name = screen_name.strip()
+
+    if len(screen_name) == 0:
+        if len(project_name) == 0:
+            return "Unknown"
+
+        return project_name
+
+    return f"[{screen_name}]{project_name}"
 
 
 def handle_normal_text(msg: str, mentioned_id=None, mentioned_mobile=None):

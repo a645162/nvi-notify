@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import os
 import argparse
+import os
 from time import sleep as time_sleep
+
 from utils.command import do_command
 
 path_current_py = os.path.realpath(__file__)
@@ -10,12 +11,11 @@ path_base = os.path.dirname(path_current_py)
 
 service_name = "nvinotify"
 
-target_service_path = \
-    "/etc/systemd/system/{}.service".format(service_name)
+target_service_path = "/etc/systemd/system/{}.service".format(service_name)
 
 length_spilt_line = 40
 
-systemd_template = \
+systemd_template = (
     """
 [Unit]
 Description=NVIDIA GPU Webhook Notify
@@ -31,11 +31,13 @@ TimeoutStopSec=300
 
 [Install]
 WantedBy=multi-user.target
-    """.strip() + "\n"
+    """.strip()
+    + "\n"
+)
 
 spilt_line = "=" * length_spilt_line
 
-bash_template = \
+bash_template = (
     """
 #!/bin/bash
 echo "{}"
@@ -43,7 +45,9 @@ date
 cd "{}" || exit
 {} \\
 "{}"
-    """.strip() + "\n"
+    """.strip()
+    + "\n"
+)
 
 
 def check_sudo():
@@ -76,17 +80,12 @@ def install(auto_start: bool = False):
 
     script_path = os.path.join(path_base, "systemd.sh")
     script_content = bash_template.format(
-        spilt_line,
-        path_base,
-        path_python,
-        exec_start_path
+        spilt_line, path_base, path_python, exec_start_path
     )
-    with open(script_path, "w", encoding='utf-8') as f:
+    with open(script_path, "w", encoding="utf-8") as f:
         f.write(script_content)
 
-    service_file_content = service_file_content.format(
-        "bash \"{}\"".format(script_path)
-    )
+    service_file_content = service_file_content.format('bash "{}"'.format(script_path))
 
     # Write To Service
     with open(target_service_path, "w") as f:
@@ -150,34 +149,34 @@ def main():
     print("Program directory path:", path_base)
 
     parser = argparse.ArgumentParser(
-        description='nvidia-smi-webhook-notify systemd service manager',
+        description="nvidia-smi-webhook-notify systemd service manager",
     )
 
+    parser.add_argument("-i", "--install", help="Install service", action="store_true")
     parser.add_argument(
-        '-i', '--install',
-        help='Install service',
-        action='store_true'
-    )
-    parser.add_argument(
-        '-r', '--remove',
-        '-u', '--uninstall',
-        help='Remove service',
-        action='store_true'
+        "-r",
+        "--remove",
+        "-u",
+        "--uninstall",
+        help="Remove service",
+        action="store_true",
     )
 
     args = parser.parse_args()
 
-    if hasattr(args, 'install') and args.install:
-        print('Try to Install...')
+    if hasattr(args, "install") and args.install:
+        print("Try to Install...")
         install(auto_start=True)
-    elif (hasattr(args, 'uninstall') and args.uninstall) or (hasattr(args, 'remove') and args.remove):
-        print('Try to Uninstall...')
+    elif (hasattr(args, "uninstall") and args.uninstall) or (
+        hasattr(args, "remove") and args.remove
+    ):
+        print("Try to Uninstall...")
         uninstall()
     else:
         parser.print_help()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print_info()
     if not check_sudo():
         print("Please run this program as root(Using 'sudo').")

@@ -18,46 +18,18 @@ from global_variable.global_gpu import (
     global_gpu_task,
     global_gpu_usage,
 )
+from monitor.GPU.info import GPU_INFO, gpu_name_filter
 from monitor.GPU.python_process import PythonGPUProcess
+from utils.sqlite import get_sql
 from webhook.send_task_msg import (
     send_process_except_warning_msg,
     send_gpu_monitor_start_msg,
 )
-from utils import unit_convert
 
 from utils.logs import get_logger
 
 logger = get_logger()
-
-
-def gpu_name_filter(gpu_name: str):
-    current_str = gpu_name
-    current_str_upper = gpu_name.upper()
-    keywords = [
-        "NVIDIA",
-        "GeForce",
-        "Quadro",
-    ]
-
-    # 遍历关键词列表
-    for keyword in keywords:
-        keyword_upper = keyword.upper()
-        # 循环寻找大写字符串中的关键词
-        while keyword_upper in current_str_upper:
-            # 找到关键词在大写字符串中的位置
-            index = current_str_upper.index(keyword_upper)
-            # 计算关键词在原始字符串中的起始位置
-            index_original = \
-                current_str_upper[:index].count(" ") - \
-                current_str[:index].count(" ")
-            # 删除原始字符串中的关键词
-            current_str = \
-                current_str[:index_original] + \
-                current_str[index_original + len(keyword) + 1:]
-            # 更新大写字符串
-            current_str_upper = current_str.upper()
-
-    return current_str.strip()
+sql = get_sql()
 
 
 class NvidiaMonitor:
@@ -66,11 +38,11 @@ class NvidiaMonitor:
         self.thread: Optional[threading.Thread] = None
         self.processes: dict = {}
         self.nvidia_i: Optional[Device] = None
-        self.update_device()
-        self.update_gpu_info()
+        self.get_device()
+        self.get_gpu_info()
         self.update_gpu_status()
 
-    def update_gpu_info(self):
+    def get_gpu_info(self):
         cur_gpu_info = {
             "gpuName": self.get_gpu_name_short(),
             "gpuTDP": self.get_gpu_tdp(),
@@ -78,46 +50,41 @@ class NvidiaMonitor:
 
         global_gpu_info[self.gpu_id].update(cur_gpu_info)
 
-    def update_device(self):
+    def get_device(self):
         self.nvidia_i = Device(self.gpu_id)
 
-    def update_gpu_status(self):
-        cur_gpu_status = {
-            # GPU Percent
-            "gpu_usage": self.get_gpu_utl(),
-            "gpu_mem_percent": self.get_gpu_mem_percent(),
+    def update_gpu_status(self) -> GPU_INFO:
+        gpu_status = GPU_INFO(
+            {
+                # GPU Percent
+                "gpu_usage": self.get_gpu_utl(),
+                "gpu_mem_percent": self.get_gpu_mem_percent(),
+                # GPU Memory Bytes
+                "gpu_mem_total_bytes": self.get_gpu_mem_total_bytes(),
+                # GPU Memory Human(String)
+                "gpu_mem_usage": self.get_gpu_mem_usage(),
+                "gpu_mem_free": self.get_gpu_mem_free(),
+                "gpu_mem_total": self.get_gpu_mem_total(),
+                # Power(Int)
+                "gpu_power_usage": self.get_gpu_power_usage(),
+                "gpu_temperature": self.get_gpu_temperature(),
+            }
+        )
 
-            # GPU Memory Bytes
-            "gpu_mem_total_bytes": self.get_gpu_mem_total_bytes(),
-            # GPU Memory Human(String)
-            "gpu_mem_usage": self.get_gpu_mem_usage(),
-            "gpu_mem_free": self.get_gpu_mem_free(),
-            "gpu_mem_total": self.get_gpu_mem_total(),
+        global_gpu_usage[self.gpu_id]["coreUsage"] = gpu_status.utl
+        global_gpu_usage[self.gpu_id]["memoryUsage"] = gpu_status.mem_percent
 
-            # Power(Int)
-            "gpuPowerUsage": self.get_gpu_power_usage(),
-            "gpuTemperature": self.get_gpu_temperature(),
-        }
+        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = (
+            gpu_status.mem_total_bytes >> 10 >> 10
+        )
 
-        global_gpu_usage[self.gpu_id]["coreUsage"] = cur_gpu_status["gpu_usage"]
-        global_gpu_usage[self.gpu_id]["memoryUsage"] = cur_gpu_status["gpu_mem_percent"]
+        global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = gpu_status.mem_usage
+        global_gpu_usage[self.gpu_id]["gpuMemoryTotal"] = gpu_status.mem_total
 
-        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = \
-            cur_gpu_status["gpu_mem_total_bytes"] >> 10 >> 10
+        global_gpu_usage[self.gpu_id]["gpuPowerUsage"] = gpu_status.power_usage
+        global_gpu_usage[self.gpu_id]["gpuTemperature"] = gpu_status.temperature
 
-        global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = cur_gpu_status[
-            "gpu_mem_usage"
-        ]
-        global_gpu_usage[self.gpu_id]["gpuMemoryTotal"] = cur_gpu_status[
-            "gpu_mem_total"
-        ]
-
-        global_gpu_usage[self.gpu_id]["gpuPowerUsage"] = cur_gpu_status["gpuPowerUsage"]
-        global_gpu_usage[self.gpu_id]["gpuTemperature"] = cur_gpu_status[
-            "gpuTemperature"
-        ]
-
-        return cur_gpu_status
+        return gpu_status
 
     def get_gpu_all_processes(self):
         try:
@@ -164,14 +131,16 @@ class NvidiaMonitor:
 
     def get_all_tasks_msg(self, process_info: Dict) -> Dict:
         all_tasks_msg_dict = {}
-        for idx, info in enumerate(process_info.values()):
+        for idx, process in enumerate(process_info.values()):
+            idx_emoji = get_emoji(idx)
+            debug_emoji = "🐞" if process.is_debug else ""
             task_msg = (
-                f"{get_emoji(idx)}{'🐞' if info.is_debug else ''}"
-                f"用户: {info.user['name']}  "
-                f"最大显存: {unit_convert.get_human_str_from_byte(info.task_gpu_memory_max)}  "
-                f"运行时长: {info.running_time_human}\n"
+                f"{idx_emoji}{debug_emoji}"
+                f"用户: {process.user['name']}  "
+                f"最大显存: {process.task_gpu_memory_max_human}  "
+                f"运行时长: {process.running_time_human}\n"
             )
-            all_tasks_msg_dict.update({info.pid: task_msg})
+            all_tasks_msg_dict.update({process.pid: task_msg})
 
         return all_tasks_msg_dict
 
@@ -190,8 +159,9 @@ class NvidiaMonitor:
                 # update all process info
                 for pid in self.processes:
                     self.processes[pid].gpu_status = self.update_gpu_status()
-                    self.processes[pid].update_cmd()
                     self.processes[pid].update_gpu_process_info()
+                    if self.processes[pid].state == "newborn":
+                        self.processes[pid].update_cmd()
 
                 # check death process pid
                 tmp_process = copy.copy(self.processes)
@@ -201,13 +171,17 @@ class NvidiaMonitor:
                         del self.processes[pid].gpu_all_tasks_msg[pid]
                         self.processes[pid].state = "death"
                         del self.processes[pid]
+                del tmp_process
 
                 # update new process
                 for pid, gpu_process in self.get_gpu_all_processes().items():
                     if pid not in self.processes:
                         new_process = PythonGPUProcess(pid, self.gpu_id, gpu_process)
                         if new_process.is_python:
-                            if new_process.running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS:
+                            if (
+                                new_process.running_time_in_seconds
+                                > WEBHOOK_DELAY_SEND_SECONDS
+                            ):
                                 new_process.state = "working"
                             else:
                                 new_process.state = "newborn"
@@ -224,6 +198,7 @@ class NvidiaMonitor:
 
                 if monitor_start_flag and len(self.processes) > 0:
                     send_gpu_monitor_start_msg(self.gpu_id, self.processes)
+                    sql.check_finish_task(self.processes, self.gpu_id)
                     monitor_start_flag = False
 
                 # 在监视线程中就进行处理，哪怕这里阻塞了，也就是相当于多加一点延时
@@ -238,24 +213,27 @@ class NvidiaMonitor:
 
             logger.info(f"GPU {self.gpu_id} monitor stop")
 
-        def thread_worker():
-            restart_times = 0
+        # def thread_worker():
+        #     restart_times = 0
 
-            while self.monitor_thread_work:
-                if restart_times > 0:
-                    logger.debug(f"GPU {self.gpu_id} monitor restart times: {restart_times}")
+        #     while self.monitor_thread_work:
+        #         if restart_times > 0:
+        #             logger.debug(
+        #                 f"GPU {self.gpu_id} monitor restart times: {restart_times}"
+        #             )
 
-                try:
-                    gpu_monitor_thread()
-                except Exception as e:
-                    logger.error(f"GPU {self.gpu_id} monitor error: {e}")
+        #         try:
+        #             gpu_monitor_thread()
+        #         except Exception as e:
+        #             logger.error(f"GPU {self.gpu_id} monitor error: {e}")
+        #             time.sleep(2)
+        #         restart_times += 1
 
-                restart_times += 1
-
-        if self.thread is None or not self.thread.is_alive():
-            self.thread = threading.Thread(target=thread_worker)
+        # if self.thread is None or not self.thread.is_alive():
+        #     self.thread = threading.Thread(target=thread_worker)
         self.monitor_thread_work = True
-        self.thread.start()
+        gpu_monitor_thread()
+        # self.thread.start()
 
     def stop_monitor(self):
         self.monitor_thread_work = False

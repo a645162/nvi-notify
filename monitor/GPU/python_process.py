@@ -1,18 +1,21 @@
 # -*- coding: utf-8 -*-
 
 import re
+import subprocess
+from datetime import datetime
 from typing import Dict, List, Optional
 
-import subprocess
 import psutil
 from nvitop import GpuProcess
 
 from config.settings import USER_LIST, WEBHOOK_DELAY_SEND_SECONDS
+from monitor.GPU.info import TASK_INFO_FOR_SQL, get_human_str_from_byte
+from utils.logs import get_logger
+from utils.sqlite import get_sql
 from webhook.send_task_msg import log_task_info, send_gpu_task_message
 
-from utils.logs import get_logger
-
 logger = get_logger()
+sql = get_sql()
 
 
 class PythonGPUProcess:
@@ -22,6 +25,7 @@ class PythonGPUProcess:
     DEATH = "death"
 
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
+        self.task_task_id: str = datetime.now().strftime("%Y%m%d%H") + str(pid)
         self.pid: int = pid
 
         # current GPU
@@ -53,7 +57,7 @@ class PythonGPUProcess:
         self.python_version: str = ""
         self.binary_path: str = ""
 
-        self.start_time: Optional[float] = None
+        self.start_time: Optional[float] = None  # timestamp
         self.running_time_human: Optional[str] = None
 
         # Props get from env var
@@ -89,6 +93,7 @@ class PythonGPUProcess:
             self.binary_path = psu_process.exe()
 
             self.update_python_version()
+            sql.insert_task_data(TASK_INFO_FOR_SQL(self.__dict__))
 
     def update_cmd(self):
         self.get_cwd()
@@ -137,10 +142,13 @@ class PythonGPUProcess:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-                self.task_gpu_memory_max is None or
-                self.task_gpu_memory_max < task_gpu_memory
+            self.task_gpu_memory_max is None
+            or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
+            self.task_gpu_memory_max_human = get_human_str_from_byte(
+                self.task_gpu_memory_max
+            )
 
         return task_gpu_memory
 
@@ -173,20 +181,12 @@ class PythonGPUProcess:
         cmdline = [line for line in self.cmdline if not line.endswith("python")]
         debug_cmd_keywords = ["vscode-server", "debugpy", "pydev/pydevd.py"]
         self.is_debug = any(
-            any(
-                keyword in _unit
-                for _unit in cmdline
-            )
-            for keyword in debug_cmd_keywords
+            any(keyword in _unit for _unit in cmdline) for keyword in debug_cmd_keywords
         )
 
     def get_user(self):
         self.user = next(
-            (
-                user
-                for user in USER_LIST
-                if self.gpu_process.username == user["name"]
-            ),
+            (user for user in USER_LIST if self.gpu_process.username == user["name"]),
             None,
         )
 
@@ -205,8 +205,8 @@ class PythonGPUProcess:
                     continue
                 for user in user_list:
                     if any(
-                            path_unit.lower() == keyword.lower().strip()
-                            for keyword in user["keywords"]
+                        path_unit.lower() == keyword.lower().strip()
+                        for keyword in user["keywords"]
                     ):
                         return user
             return None
@@ -235,10 +235,11 @@ class PythonGPUProcess:
         try:
             command = f"conda run -n {conda_env} python --version"
             result = subprocess.run(
-                command, shell=True,
+                command,
+                shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
             )
             result = str(result.stdout)
             if "Python" not in result:
@@ -258,10 +259,11 @@ class PythonGPUProcess:
         try:
             command = f"'{binary_path}' --version"
             result = subprocess.run(
-                command, shell=True,
+                command,
+                shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
             )
             result = str(result.stdout)
             if "Python" not in result:
@@ -280,9 +282,7 @@ class PythonGPUProcess:
             conda_env_name = match.group(1)
             env_str = conda_env_name
         else:
-            env_str = (
-                self.get_env_value("CONDA_DEFAULT_ENV", "")
-            )
+            env_str = self.get_env_value("CONDA_DEFAULT_ENV", "")
 
         env_str = env_str.strip()
 
@@ -319,21 +319,20 @@ class PythonGPUProcess:
         return return_value
 
     def get_is_multi_gpu(self) -> bool:
-        self.is_multi_gpu = \
-            (self.get_world_size() is not None) and \
-            self.get_local_rank() != "" and \
-            int(self.get_world_size()) > 1
+        self.is_multi_gpu = (
+            (self.get_world_size() is not None)
+            and self.get_local_rank() != ""
+            and int(self.get_world_size()) > 1
+        )
 
         return self.is_multi_gpu
 
     def get_cuda_visible_devices(self) -> str:
-        self.cuda_visible_devices = \
-            self.get_env_value("CUDA_VISIBLE_DEVICES", "")
+        self.cuda_visible_devices = self.get_env_value("CUDA_VISIBLE_DEVICES", "")
         return self.cuda_visible_devices
 
     def get_screen_session_name(self) -> str:
-        self.screen_session_name = \
-            self.get_env_value("STY", "").strip()
+        self.screen_session_name = self.get_env_value("STY", "").strip()
 
         if self.screen_session_name == "":
             return ""
@@ -342,8 +341,7 @@ class PythonGPUProcess:
         if dot_index != -1:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
-                self.screen_session_name = \
-                    self.screen_session_name[dot_index + 1:]
+                self.screen_session_name = self.screen_session_name[dot_index + 1 :]
 
         return self.screen_session_name
 
@@ -377,12 +375,15 @@ class PythonGPUProcess:
         if new_state == "newborn" and self._state is None:
             log_task_info(self.__dict__, task_type="create")
         elif new_state == "working" and self._state == "newborn":
+            sql.update_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
             send_gpu_task_message(self.__dict__, "create")
         elif new_state == "death" and self._state == "working":
             log_task_info(self.__dict__, task_type="finish")
+            sql.update_fininsh_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
             send_gpu_task_message(self.__dict__, "finish")
         elif new_state == "death" and self._state == "newborn":
             log_task_info(self.__dict__, task_type="finish")
+            sql.update_fininsh_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
         self._state = new_state
 
     @property
@@ -392,9 +393,9 @@ class PythonGPUProcess:
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
         if (
-                new_running_time_in_seconds >=
-                WEBHOOK_DELAY_SEND_SECONDS >=
-                self._running_time_in_seconds
+            new_running_time_in_seconds
+            >= WEBHOOK_DELAY_SEND_SECONDS
+            >= self._running_time_in_seconds
         ):
             self.state = "working"
         self._running_time_in_seconds = new_running_time_in_seconds

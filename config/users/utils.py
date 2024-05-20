@@ -9,19 +9,11 @@ from config.utils import get_files_with_extension, parse_yaml
 def get_user(yaml_content: dict) -> List[dict]:
     return_list = []
 
-    for user_uuid in yaml_content.keys():
-        user_dict: dict = yaml_content[user_uuid]
-
-        if "keywords" not in user_dict.keys():
-            user_dict["keywords"] = []
-
-        if "wework" not in user_dict.keys():
-            user_dict["wework"] = {}
-
-        if "mention_id" not in user_dict["wework"].keys():
-            user_dict["wework"]["mention_id"] = ""
-        if "mention_mobile" not in user_dict["wework"].keys():
-            user_dict["wework"]["mention_mobile"] = ""
+    for user_dict in yaml_content.values():
+        user_dict["keywords"] = user_dict.get("keywords", [])
+        user_dict["wework"] = user_dict.get("wework", {})
+        user_dict["wework"]["mention_id"] = user_dict["wework"].get("mention_id", "")
+        user_dict["wework"]["mention_mobile"] = user_dict["wework"].get("mention_mobile", "")
 
         return_list.append(user_dict)
 

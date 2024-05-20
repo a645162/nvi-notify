@@ -15,18 +15,13 @@ from config.settings import (
     GPU_BOARD_WEB_URL,
     SERVER_NAME,
 )
-
-from global_variable.global_system import (
-    global_system_info
-)
-
 from global_variable.global_gpu import (
     global_gpu_info,
     global_gpu_task,
     global_gpu_usage,
 )
+from global_variable.global_system import global_system_info
 from monitor.GPU.python_process import PythonGPUProcess
-
 from utils.logs import get_logger
 
 logger = get_logger()
@@ -54,7 +49,6 @@ def get_system_info():
     system_info: dict = {
         "memoryPhysicTotalMb": 4096,
         "memoryPhysicUsedMb": 2048,
-
         "memorySwapTotalMb": 4096,
         "memorySwapUsedMb": 2048,
     }
@@ -134,27 +128,19 @@ def get_gpu_task():
             {
                 "id": process_obj.pid,
                 "name": process_obj.user["name"],
-
                 "debugMode": process_obj.is_debug,
-
                 "projectName": process_obj.project_name,
                 "pyFileName": process_obj.python_file,
-
                 "runTime": process_obj.running_time_human,
                 "startTimestamp": int(process_obj.start_time) * 1000,
-
                 "gpuMemoryUsage": int(process_obj.task_gpu_memory >> 10 >> 10),
                 "gpuMemoryUsageMax": int(process_obj.task_gpu_memory_max >> 10 >> 10),
-
                 "worldSize": process_obj.world_size,
                 "localRank": process_obj.local_rank,
                 "condaEnv": process_obj.conda_env,
                 "screenSessionName": process_obj.screen_session_name,
-
                 "pythonVersion": process_obj.python_version,
-
                 "command": process_obj.command,
-
                 "taskMainMemoryMB": int(process_obj.task_main_memory_mb),
             }
         )
@@ -181,21 +167,12 @@ def index():
         logger.info("GPU board URL is not set or cannot be accessed.")
 
     command_result = run_command("nvitop -U")
-    return render_template(
-        "index.html",
-        result=command_result,
-        page_title=SERVER_NAME
-    )
+    return render_template("index.html", result=command_result, page_title=SERVER_NAME)
 
 
 def run_command(command):
     try:
-        result = subprocess.run(
-            command,
-            shell=True,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
         return result.stdout
     except Exception as e:
         return str(e), 500

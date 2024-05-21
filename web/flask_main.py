@@ -7,7 +7,7 @@ from typing import List
 
 import requests
 from flask import Flask, Response, redirect, render_template, request
-from flask_cors import CORS
+# from flask_cors import CORS
 
 from config.settings import (
     FLASK_SERVER_HOST,

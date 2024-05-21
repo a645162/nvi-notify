@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import os.path
 import re
 import subprocess
 from datetime import datetime
@@ -26,7 +26,7 @@ class PythonGPUProcess:
 
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
         self.task_task_id: str = (
-            datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
+                datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
         )
         self.pid: int = pid
 
@@ -69,6 +69,9 @@ class PythonGPUProcess:
         self.local_rank: int = 0
         self.cuda_visible_devices: str = ""
         self.screen_session_name: str = ""
+        self.cuda_root: str = ""
+        self.cuda_nvcc_bin: str = ""
+        self.cuda_version: str = ""
 
         self._state: Optional[str] = None  # init
         self._running_time_in_seconds: int = 0  # init
@@ -145,8 +148,8 @@ class PythonGPUProcess:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-            self.task_gpu_memory_max is None
-            or self.task_gpu_memory_max < task_gpu_memory
+                self.task_gpu_memory_max is None
+                or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = get_human_str_from_byte(
@@ -211,8 +214,8 @@ class PythonGPUProcess:
                     continue
                 for user in user_list:
                     if any(
-                        path_unit.lower() == keyword.lower().strip()
-                        for keyword in user["keywords"]
+                            path_unit.lower() == keyword.lower().strip()
+                            for keyword in user["keywords"]
                     ):
                         return user
             return None
@@ -326,9 +329,9 @@ class PythonGPUProcess:
 
     def get_is_multi_gpu(self) -> bool:
         self.is_multi_gpu = (
-            (self.get_world_size() is not None)
-            and self.get_local_rank() != ""
-            and int(self.get_world_size()) > 1
+                (self.get_world_size() is not None)
+                and self.get_local_rank() != ""
+                and int(self.get_world_size()) > 1
         )
 
         return self.is_multi_gpu
@@ -347,17 +350,76 @@ class PythonGPUProcess:
         if dot_index != -1:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
-                self.screen_session_name = self.screen_session_name[dot_index + 1 :]
+                self.screen_session_name = self.screen_session_name[dot_index + 1:]
 
         return self.screen_session_name
 
+    def get_cuda_root(self) -> str:
+        cuda_home = self.get_env_value(
+            "CUDA_HOME", ""
+        ).strip()
+        nvcc_path = os.path.join(cuda_home, "bin", "nvcc")
+        if os.path.exists(nvcc_path):
+            self.cuda_root = cuda_home
+            self.cuda_nvcc_bin = nvcc_path
+            return self.cuda_root
+
+        cuda_toolkit_root = \
+            self.get_env_value(
+                "CUDAToolkit_ROOT", ""
+            ).strip()
+        nvcc_path = os.path.join(cuda_toolkit_root, "bin", "nvcc")
+        if os.path.exists(nvcc_path):
+            self.cuda_root = cuda_toolkit_root
+            self.cuda_nvcc_bin = nvcc_path
+            return self.cuda_root
+
+        return ""
+
+    def get_cuda_version(self) -> str:
+        if self.cuda_nvcc_bin.strip() == "":
+            return ""
+
+        if not os.path.exists(self.cuda_nvcc_bin):
+            return ""
+
+        try:
+            result = subprocess.run(
+                f"{self.cuda_nvcc_bin} --version",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            result = str(result.stdout)
+            if "release" not in result:
+                return ""
+            result_list = result.split("\n")
+            version = ""
+
+            for line in result_list:
+                if "release" in line:
+                    version = line.split(",")[-1].strip()
+                    break
+
+            self.cuda_version = version
+            return version
+        except Exception:
+            return ""
+
     def get_all_env(self):
         self.get_conda_env_name()
+
         self.get_world_size()
         self.get_local_rank()
         self.get_is_multi_gpu()
+
         self.get_cuda_visible_devices()
+
         self.get_screen_session_name()
+
+        self.get_cuda_root()
+        self.get_cuda_version()
 
     def get_project_name(self) -> str:
         if self.cwd is not None:
@@ -399,9 +461,9 @@ class PythonGPUProcess:
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
         if (
-            new_running_time_in_seconds
-            >= WEBHOOK_DELAY_SEND_SECONDS
-            >= self._running_time_in_seconds
+                new_running_time_in_seconds
+                >= WEBHOOK_DELAY_SEND_SECONDS
+                >= self._running_time_in_seconds
         ):
             self.state = "working"
         self._running_time_in_seconds = new_running_time_in_seconds

@@ -142,6 +142,8 @@ def get_gpu_task():
                 "pythonVersion": process_obj.python_version,
                 "command": process_obj.command,
                 "taskMainMemoryMB": int(process_obj.task_main_memory_mb),
+                "cudaRoot": str(process_obj.cuda_root),
+                "cudaVersion": str(process_obj.cuda_version),
             }
         )
 

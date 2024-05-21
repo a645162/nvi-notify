@@ -30,8 +30,8 @@ logger.info("Flask server is starting...")
 app = Flask(__name__)
 
 # 允许所有域进行跨源请求
-CORS(app)
-logger.info("Set CORS for Flask server.")
+# CORS(app)
+# logger.info("Set CORS for Flask server.")
 
 
 @app.route("/get_result")

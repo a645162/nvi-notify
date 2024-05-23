@@ -130,6 +130,10 @@ def send_text_thread() -> None:
             msg_queue.pop(0)
             logger.info(f"[{get_now_time()}]消息队列发送一条消息。")
 
+            # 每分钟最多20条消息。
+            # 60/20=3
+            time.sleep(3 + 1)
+
         except Exception:
             time.sleep(60)
 
@@ -156,6 +160,11 @@ def send_text(
         webhook_url = webhook_url_warning
     else:
         logger.error("msg_type must be 'normal' or 'warning'")
+        return
+
+    msg = msg.strip()
+    if len(msg) == 0:
+        logger.warning("Message is empty!")
         return
 
     webhook_url = webhook_url.strip()

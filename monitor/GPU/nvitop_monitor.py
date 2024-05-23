@@ -20,6 +20,7 @@ from global_variable.global_gpu import (
 )
 from monitor.GPU.info import GPU_INFO, gpu_name_filter
 from monitor.GPU.python_process import PythonGPUProcess
+from utils.converter import convert_bytes_to_mb
 from utils.sqlite import get_sql
 from webhook.send_task_msg import (
     send_process_except_warning_msg,
@@ -74,8 +75,8 @@ class NvidiaMonitor:
         global_gpu_usage[self.gpu_id]["coreUsage"] = gpu_status.utl
         global_gpu_usage[self.gpu_id]["memoryUsage"] = gpu_status.mem_percent
 
-        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = (
-            gpu_status.mem_total_bytes >> 10 >> 10
+        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = convert_bytes_to_mb(
+            gpu_status.mem_total_bytes
         )
 
         global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = gpu_status.mem_usage

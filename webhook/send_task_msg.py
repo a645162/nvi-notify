@@ -14,7 +14,7 @@ from config.settings import (
     get_emoji,
     get_now_time,
 )
-from monitor.GPU.info import get_human_str_from_byte
+from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
 from webhook.wework import send_text
 
@@ -252,3 +252,19 @@ def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
     """
     warning_message = f"🤒🤒{SERVER_NAME}的CPU:{cpu_id}温度已达{cpu_temperature}°C\n"
     send_text(msg=handle_warning_text(warning_message), msg_type="warning")
+
+def send_hard_disk_high_occupancy_warning_msg(
+    name: str, mountpoint: str, total_GB: float, free_GB: float, percentage: float
+):
+    """
+    发送硬盘高占用警告消息函数
+    """
+    hard_disk_name_for_msg = {"system": "系统盘", "data": "数据盘"}
+
+    warning_message = (
+        f"⚠️【硬盘可用空间不足】⚠️\n"
+        f"{hard_disk_name_for_msg.get(name, 'Unknown')}(挂载点为{mountpoint})"
+        f"剩余可用容量为{free_GB:.2f}GB，总容量为{total_GB:.2f}GB，占用率为{percentage:.2f}%\n"
+    )
+
+    send_text(msg=handle_normal_text(warning_message), msg_type="normal")

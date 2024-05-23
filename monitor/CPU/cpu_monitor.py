@@ -12,6 +12,8 @@ from config.settings import (
     TEMPERATURE_MONITOR_SAMPLING_INTERVAL,
 )
 from global_variable.global_system import global_system_info
+from monitor.hardware_resource.resource_monitor import Memory
+from utils.converter import convert_bytes_to_mb
 from utils.logs import get_logger
 from webhook.send_task_msg import (
     send_cpu_except_warning_msg,
@@ -22,7 +24,6 @@ logger = get_logger()
 
 
 class CpuUtils:
-
     @staticmethod
     def get_cpu_physics_num():
         return psutil.cpu_count(logical=False)
@@ -37,26 +38,6 @@ class CpuUtils:
             return psutil.cpu_percent()
         return psutil.cpu_percent(interval=interval)
 
-    @staticmethod
-    def convert_bytes_to_mb(bytes: int) -> int:
-        return bytes // (1024**2)
-
-    @staticmethod
-    def convert_bytes_to_gb(bytes: int) -> float:
-        return bytes / (1024**3)
-
-    @staticmethod
-    def convert_mem_to_str(mem_bytes: int) -> str:
-        mem_gb = CpuUtils.convert_bytes_to_gb(mem_bytes)
-        return f"{mem_gb:.1f}"
-
-    @staticmethod
-    def get_memory_info():
-        return psutil.virtual_memory()
-
-    @staticmethod
-    def get_swap_memory_info():
-        return psutil.swap_memory()
 
 
 class CPUMonitor:
@@ -78,22 +59,16 @@ class CPUMonitor:
                 if self.high_temperature_trigger:
                     send_cpu_temperature_warning_msg(self.cpu_id, self.temperature)
 
-                memory_physic = CpuUtils.get_memory_info()
-                memory_swap = CpuUtils.get_swap_memory_info()
+                memory_physic = Memory.get_memory_info()
+                memory_swap = Memory.get_swap_memory_info()
 
-                global_system_info["memoryPhysicTotalMb"] = \
-                    CpuUtils.convert_bytes_to_mb(memory_physic.total)
-                global_system_info["memoryPhysicUsedMb"] = \
-                    CpuUtils.convert_bytes_to_mb(memory_physic.used)
-                # global_system_info["memory_physic_free_mb"] = \
-                #     CpuUtils.convert_bytes_to_gb(memory_physic.free)
+                global_system_info["memoryPhysicTotalMb"] = convert_bytes_to_mb(memory_physic.total)
+                global_system_info["memoryPhysicUsedMb"] = convert_bytes_to_mb(memory_physic.used)
+                # global_system_info["memory_physic_free_mb"] = convert_bytes_to_gb(memory_physic.free)
 
-                global_system_info["memorySwapTotalMb"] = \
-                    CpuUtils.convert_bytes_to_mb(memory_swap.total)
-                global_system_info["memorySwapUsedMb"] = \
-                    CpuUtils.convert_bytes_to_mb(memory_swap.used)
-                # global_system_info["memory_swap_free_mb"] = \
-                #     CpuUtils.convert_bytes_to_gb(memory_swap.free)
+                global_system_info["memorySwapTotalMb"] = convert_bytes_to_mb(memory_swap.total)
+                global_system_info["memorySwapUsedMb"] = convert_bytes_to_mb(memory_swap.used)
+                # global_system_info["memory_swap_free_mb"] = convert_bytes_to_gb(memory_swap.free)
 
                 time.sleep(TEMPERATURE_MONITOR_SAMPLING_INTERVAL)
 

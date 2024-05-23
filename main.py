@@ -4,6 +4,7 @@ import time
 
 from monitor.CPU.cpu_monitor import start_cpu_monitor_all
 from monitor.GPU.nvitop_monitor import start_gpu_monitor_all
+from monitor.hardware_resource.resource_monitor import start_resource_monitor_all
 from utils.logs import get_logger
 from web.flask_main import start_web_server_both
 
@@ -25,6 +26,9 @@ if __name__ == "__main__":
 
     logger.info("GPU Monitor sub program is starting...")
     start_gpu_monitor_all()
+    
+    logger.info("Hard Disk Monitor sub program is starting...")
+    start_resource_monitor_all()
 
     logger.info("Web server sub program is starting...")
     start_web_server_both()

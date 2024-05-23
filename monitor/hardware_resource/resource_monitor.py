@@ -93,6 +93,7 @@ class HardDiskMonitor:
         def harddisk_monitor_thread():
             logger.info(f"Hrad disk {self.mountpoint} monitor start")
             while monitor_thread_work:
+                self.harddisk = HardDisk(self.mountpoint)
                 self.percentage = self.harddisk.get_percentage()
                 self.free_GB = self.harddisk.get_free_GB()
                 self.total_GB = self.harddisk.get_total_GB()
@@ -129,10 +130,7 @@ class HardDiskMonitor:
 
     @percentage.setter
     def percentage(self, cur_percentage):
-        self.high_percentage_trigger = (
-            cur_percentage > self.high_percentage_threshold > self._percentage
-        )
-
+        self.high_percentage_trigger = cur_percentage > self.high_percentage_threshold
         self._percentage = cur_percentage
 
     @property
@@ -141,8 +139,7 @@ class HardDiskMonitor:
 
     @free_GB.setter
     def free_GB(self, cur_free_GB):
-        self.low_free_trigger = cur_free_GB < self.low_free_threshold < self._free_GB
-
+        self.low_free_trigger = (cur_free_GB < self.low_free_threshold) and (cur_free_GB < self._free_GB)
         self._free_GB = cur_free_GB
 
 

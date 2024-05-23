@@ -215,6 +215,7 @@ def handle_normal_text(msg: str, mentioned_id=None, mentioned_mobile=None):
         msg,
         mentioned_id,
         mentioned_mobile,
+        "normal",
     )
 
 
@@ -267,4 +268,4 @@ def send_hard_disk_high_occupancy_warning_msg(
         f"剩余可用容量为{free_GB:.2f}GB，总容量为{total_GB:.2f}GB，占用率为{percentage:.2f}%\n"
     )
 
-    send_text(msg=handle_normal_text(warning_message), msg_type="normal")
+    handle_normal_text(msg=warning_message)

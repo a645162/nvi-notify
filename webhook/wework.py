@@ -132,7 +132,7 @@ def send_text_thread() -> None:
 
             # 每分钟最多20条消息。
             # 60/20=3
-            time.sleep(3 + 1)
+            time.sleep(3.1)
 
         except Exception:
             time.sleep(60)

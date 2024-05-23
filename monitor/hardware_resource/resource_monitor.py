@@ -10,6 +10,9 @@ from config.settings import (
     HARD_DISK_LOW_FREE_GB_THRESHOLD,
     HARD_DISK_MONITOR_SAMPLING_INTERVAL,
     HARD_DISK_MOUNTPOINT,
+    WEBHOOK_SLEEP_TIME_END,
+    WEBHOOK_SLEEP_TIME_START,
+    is_within_time_range,
 )
 from utils.converter import convert_bytes_to_gb, get_human_str_from_byte
 from utils.logs import get_logger
@@ -93,6 +96,12 @@ class HardDiskMonitor:
         def harddisk_monitor_thread():
             logger.info(f"Hrad disk {self.mountpoint} monitor start")
             while monitor_thread_work:
+                if is_within_time_range(
+                    WEBHOOK_SLEEP_TIME_START, WEBHOOK_SLEEP_TIME_END
+                ):
+                    time.sleep(60)
+                    continue
+
                 self.harddisk = HardDisk(self.mountpoint)
                 self.percentage = self.harddisk.get_percentage()
                 self.free_GB = self.harddisk.get_free_GB()

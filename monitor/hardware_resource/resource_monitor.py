@@ -96,12 +96,6 @@ class HardDiskMonitor:
         def harddisk_monitor_thread():
             logger.info(f"Hrad disk {self.mountpoint} monitor start")
             while monitor_thread_work:
-                if is_within_time_range(
-                    WEBHOOK_SLEEP_TIME_START, WEBHOOK_SLEEP_TIME_END
-                ):
-                    time.sleep(60)
-                    continue
-
                 self.harddisk = HardDisk(self.mountpoint)
                 self.percentage = self.harddisk.get_percentage()
                 self.free_GB = self.harddisk.get_free_GB()
@@ -113,8 +107,11 @@ class HardDiskMonitor:
                     self.send_warning_msg_trigger = (
                         self.high_percentage_trigger and self.low_free_trigger
                     )
-
                 if self.send_warning_msg_trigger:
+                    logger.info("硬盘容量不足！")
+                if self.send_warning_msg_trigger and not is_within_time_range(
+                    WEBHOOK_SLEEP_TIME_START, WEBHOOK_SLEEP_TIME_END
+                ):
                     send_hard_disk_high_occupancy_warning_msg(
                         self.hard_disk_name,
                         self.mountpoint,

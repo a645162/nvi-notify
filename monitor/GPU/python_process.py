@@ -219,10 +219,11 @@ class PythonGPUProcess:
                             for keyword in user["keywords"]
                     ):
                         return user
-            return None
+            raise RuntimeWarning("未获取到任务用户名")
 
-        cwd = self.cwd + "/" if self.cwd is not None else ""
-        self.user = find_user_by_path(USER_LIST, cwd) or default_user_dict
+        if self.user is None:
+            cwd = self.cwd + "/" if self.cwd is not None else ""
+            self.user = find_user_by_path(USER_LIST, cwd) or default_user_dict
 
     def get_process_environ(self):
         try:

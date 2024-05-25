@@ -196,7 +196,7 @@ class PythonGPUProcess:
 
     def get_user(self):
         self.user = next(
-            (user for user in USER_LIST if self.gpu_process.username == user["name"]),
+            (user for user in USER_LIST if self.gpu_process.username == user["name_eng"]),
             None,
         )
 

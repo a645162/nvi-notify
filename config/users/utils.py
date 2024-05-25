@@ -10,6 +10,7 @@ def get_user(yaml_content: dict) -> List[dict]:
     return_list = []
 
     for user_dict in yaml_content.values():
+        user_dict["name_eng"] = user_dict.get("name_eng", "")
         user_dict["keywords"] = user_dict.get("keywords", [])
         user_dict["wework"] = user_dict.get("wework", {})
         user_dict["wework"]["mention_id"] = user_dict["wework"].get("mention_id", "")

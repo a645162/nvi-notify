@@ -450,8 +450,12 @@ class GPUProcessInfo:
     @state.setter
     def state(self, new_state):
         if new_state == "newborn" and self._state is None:
+            # 新生进程
+
             log_task_info(self.__dict__, task_type="create")
         elif new_state == "working" and self._state == "newborn":
+            # 新生进程进入正常工作状态
+
             sql.update_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
 
             # Group Center
@@ -460,6 +464,8 @@ class GPUProcessInfo:
             # WebHook
             send_gpu_task_message(self.__dict__, "create")
         elif new_state == "death" and self._state == "working":
+            # 已经进入正常工作状态的进程正常结束
+
             log_task_info(self.__dict__, task_type="finish")
             sql.update_finish_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
 
@@ -469,6 +475,8 @@ class GPUProcessInfo:
             # WebHook
             send_gpu_task_message(self.__dict__, "finish")
         elif new_state == "death" and self._state == "newborn":
+            # 没有到发信阈值就被杀死的进程
+
             log_task_info(self.__dict__, task_type="finish")
             sql.update_finish_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
         self._state = new_state
@@ -479,10 +487,6 @@ class GPUProcessInfo:
 
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
-        if (
-                new_running_time_in_seconds
-                >= WEBHOOK_DELAY_SEND_SECONDS
-                >= self._running_time_in_seconds
-        ):
+        if new_running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS:
             self.state = "working"
         self._running_time_in_seconds = new_running_time_in_seconds

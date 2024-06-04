@@ -39,10 +39,14 @@ class GPUProcessInfo:
         self.task_task_id: str = (
                 datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
         )
+
         self.pid: int = pid
+        self.process_name: str = gpu_process.name()
 
         # current GPU
         self.gpu_id: int = gpu_id
+        self.gpu_name: str = gpu_process.device.name()
+
         self.gpu_process: GpuProcess = gpu_process
         self.gpu_status: Optional[Dict] = None
         self.gpu_all_tasks_msg: Optional[Dict] = None

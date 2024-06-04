@@ -32,7 +32,7 @@ def get_env_time(time_str: str, default: datetime.time = None) -> datetime.time:
         return default
 
     time_str_1 = time_str[:index].strip()
-    time_str_2 = time_str[index + 1 :].strip()
+    time_str_2 = time_str[index + 1:].strip()
 
     try:
         int_1 = int(time_str_1)
@@ -52,7 +52,8 @@ def get_now_time():
 
 
 def is_within_time_range(
-    start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
+        start_time=datetime.time(11, 0),
+        end_time=datetime.time(7, 30)
 ):
     current_time = datetime.datetime.now().time()
 
@@ -125,22 +126,22 @@ USER_LIST = get_all_user_list(os.path.join(os.getcwd(), "config/users"))
 NUM_CPU = get_cpu_physics_num()
 NUM_GPU = Device.count()
 
-# server info
+# Server Info
 SERVER_NAME = os.getenv("SERVER_NAME", None)
 SERVER_DOMAIN = os.getenv("SERVER_DOMAIN", None)
 
-# cpu monitor
+# CPU Monitor
 CPU_HIGH_TEMPERATURE_THRESHOLD = int(os.getenv("HIGH_TEMPERATURE_THRESHOLD", 85))
 TEMPERATURE_MONITOR_SAMPLING_INTERVAL = int(
     os.getenv("TEMPERATURE_MONITOR_SAMPLING_INTERVAL", 300)
 )
 
-# gpu monitor
+# GPU Monitor
 GPU_MONITOR_SAMPLING_INTERVAL = int(os.getenv("GPU_MONITOR_SAMPLING_INTERVAL", 5))
 
-# hard disk monitor
+# Hard Disk Monitor
 HARD_DISK_MOUNT_POINT = [
-    m.strip() for m in os.getenv("HARD_DISK_MOUNTPOINT", "/").split(",")
+    m.strip() for m in os.getenv("HARD_DISK_MOUNT_POINT", "/").split(",")
 ]
 HARD_DISK_HIGH_PERCENTAGE_THRESHOLD = int(
     os.getenv("HARD_DISK_HIGH_PERCENTAGE_THRESHOLD", 95)
@@ -150,12 +151,15 @@ HARD_DISK_MONITOR_SAMPLING_INTERVAL = int(
     os.getenv("HARD_DISK_MONITOR_SAMPLING_INTERVAL", 3600)
 )
 
-# flask
+# Flask
 FLASK_SERVER_HOST = os.getenv("FLASK_SERVER_HOST", "0,0,0,0")
 FLASK_SERVER_PORT = os.getenv("FLASK_SERVER_PORT", "3000")
 GPU_BOARD_WEB_URL = os.getenv("GPU_BOARD_WEB_URL", "")
 
-# webhook
+# Group Center
+GROUP_CENTER_URL = os.getenv("GROUP_CENTER_URL", "http://127.0.0.1:8088")
+
+# WebHook
 WEBHOOK_DELAY_SEND_SECONDS = int(os.getenv("WEBHOOK_DELAY_SEND_SECONDS", 60))
 WEBHOOK_SLEEP_TIME_START = get_env_time(
     os.getenv("WEBHOOK_SLEEP_TIME_START", "23:00"), datetime.time(23, 0)
@@ -166,6 +170,22 @@ WEBHOOK_SLEEP_TIME_END = get_env_time(
 
 WEBHOOK_WEWORK_DEPLOY = os.getenv("WEBHOOK_WEWORK_DEPLOY", "")
 WEBHOOK_WEWORK_DEV = os.getenv("WEBHOOK_WEWORK_DEV", "")
+
+
+def fix_env():
+    def fix_url():
+        global GROUP_CENTER_URL
+
+        if not GROUP_CENTER_URL.startswith("http"):
+            GROUP_CENTER_URL = f"http://{GROUP_CENTER_URL}"
+
+        if not GROUP_CENTER_URL.endswith("/"):
+            GROUP_CENTER_URL += "/"
+
+    fix_url()
+
+
+fix_env()
 
 if __name__ == "__main__":
     # env_path = Path(".") / ".env"

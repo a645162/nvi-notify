@@ -9,7 +9,7 @@ from config.settings import (
     HARD_DISK_HIGH_PERCENTAGE_THRESHOLD,
     HARD_DISK_LOW_FREE_GB_THRESHOLD,
     HARD_DISK_MONITOR_SAMPLING_INTERVAL,
-    HARD_DISK_MOUNTPOINT,
+    HARD_DISK_MOUNT_POINT,
     WEBHOOK_SLEEP_TIME_END,
     WEBHOOK_SLEEP_TIME_START,
     is_within_time_range,
@@ -150,11 +150,11 @@ class HardDiskMonitor:
 
 
 def start_resource_monitor_all():
-    if HARD_DISK_MOUNTPOINT is None:
+    if HARD_DISK_MOUNT_POINT is None:
         logger.error("Cannot get the mountpoint of hard disk.")
         return
 
-    for mountpoint in HARD_DISK_MOUNTPOINT:
+    for mountpoint in HARD_DISK_MOUNT_POINT:
         hard_disk_monitor = HardDiskMonitor(mountpoint)
         hard_disk_monitor.start_monitor()
 

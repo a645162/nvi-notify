@@ -9,7 +9,10 @@ from typing import Dict, List, Optional
 import psutil
 from nvitop import GpuProcess
 
-from config.settings import USER_LIST, WEBHOOK_DELAY_SEND_SECONDS
+from config.settings import (
+    USER_LIST,
+    WEBHOOK_DELAY_SEND_SECONDS
+)
 from monitor.GPU.info import TASK_INFO_FOR_SQL
 from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
@@ -444,6 +447,13 @@ class GPUProcessInfo:
         return file_name.split("/")[-1] if "/" in file_name else file_name
 
     @property
+    def user_name(self):
+        if "name" in self.user.keys():
+            return str(self.user["name"]).strip()
+        else:
+            return ""
+
+    @property
     def state(self):
         return self._state
 
@@ -470,7 +480,7 @@ class GPUProcessInfo:
             sql.update_finish_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
 
             # Group Center
-            group_center.gpu_task_message(self, "create")
+            group_center.gpu_task_message(self, "finish")
 
             # WebHook
             send_gpu_task_message(self.__dict__, "finish")
@@ -487,6 +497,8 @@ class GPUProcessInfo:
 
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
-        if new_running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS:
+        # 上次不满足，但是这次满足
+        if new_running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS > self._running_time_in_seconds:
             self.state = "working"
+
         self._running_time_in_seconds = new_running_time_in_seconds

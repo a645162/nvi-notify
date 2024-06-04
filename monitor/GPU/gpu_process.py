@@ -15,7 +15,7 @@ from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
 from utils.sqlite import get_sql
 
-# from notify import group_center
+from notify import group_center
 
 from notify.send_task_msg import (
     log_task_info,
@@ -455,7 +455,7 @@ class GPUProcessInfo:
             sql.update_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
 
             # Group Center
-            # group_center.gpu_task_message(self, "create")
+            group_center.gpu_task_message(self, "create")
 
             # WebHook
             send_gpu_task_message(self.__dict__, "create")
@@ -464,7 +464,7 @@ class GPUProcessInfo:
             sql.update_finish_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
 
             # Group Center
-            # group_center.gpu_task_message(self, "create")
+            group_center.gpu_task_message(self, "create")
 
             # WebHook
             send_gpu_task_message(self.__dict__, "finish")

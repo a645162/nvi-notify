@@ -2,7 +2,7 @@
 
 from typing import List
 
-from monitor.GPU.python_process import PythonGPUProcess
+from monitor.GPU.gpu_process import GPUProcessInfo
 
 from utils.logs import get_logger
 
@@ -23,7 +23,7 @@ gpu_task为一个列表
 
 global_gpu_info: List[dict] = []
 global_gpu_usage: List[dict] = []
-global_gpu_task: List[List[PythonGPUProcess]] = []
+global_gpu_task: List[List[GPUProcessInfo]] = []
 
 
 # For Debug Use

@@ -21,7 +21,7 @@ from global_variable.global_gpu import (
     global_gpu_usage,
 )
 from global_variable.global_system import global_system_info
-from monitor.GPU.python_process import PythonGPUProcess
+from monitor.GPU.gpu_process import GPUProcessInfo
 from utils.logs import get_logger
 
 logger = get_logger()
@@ -119,7 +119,7 @@ def get_gpu_task():
             mimetype="application/json",
         )
 
-    current_gpu_processes: List[PythonGPUProcess] = global_gpu_task[gpu_index]
+    current_gpu_processes: List[GPUProcessInfo] = global_gpu_task[gpu_index]
 
     task_list = []
 

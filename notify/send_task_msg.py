@@ -16,7 +16,7 @@ from config.settings import (
 )
 from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
-from webhook.wework import send_text
+from notify.wework import send_text
 
 logger = get_logger()
 

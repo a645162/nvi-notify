@@ -1,14 +1,14 @@
 from typing import List
 import datetime
 
-from monitor.GPU.python_process import PythonGPUProcess
+from monitor.GPU.gpu_process import GPUProcessInfo
 
 record_latest_timestamp: int = 0
 
 
 class PythonGPUProcessRecord:
 
-    def __init__(self, gpu_process: PythonGPUProcess):
+    def __init__(self, gpu_process: GPUProcessInfo):
         self.datetime: datetime.datetime = datetime.datetime.now()
         self.timestamp: int = int(datetime.datetime.timestamp(self.datetime))
 
@@ -16,7 +16,7 @@ class PythonGPUProcessRecord:
         if self.timestamp > record_latest_timestamp:
             record_latest_timestamp = self.timestamp
 
-        self.gpu_process: PythonGPUProcess = gpu_process
+        self.gpu_process: GPUProcessInfo = gpu_process
 
 
 task_new_born: List[PythonGPUProcessRecord] = []

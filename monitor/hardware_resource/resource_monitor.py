@@ -16,7 +16,7 @@ from config.settings import (
 )
 from utils.converter import convert_bytes_to_gb, get_human_str_from_byte
 from utils.logs import get_logger
-from webhook.send_task_msg import send_hard_disk_high_occupancy_warning_msg
+from notify.send_task_msg import send_hard_disk_high_occupancy_warning_msg
 
 logger = get_logger()
 

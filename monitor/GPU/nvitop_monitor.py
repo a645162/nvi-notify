@@ -19,10 +19,13 @@ from global_variable.global_gpu import (
     global_gpu_usage,
 )
 from monitor.GPU.info import GPU_INFO, gpu_name_filter
-from monitor.GPU.python_process import PythonGPUProcess
+from monitor.GPU.gpu_process import GPUProcessInfo
 from utils.converter import convert_bytes_to_mb
 from utils.sqlite import get_sql
-from webhook.send_task_msg import (
+
+from notify import group_center
+
+from notify.send_task_msg import (
     send_process_except_warning_msg,
     send_gpu_monitor_start_msg,
 )
@@ -178,11 +181,11 @@ class NvidiaMonitor:
                 # update new process
                 for pid, gpu_process in self.get_gpu_all_processes().items():
                     if pid not in self.processes:
-                        new_process = PythonGPUProcess(pid, self.gpu_id, gpu_process)
+                        new_process = GPUProcessInfo(pid, self.gpu_id, gpu_process)
                         if new_process.is_python:
                             if (
-                                new_process.running_time_in_seconds
-                                > WEBHOOK_DELAY_SEND_SECONDS
+                                    new_process.running_time_in_seconds
+                                    > WEBHOOK_DELAY_SEND_SECONDS
                             ):
                                 new_process.state = "working"
                             else:
@@ -199,7 +202,12 @@ class NvidiaMonitor:
                     self.processes[pid].num_task = len(self.processes)
 
                 if monitor_start_flag and len(self.processes) > 0:
+                    # Send to Group Center
+                    group_center.gpu_monitor_start()
+
+                    # Send by WebHook
                     send_gpu_monitor_start_msg(self.gpu_id, self.processes)
+
                     sql.check_finish_task(self.processes, self.gpu_id)
                     monitor_start_flag = False
 

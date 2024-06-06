@@ -88,7 +88,7 @@ class GroupCenterWorkThread(threading.Thread):
             time_sleep(10)
 
 
-work_thread: GroupCenterWorkThread
+work_thread = None
 
 
 def add_task_to_center(data: dict, target: str):
@@ -131,7 +131,7 @@ def gpu_task_message(process_obj, task_status: str):
         "taskGpuId": process_obj.gpu_id,
         "taskGpuName": process_obj.gpu_name,
 
-        "taskGpuMemoryMb": process_obj.task_main_memory_mb,
+        "taskGpuMemoryMb": process_obj.task_gpu_memory,
         "taskGpuMemoryHuman": process_obj.task_gpu_memory_human,
 
         "taskGpuMemoryMaxMb": process_obj.task_gpu_memory_max,

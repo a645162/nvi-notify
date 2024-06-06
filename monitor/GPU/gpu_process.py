@@ -463,6 +463,9 @@ class GPUProcessInfo:
 
     @state.setter
     def state(self, new_state):
+        if self._state == new_state:
+            return
+
         if new_state == "newborn" and self._state is None:
             # 新生进程
 
@@ -493,6 +496,7 @@ class GPUProcessInfo:
 
             log_task_info(self.__dict__, task_type="finish")
             sql.update_finish_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
+
         self._state = new_state
 
     @property

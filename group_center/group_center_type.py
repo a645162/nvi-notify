@@ -26,8 +26,8 @@ class GroupCenterGpuTaskInfo:
     cudaRoot: str = ""
     cudaVersion: str = ""
 
-    taskStartTime = 0.0
-    taskRunningTimeString = ""
+    taskStartTime:int = 0
+    taskRunningTimeString:str = ""
     taskRunningTimeInSeconds = 0
 
     projectName: str = ""
@@ -77,7 +77,7 @@ class GroupCenterGpuTaskInfo:
         self.cudaVersion = gpu_process_obj.cuda_version
 
         # 运行时间
-        self.taskStartTime = gpu_process_obj.start_time
+        self.taskStartTime = int(gpu_process_obj.start_time)
         self.taskRunningTimeString = gpu_process_obj.running_time_human
         self.taskRunningTimeInSeconds = gpu_process_obj.running_time_in_seconds
 

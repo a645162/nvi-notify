@@ -142,10 +142,12 @@ def gpu_task_message(process_obj, task_status: str):
         "taskGpuId": process_obj.gpu_id,
         "taskGpuName": process_obj.gpu_name,
 
-        "taskGpuMemoryMb": process_obj.task_gpu_memory,
+        # "taskGpuMemoryMb": process_obj.task_gpu_memory,
+        "taskGpuMemoryGb": process_obj.task_gpu_memory / 10,
         "taskGpuMemoryHuman": process_obj.task_gpu_memory_human,
 
-        "taskGpuMemoryMaxMb": process_obj.task_gpu_memory_max,
+        # "taskGpuMemoryMaxMb": process_obj.task_gpu_memory_max,
+        "taskGpuMemoryMaxGb": process_obj.task_gpu_memory_max / 10,
 
         # 运行时间
         "taskStartTime": process_obj.start_time,

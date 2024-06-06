@@ -1,9 +1,5 @@
 class GroupCenterGpuTaskInfo:
-    serverName = ""
-    serverNameEng = ""
-    accessKey = ""
-
-    taskID = 0
+    taskID: str = ""
 
     messageType = ""
 
@@ -24,10 +20,23 @@ class GroupCenterGpuTaskInfo:
     #    taskGpuMemoryMaxMb = 0
     taskGpuMemoryMaxGb = 0.0
 
-    taskStartTime = 0.0
+    multiDeviceLocalRank: int = 0
+    multiDeviceWorldSize: int = 0
 
+    cudaRoot: str = ""
+    cudaVersion: str = ""
+
+    taskStartTime = 0.0
     taskRunningTimeString = ""
     taskRunningTimeInSeconds = 0
+
+    projectName: str = ""
+    screenSessionName: str = ""
+    pyFileName: str = ""
+
+    pythonVersion: str = ""
+    commandLine: str = ""
+    condaEnvName: str = ""
 
     def __init__(self, gpu_process_obj):
         self.update(gpu_process_obj=gpu_process_obj)
@@ -59,7 +68,24 @@ class GroupCenterGpuTaskInfo:
         self.taskGpuMemoryHuman = gpu_process_obj.task_gpu_memory_human
         self.taskGpuMemoryMaxGb = (gpu_process_obj.task_gpu_memory_max >> 10 >> 10) / 1024
 
+        # 多卡
+        self.multiDeviceLocalRank = gpu_process_obj.local_rank
+        self.multiDeviceWorldSize = gpu_process_obj.world_size
+
+        # CUDA 信息
+        self.cudaRoot = gpu_process_obj.cuda_root
+        self.cudaVersion = gpu_process_obj.cuda_version
+
         # 运行时间
         self.taskStartTime = gpu_process_obj.start_time
         self.taskRunningTimeString = gpu_process_obj.running_time_human
         self.taskRunningTimeInSeconds = gpu_process_obj.running_time_in_seconds
+
+        # Name
+        self.projectName = gpu_process_obj.project_name
+        self.screenSessionName = gpu_process_obj.screen_session_name
+        self.pyFileName = gpu_process_obj.python_file
+
+        self.pythonVersion = gpu_process_obj.python_version
+        self.commandLine = gpu_process_obj.command
+        self.condaEnvName = gpu_process_obj.conda_env

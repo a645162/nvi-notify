@@ -16,7 +16,14 @@ logger = get_logger()
 
 
 def get_url(target: str):
-    return (GROUP_CENTER_URL + target).replace("//", "/")
+    if GROUP_CENTER_URL.endswith("/"):
+        if target.startswith("/"):
+            target = target[1:]
+    else:
+        if not target.startswith("/"):
+            target = "/" + target
+
+    return GROUP_CENTER_URL + target
 
 
 public_part: dict = {

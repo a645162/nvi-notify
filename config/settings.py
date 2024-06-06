@@ -128,6 +128,7 @@ NUM_GPU = Device.count()
 
 # Server Info
 SERVER_NAME = os.getenv("SERVER_NAME", None)
+SERVER_NAME_SHORT = os.getenv("SERVER_NAME_SHORT", "")
 SERVER_DOMAIN = os.getenv("SERVER_DOMAIN", None)
 
 # CPU Monitor

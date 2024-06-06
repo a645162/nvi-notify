@@ -1,10 +1,13 @@
 from typing import List
 import threading
 import requests
+import json
 from time import sleep as time_sleep
 
 from config.settings import (
-    GROUP_CENTER_URL
+    GROUP_CENTER_URL,
+    SERVER_NAME,
+    SERVER_NAME_SHORT
 )
 
 from utils.logs import get_logger
@@ -14,6 +17,13 @@ logger = get_logger()
 
 def get_url(target: str):
     return (GROUP_CENTER_URL + target).replace("//", "/")
+
+
+public_part: dict = {
+    "name": SERVER_NAME,
+    "nameEng": SERVER_NAME_SHORT,
+    "key": "",
+}
 
 
 def hand_shake_to_center(
@@ -26,7 +36,17 @@ def hand_shake_to_center(
 def send_dict_to_center(data: dict, target: str) -> bool:
     url = get_url(target=target)
     try:
-        requests.post(url, json=data, timeout=10)
+        response = requests.post(url, json=data, timeout=10)
+
+        response_dict: dict = json.loads(response.text)
+
+        if (not (
+                "isSucceed" in response_dict.keys() and
+                response_dict["isSucceed"]
+        )):
+            logger.error(f"[Group Center] Send {target} Failed: {response.text}")
+            return False
+
         logger.info(f"[Group Center] Send {target} Success")
         return True
     except Exception as e:
@@ -53,7 +73,13 @@ class GroupCenterWorkThread(threading.Thread):
         while self.need_work:
             if len(task_list) > 0:
                 data, target = task_list[0]
-                if send_dict_to_center(data=data, target=target):
+                if send_dict_to_center(
+                        data={
+                            **public_part,
+                            **data
+                        },
+                        target=target
+                ):
                     task_list.pop(0)
                 else:
                     # 出错多休息一会儿~

@@ -23,7 +23,7 @@ from monitor.GPU.gpu_process import GPUProcessInfo
 from utils.converter import convert_bytes_to_mb
 from utils.sqlite import get_sql
 
-from notify import group_center
+from group_center import group_center
 
 from notify.send_task_msg import (
     send_process_except_warning_msg,

@@ -4,6 +4,8 @@ import requests
 import json
 from time import sleep as time_sleep
 
+from group_center.group_center_type import GroupCenterGpuTaskInfo
+
 from config.settings import (
     USE_GROUP_CENTER,
     GROUP_CENTER_URL,
@@ -123,37 +125,11 @@ def gpu_task_message(process_obj, task_status: str):
     )
 
     data_dict: dict = {
-        # 任务唯一标识符
-        "taskId": process_obj.task_task_id,
-
         "messageType": task_status,
-
-        # 任务类型
-        "taskType": "gpu",
-        # 任务状态
-        "taskStatus": process_obj.state,
-        # 用户
-        "taskUser": process_obj.user_name,
-        # 进程PID
-        "taskPid": process_obj.pid,
-        "taskMainMemory": process_obj.task_main_memory_mb,
-
-        # GPU 信息
-        "taskGpuId": process_obj.gpu_id,
-        "taskGpuName": process_obj.gpu_name,
-
-        # "taskGpuMemoryMb": process_obj.task_gpu_memory,
-        "taskGpuMemoryGb": (process_obj.task_gpu_memory >> 10 >> 10) / 1024,
-        "taskGpuMemoryHuman": process_obj.task_gpu_memory_human,
-
-        # "taskGpuMemoryMaxMb": process_obj.task_gpu_memory_max,
-        "taskGpuMemoryMaxGb": (process_obj.task_gpu_memory_max >> 10 >> 10) / 1024,
-
-        # 运行时间
-        "taskStartTime": process_obj.start_time,
-
-        "taskRunningTime": process_obj.running_time_human,
-        "taskRunningTimeInSeconds": process_obj.running_time_in_seconds
     }
+
+    groupCenterGpuTaskInfoObj = GroupCenterGpuTaskInfo(process_obj)
+
+    data_dict.update(groupCenterGpuTaskInfoObj.__dict__)
 
     add_task_to_center(data_dict, "/api/client/gpu_task/info")

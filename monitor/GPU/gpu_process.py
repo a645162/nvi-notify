@@ -18,7 +18,7 @@ from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
 from utils.sqlite import get_sql
 
-from notify import group_center
+from group_center import group_center
 
 from notify.send_task_msg import (
     log_task_info,

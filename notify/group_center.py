@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 import threading
 import requests
 import json
@@ -58,7 +58,7 @@ def gpu_monitor_start():
     logger.info("[Group Center] Gpu Monitor Start")
 
 
-task_list: List[(dict, str)] = []
+task_list: List[Tuple[dict, str]] = []
 
 
 class GroupCenterWorkThread(threading.Thread):

@@ -28,9 +28,9 @@ def get_url(target: str):
 
 
 public_part: dict = {
-    "name": SERVER_NAME,
-    "nameEng": SERVER_NAME_SHORT,
-    "key": "",
+    "serverName": SERVER_NAME,
+    "serverNameEng": SERVER_NAME_SHORT,
+    "accessKey": "",
 }
 
 
@@ -148,7 +148,7 @@ def gpu_task_message(process_obj, task_status: str):
         "taskGpuMemoryMaxMb": process_obj.task_gpu_memory_max,
 
         # 运行时间
-        "startTime": process_obj.start_time,
+        "taskStartTime": process_obj.start_time,
 
         "taskRunningTime": process_obj.running_time_human,
         "taskRunningTimeInSeconds": process_obj.running_time_in_seconds

@@ -248,9 +248,6 @@ class GPUProcessInfo:
 
     def get_env_value(self, key: str, default_value: str):
         if self.process_environ is None:
-            self.get_process_environ()
-
-        if self.process_environ is None:
             return default_value
 
         return self.process_environ.get(key, default_value)
@@ -424,6 +421,9 @@ class GPUProcessInfo:
             return ""
 
     def get_all_env(self):
+        # 获取所有的环境变量
+        self.get_process_environ()
+
         self.get_conda_env_name()
 
         self.get_world_size()

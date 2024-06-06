@@ -5,6 +5,7 @@ import json
 from time import sleep as time_sleep
 
 from config.settings import (
+    USE_GROUP_CENTER,
     GROUP_CENTER_URL,
     SERVER_NAME,
     SERVER_NAME_SHORT
@@ -99,6 +100,9 @@ work_thread = None
 
 
 def add_task_to_center(data: dict, target: str):
+    if not USE_GROUP_CENTER:
+        return
+
     global task_list, work_thread
     task_list.append((data, target))
 

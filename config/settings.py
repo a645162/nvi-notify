@@ -158,6 +158,8 @@ FLASK_SERVER_PORT = os.getenv("FLASK_SERVER_PORT", "3000")
 GPU_BOARD_WEB_URL = os.getenv("GPU_BOARD_WEB_URL", "")
 
 # Group Center
+USE_GROUP_CENTER_str = os.getenv("USE_GROUP_CENTER", "TRUE").upper()
+USE_GROUP_CENTER: bool = USE_GROUP_CENTER_str == "TRUE"
 GROUP_CENTER_URL = os.getenv("GROUP_CENTER_URL", "http://127.0.0.1:8088")
 
 # WebHook

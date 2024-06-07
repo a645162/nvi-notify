@@ -107,9 +107,9 @@ class GPUProcessInfo:
         self.get_cmdline()
         self.get_python_version()
         self.get_process_environ()
+        self.get_task_main_memory_mb()
 
     def update_gpu_process_info(self):
-        self.get_task_main_memory_mb()
         self.get_task_gpu_memory()
         self.get_task_gpu_memory_human()
         self.get_running_time_in_seconds()

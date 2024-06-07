@@ -176,8 +176,13 @@ WEBHOOK_SLEEP_TIME_END = get_env_time(
     os.getenv("WEBHOOK_SLEEP_TIME_END", "8:00"), datetime.time(8, 0)
 )
 
-WEBHOOK_WEWORK_DEPLOY = os.getenv("WEBHOOK_WEWORK_DEPLOY", "")
-WEBHOOK_WEWORK_DEV = os.getenv("WEBHOOK_WEWORK_DEV", "")
+WEBHOOK_NAME = [
+    m.strip().upper() for m in os.getenv("WEBHOOK_NAME", "WEWORK").split(",")
+]
+WEBHOOK_WEWORK_DEPLOY = os.getenv("WEBHOOK_WEWORK_DEPLOY", "").strip()
+WEBHOOK_WEWORK_DEV = os.getenv("WEBHOOK_WEWORK_DEV", "").strip()
+WEBHOOK_LARK_DEPLOY = os.getenv("WEBHOOK_LARK_DEPLOY", "").strip()
+WEBHOOK_LARK_DEV = os.getenv("WEBHOOK_LARK_DEV", "").strip()
 
 
 def fix_env():

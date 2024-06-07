@@ -41,6 +41,7 @@ def hand_shake_to_center(
         username: str,
         password: str
 ) -> bool:
+    logger.info("[Group Center] Auth Handshake Start")
     url = get_url(target="/auth/client/auth")
     try:
         response = requests.get(
@@ -68,6 +69,7 @@ def hand_shake_to_center(
     except Exception as e:
         logger.error(f"[Group Center] Handshake Failed: {e}")
         return False
+    logger.info("[Group Center] Auth Handshake Finished.")
 
 
 def send_dict_to_center(data: dict, target: str) -> bool:
@@ -129,7 +131,7 @@ class GroupCenterWorkThread(threading.Thread):
                     task_list.pop(0)
                 else:
                     # 出错多休息一会儿~
-                    time_sleep(60)
+                    time_sleep(20)
 
             time_sleep(10)
 

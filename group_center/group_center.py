@@ -29,18 +29,45 @@ def get_url(target: str):
     return GROUP_CENTER_URL + target
 
 
+access_key = ""
+
 public_part: dict = {
     "serverName": SERVER_NAME,
     "serverNameEng": SERVER_NAME_SHORT,
-    "accessKey": "",
 }
 
 
 def hand_shake_to_center(
         username: str,
         password: str
-):
-    pass
+) -> bool:
+    url = get_url(target="/auth/client/auth")
+    try:
+        response = requests.get(
+            url=url,
+            params={
+                "userName": username,
+                "password": password
+            },
+            timeout=10
+        )
+
+        if response.status_code != 200:
+            logger.error(f"[Group Center] Handshake Failed: {response.text}")
+            return False
+        response_dict: dict = json.loads(response.text)
+        if (not (
+                "isAuthenticated" in response_dict.keys() and
+                response_dict["isAuthenticated"]
+        )):
+            logger.error(f"[Group Center] Not authorized")
+            return False
+        global access_key
+        access_key = response_dict["accessKey"]
+
+    except Exception as e:
+        logger.error(f"[Group Center] Handshake Failed: {e}")
+        return False
 
 
 def send_dict_to_center(data: dict, target: str) -> bool:
@@ -49,6 +76,13 @@ def send_dict_to_center(data: dict, target: str) -> bool:
         response = requests.post(url, json=data, timeout=10)
 
         response_dict: dict = json.loads(response.text)
+
+        if (not (
+                "isAuthenticated" in response_dict.keys() and
+                response_dict["isAuthenticated"]
+        )):
+            logger.error(f"[Group Center] Not authorized")
+            return False
 
         if (not (
                 "isSucceed" in response_dict.keys() and
@@ -78,16 +112,18 @@ class GroupCenterWorkThread(threading.Thread):
         super(GroupCenterWorkThread, self).__init__()
 
     def run(self):
-        global task_list
+        global task_list, access_key
 
         while self.need_work:
             if len(task_list) > 0:
                 data, target = task_list[0]
+                final_data = {
+                    **public_part,
+                    **data,
+                    "accessKey": access_key
+                }
                 if send_dict_to_center(
-                        data={
-                            **public_part,
-                            **data
-                        },
+                        data=final_data,
                         target=target
                 ):
                     task_list.pop(0)

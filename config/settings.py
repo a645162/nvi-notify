@@ -166,6 +166,7 @@ GPU_BOARD_WEB_URL = os.getenv("GPU_BOARD_WEB_URL", "")
 USE_GROUP_CENTER_str = os.getenv("USE_GROUP_CENTER", "FALSE")
 USE_GROUP_CENTER: bool = get_bool_from_string(USE_GROUP_CENTER_str)
 GROUP_CENTER_URL = os.getenv("GROUP_CENTER_URL", "http://127.0.0.1:8088")
+GROUP_CENTER_PASSWORD = os.getenv("GROUP_CENTER_PASSWORD", "password")
 
 # WebHook
 WEBHOOK_DELAY_SEND_SECONDS = int(os.getenv("WEBHOOK_DELAY_SEND_SECONDS", 60))

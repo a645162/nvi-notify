@@ -45,6 +45,8 @@ def hand_shake_to_center(
     logger.info("[Group Center] Auth Handshake Start")
     url = get_url(target="/auth/client/auth")
     try:
+        logger.info(f"[Group Center] Handshake To: {url}")
+        logger.info(f"[Group Center] Handshake Params: {username} {password}")
         response = requests.get(
             url=url,
             params={
@@ -57,6 +59,7 @@ def hand_shake_to_center(
         if response.status_code != 200:
             logger.error(f"[Group Center] Handshake Failed: {response.text}")
             return False
+
         response_dict: dict = json.loads(response.text)
         if (not (
                 "isAuthenticated" in response_dict.keys() and
@@ -66,6 +69,7 @@ def hand_shake_to_center(
             return False
         global access_key
         access_key = response_dict["accessKey"]
+        logger.info(f"[Group Center] Auth Handshake Success: {access_key}")
 
     except Exception as e:
         logger.error(f"[Group Center] Handshake Failed: {e}")

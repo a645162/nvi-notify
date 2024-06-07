@@ -2,6 +2,7 @@ import os
 import sqlite3
 
 from config.settings import NUM_GPU, SERVER_NAME
+from monitor.info.enum import TaskState
 from monitor.info.sql_task_info import TaskInfoForSQL
 from utils.logs import get_logger
 
@@ -139,9 +140,8 @@ class SQLite:
     def get_running_task_data(self, gpu_id):
         try:
             self.cur.execute(
-                "SELECT * FROM {} WHERE finish_timestamp = 0 AND task_state != 'death'".format(
-                    self.table_name_header + str(gpu_id)
-                )
+                f"SELECT * FROM {self.table_name_header + str(gpu_id)} "
+                f"WHERE finish_timestamp = 0 AND task_state != '{TaskState.DEATH}'"
             )
             return self.cur.fetchall()
         except Exception as e:
@@ -159,11 +159,13 @@ class SQLite:
             ):
                 update_sql_text = (
                     "UPDATE {} "
-                    "SET task_state = 'death' "
+                    "SET task_state = '{}' "
                     "WHERE process_id = ? AND gpu_id = ? AND finish_timestamp= 0;"
                 )
                 self.cur.execute(
-                    update_sql_text.format(self.table_name_header + str(gpu_id)),
+                    update_sql_text.format(
+                        self.table_name_header + str(gpu_id), TaskState.DEATH
+                    ),
                     (unfinished_task_data[1], gpu_id),
                 )
                 self.conn.commit()

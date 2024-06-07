@@ -10,6 +10,7 @@ from dotenv import dotenv_values, load_dotenv
 from nvitop import Device
 
 from config.user import get_all_user_info
+from monitor.info.enum import AllWebhookName
 from utils.logs import get_logger
 from utils.utils import get_interface_ip_dict
 
@@ -176,7 +177,7 @@ WEBHOOK_SLEEP_TIME_END = get_env_time(
 )
 
 WEBHOOK_NAME = [
-    m.strip().upper() for m in os.getenv("WEBHOOK_NAME", "WEWORK").split(",")
+    m.strip().upper() for m in os.getenv("WEBHOOK_NAME", AllWebhookName.WEWORK).split(",")
 ]
 WEBHOOK_WEWORK_DEPLOY = os.getenv("WEBHOOK_WEWORK_DEPLOY", "").strip()
 WEBHOOK_WEWORK_DEV = os.getenv("WEBHOOK_WEWORK_DEV", "").strip()

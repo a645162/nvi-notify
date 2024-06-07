@@ -16,6 +16,7 @@ from config.settings import (
 )
 from config.user import UserInfo
 from monitor.info.webhook_task_info import TaskInfoForWebHook
+from monitor.info.enum import AllWebhookName, MsgType, TaskEvent
 from notify.webhook import send_text
 from utils.logs import get_logger
 
@@ -74,7 +75,7 @@ def send_gpu_task_message(process_info: Dict, task_event: str):
         if multi_gpu_msg == "-1":  # 非第一个使用的GPU不发送消息
             return
 
-        if task_event == "create":
+        if task_event == TaskEvent.CREATE:
             msg_header = (
                 f"{gpu_name_header}🚀"
                 f"{task.user.name_cn}的"
@@ -82,7 +83,7 @@ def send_gpu_task_message(process_info: Dict, task_event: str):
                 f"({task.screen_name}{task.project_name}-{task.python_file})启动"
                 "\n"
             )
-        elif task_event == "finish":
+        elif task_event == TaskEvent.FINISH:
             msg_header = (
                 f"{gpu_name_header}☑️"
                 f"{task.user.name_cn}的"
@@ -104,7 +105,7 @@ def send_gpu_task_message(process_info: Dict, task_event: str):
             + task.gpu_status_msg
             + gpu_task_status_info_msg
             + task.all_task_msg,
-            user=task.user if task_event == "finish" else None,
+            user=task.user if task_event == TaskEvent.FINISH else None,
         )
 
 
@@ -124,14 +125,14 @@ def log_task_info(process_info: Dict, task_event: str):
     task = TaskInfoForWebHook(process_info, task_event)
 
     with open(logfile_dir_path / "user_task.log", "a") as log_writer:
-        if task_event == "create":
+        if task_event == TaskEvent.CREATE:
             output_log = (
                 f"{task.gpu_name}"
                 f" {task.user.name_cn} "
                 f"create new {'debug ' if task.is_debug else ''}"
                 f"task: {task.pid}"
             )
-        elif task_event == "finish":
+        elif task_event == TaskEvent.FINISH:
             output_log = (
                 f"{task.gpu_name}"
                 f" finish {task.user.name_cn}'s {'debug ' if task.is_debug else ''}"
@@ -156,7 +157,7 @@ def handle_normal_text(msg: str, user: UserInfo = None):
         msg += f"📈http://{SERVER_DOMAIN}\n"
 
     msg += f"⏰{get_now_time()}"
-    send_text(msg, "normal", user, "all")
+    send_text(msg, MsgType.NORMAL, user, AllWebhookName.ALL)
 
 
 def handle_warning_text(msg: str) -> str:
@@ -176,7 +177,7 @@ def send_process_except_warning_msg():
     发送进程异常警告消息函数
     """
     warning_message = f"⚠️⚠️{SERVER_NAME}获取进程失败！⚠️⚠️\n"
-    send_text(msg=handle_warning_text(warning_message), msg_type="warning")
+    send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
 
 def send_cpu_except_warning_msg(cpu_id: int):
@@ -184,7 +185,7 @@ def send_cpu_except_warning_msg(cpu_id: int):
     发送CPU异常警告消息函数
     """
     warning_message = f"⚠️⚠️{SERVER_NAME}获取CPU:{cpu_id}温度失败！⚠️⚠️\n"
-    send_text(msg=handle_warning_text(warning_message), msg_type="warning")
+    send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
 
 def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
@@ -192,7 +193,7 @@ def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
     发送CPU温度异常警告消息函数
     """
     warning_message = f"🤒🤒{SERVER_NAME}的CPU:{cpu_id}温度已达{cpu_temperature}°C\n"
-    send_text(msg=handle_warning_text(warning_message), msg_type="warning")
+    send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
 def send_hard_disk_high_occupancy_warning_msg(
     name: str, mountpoint: str, total_GB: float, free_GB: float, percentage: float

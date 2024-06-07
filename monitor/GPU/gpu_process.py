@@ -10,7 +10,8 @@ import psutil
 from nvitop import GpuProcess
 
 from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
-from group_center import group_center
+from notify import group_center
+from monitor.info.enum import TaskEvent, TaskState
 from monitor.info.gpu_info import GPUInfo
 from monitor.info.sql_task_info import TaskInfoForSQL
 from notify.send_task_msg import log_task_info, send_gpu_task_message
@@ -23,15 +24,8 @@ sql = get_sql()
 
 
 class GPUProcessInfo:
-    # Enum
-    NEWBORN = "newborn"
-    WORKING = "working"
-    DEATH = "death"
-
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
-        self.task_id: str = (
-            datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
-        )
+        self.task_id: str = datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
 
         self.pid: int = pid
         self.process_name: str = gpu_process.name()
@@ -222,11 +216,7 @@ class GPUProcessInfo:
 
     def get_user_old(self):
         self.user = next(
-            (
-                user
-                for user in USERS
-                if self.gpu_process.username() == user["name_eng"]
-            ),
+            (user for user in USERS if self.gpu_process.username() == user["name_eng"]),
             None,
         )
 
@@ -413,7 +403,9 @@ class GPUProcessInfo:
         if dot_index != -1:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
-                self.screen_session_name = self.screen_session_name[dot_index + 1 :].strip()
+                self.screen_session_name = self.screen_session_name[
+                    dot_index + 1 :
+                ].strip()
 
     def get_project_name(self):
         if self.cwd is not None:
@@ -443,35 +435,44 @@ class GPUProcessInfo:
         if self._state == new_state:
             return
 
-        if new_state == "newborn" and self._state is None:
+        if new_state == TaskState.NEWBORN and self._state is None:
             # 新生进程
 
-            log_task_info(self.__dict__, "create")
-        elif new_state == "working" and self._state == "newborn":
+            log_task_info(self.__dict__, TaskEvent.CREATE)
+        elif (
+            new_state == TaskState.WORKING
+            and self._state == TaskState.NEWBORN
+        ):
             # 新生进程进入正常工作状态
 
             sql.update_task_data(TaskInfoForSQL(self.__dict__, new_state))
 
             # Group Center
-            group_center.gpu_task_message(self, "create")
+            group_center.gpu_task_message(self, TaskEvent.CREATE)
 
             # WebHook
-            send_gpu_task_message(self.__dict__, "create")
-        elif new_state == "death" and self._state == "working":
+            send_gpu_task_message(self.__dict__, TaskEvent.CREATE)
+        elif (
+            new_state == TaskState.DEATH
+            and self._state == TaskState.WORKING
+        ):
             # 已经进入正常工作状态的进程正常结束
 
-            log_task_info(self.__dict__, "finish")
+            log_task_info(self.__dict__, TaskEvent.FINISH)
             sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, new_state))
 
             # Group Center
-            group_center.gpu_task_message(self, "finish")
+            group_center.gpu_task_message(self, TaskEvent.FINISH)
 
             # WebHook
-            send_gpu_task_message(self.__dict__, "finish")
-        elif new_state == "death" and self._state == "newborn":
+            send_gpu_task_message(self.__dict__, TaskEvent.FINISH)
+        elif (
+            new_state == TaskState.DEATH
+            and self._state == TaskState.NEWBORN
+        ):
             # 没有到发信阈值就被杀死的进程
 
-            log_task_info(self.__dict__, "finish")
+            log_task_info(self.__dict__, TaskEvent.FINISH)
             sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, new_state))
 
         self._state = new_state

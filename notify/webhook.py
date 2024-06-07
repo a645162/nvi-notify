@@ -7,6 +7,7 @@ import os
 import threading
 import time
 from queue import Queue
+from typing import List, Union
 
 import requests
 
@@ -18,32 +19,33 @@ from config.settings import (
     is_within_time_range,
 )
 from config.user import UserInfo
+from monitor.info.enum import AllWebhookName, MsgType, WebhookState
 from utils.logs import get_logger
 
 logger = get_logger()
 
 
-class WEBHOOK:
-    def __init__(self, webhook_type: str) -> None:
-        valid_webhook_type = ["wework", "lark"]
+class Webhook:
+    def __init__(self, webhook_name: str) -> None:
+        valid_webhook = [e.value for e in AllWebhookName.__members__.values()]
         assert (
-            webhook_type.lower() in valid_webhook_type
-        ), f"{webhook_type}'s webhook is not supported!"
+            webhook_name.lower() in valid_webhook
+        ), f"{webhook_name}'s webhook is not supported!"
 
-        self.webhook_type = webhook_type
+        self.webhook_name = webhook_name.lower()
         self._webhook_url_main = self.get_webhook_url(
-            os.getenv(f"WEBHOOK_{webhook_type.upper()}_DEPLOY")
+            os.getenv(f"WEBHOOK_{webhook_name.upper()}_DEPLOY")
         )
         self._webhook_url_warning = self.get_webhook_url(
-            os.getenv(f"WEBHOOK_{webhook_type.upper()}_DEV")
+            os.getenv(f"WEBHOOK_{webhook_name.upper()}_DEV")
         )
         self._webhook_main_secret = os.getenv(
-            f"WEBHOOK_{webhook_type.upper()}_DEPLOY_SECRET"
+            f"WEBHOOK_{webhook_name.upper()}_DEPLOY_SECRET"
         )
-        self._webhook_warning_secret = os.getenv(
-            f"WEBHOOK_{webhook_type.upper()}_DEV_SECRET"
+        self.webhook_warning_secret = os.getenv(
+            f"WEBHOOK_{webhook_name.upper()}_DEV_SECRET"
         )
-        self._webhook_state = "working"
+        self._webhook_state = WebhookState.WORKING
 
         self.msg_queue = Queue()
 
@@ -87,11 +89,11 @@ class WEBHOOK:
         webhook_api = webhook_api.strip()
 
         if len(webhook_api) == 0:
-            logger.error(f"Illegal {self.webhook_type} Webhook!")
+            logger.error(f"Illegal {self.webhook_name} Webhook!")
             return ""
-        if self.webhook_type.lower() == "wework":
+        if self.webhook_name == AllWebhookName.WEWORK:
             webhook_header = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
-        elif self.webhook_type.lower() == "lark":
+        elif self.webhook_name == AllWebhookName.LARK:
             webhook_header = "https://open.feishu.cn/open-apis/bot/v2/hook/"
 
         if webhook_api.startswith(webhook_header):
@@ -99,16 +101,20 @@ class WEBHOOK:
         else:
             return webhook_header + webhook_api
 
-    def send_message(self, msg: str, msg_type: str = "normal", user: UserInfo = None):
-        if msg_type == "normal":
+    def send_message(
+        self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
+    ):
+        if msg_type == MsgType.NORMAL:
             webhook_url = self.webhook_url_main
-        elif msg_type == "warning":
+            webhook_secret = self.webhook_main_secret
+        elif msg_type == MsgType.WARNING:
             webhook_url = self.webhook_url_warning
+            webhook_secret = self.webhook_warning_secret
 
-        if self.webhook_type == "wework":
+        if self.webhook_name == AllWebhookName.WEWORK:
             self.send_weCom_message(msg, webhook_url, user)
-        elif self.webhook_type == "lark":
-            self.send_lark_message(msg, webhook_url, user)
+        elif self.webhook_name == AllWebhookName.LARK:
+            self.send_lark_message(msg, webhook_url, webhook_secret, user)
 
     def send_weCom_message(self, msg: str, webhook_url: str, user: UserInfo = None):
         headers = {"Content-Type": "application/json"}
@@ -130,7 +136,9 @@ class WEBHOOK:
         r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
         logger.info(f"WeCom[text]{r.text}")
 
-    def send_lark_message(self, msg: str, webhook_url: str, user: UserInfo = None):
+    def send_lark_message(
+        self, msg: str, webhook_url: str, webhook_secret: str, user: UserInfo = None
+    ):
         headers = {"Content-Type": "application/json"}
         msg = msg.replace("/::D", "[呲牙]")
         if user is None:
@@ -152,7 +160,7 @@ class WEBHOOK:
         now_timestamp = int(datetime.datetime.now().timestamp())
         data = {
             "timestamp": now_timestamp,
-            "sign": self.gen_sign(now_timestamp, self.webhook_secret),
+            "sign": self.gen_sign(now_timestamp, webhook_secret),
             "msg_type": "text",
             "content": {
                 "text": msg,
@@ -182,15 +190,15 @@ class WEBHOOK:
                 logger.warning(
                     f"[{get_now_time()}]{self.webhook_type}消息队列发送异常。"
                 )
-                time.sleep(20)
+                time.sleep(60)
 
     def check_webhook_state(self):
         while is_within_time_range(WEBHOOK_SLEEP_TIME_START, WEBHOOK_SLEEP_TIME_END):
-            if self._webhook_state != "sleeping":
-                self.webhook_state = "sleeping"
+            if self._webhook_state != WebhookState.SLEEPING:
+                self.webhook_state = WebhookState.SLEEPING
             time.sleep(60)
-        if self._webhook_state != "working":
-            self.webhook_state = "working"
+        if self._webhook_state != WebhookState.WORKING:
+            self.webhook_state = WebhookState.WORKING
 
     @property
     def webhook_state(self):
@@ -222,47 +230,43 @@ webhook_threads = {}
 
 def send_text(
     msg: str,
-    msg_type: str = "normal",
+    msg_type: str = MsgType.NORMAL,
     user: UserInfo = None,
-    webhook_type: str = "wework",
+    enable_webhook_name: Union[List[str], str] = AllWebhookName.ALL,
 ):
-    """Send text message in non-sleep time.
+    valid_msg_type_list = [member.value for member in MsgType]
+    valid_webhook_name = [member.value for member in AllWebhookName]
 
-    Args:
-        msg_type (str): choice=['normal', 'warning']. Defaults to "normal".
-
-    Raises:
-        ValueError: "msg_type must be 'normal' or 'warning'"
-    """
-    assert msg_type in ["normal", "warning"], logger.error(
-        "msg_type must be 'normal' or 'warning'"
-    )
-
-    if webhook_type not in WEBHOOK_NAME and webhook_type != "all":
-        logger.error(f"webhook_type must be in {WEBHOOK_NAME}")
-        return
-    if webhook_type == "all":
-        webhook_type = WEBHOOK_NAME
-    if isinstance(webhook_type, str):
-        webhook_type = [webhook_type.lower()]
+    assert msg_type in valid_msg_type_list, logger.error("msg_type must be in MsgType")
+    if not isinstance(enable_webhook_name, list):
+        assert enable_webhook_name in valid_webhook_name, logger.error(
+            "enable_webhook_name must be in WEBHOOK_NAME env, or 'AllWebhookName.ALL'"
+        )
+        webhook_list = [enable_webhook_name.lower()]
+    else:
+        for _webhook_name in enable_webhook_name:
+            assert _webhook_name in valid_webhook_name, logger.error(
+                "enable_webhook_name must be in WEBHOOK_NAME env, or 'AllWebhookName.ALL'"
+            )
+        webhook_list = enable_webhook_name
 
     msg = msg.strip()
     if len(msg) == 0:
         logger.warning("Message is empty!")
         return
 
-    for webhook in WEBHOOK_NAME:
-        webhook = webhook.lower()
-        if webhook not in webhook_threads:
-            webhook_threads[webhook] = WEBHOOK(webhook)
+    for webhook_name in WEBHOOK_NAME:  # 仅实例化环境变量中的
+        webhook_name = webhook_name.lower()
+        if webhook_name not in webhook_threads:
+            webhook_threads[webhook_name] = Webhook(webhook_name)
             threading.Thread(
-                target=webhook_threads[webhook].webhook_send_thread
+                target=webhook_threads[webhook_name].webhook_send_thread
             ).start()
             time.sleep(0.5)  # waiting
 
-    for webhook in webhook_type:
-        webhook = webhook.lower()
-        if webhook_threads.get(webhook, None):
-            webhook_threads[webhook].msg_queue.put((msg, msg_type, user))
+    for webhook_name in webhook_list:
+        webhook_name = webhook_name.lower()
+        if webhook_threads.get(webhook_name, None):  # 环境变量中不包含的Webhook则跳过
+            webhook_threads[webhook_name].msg_queue.put((msg, msg_type, user))
 
-            logger.info(f"[{get_now_time()}]{webhook}消息队列添加一条消息。")
+            logger.info(f"[{get_now_time()}]{webhook_name}消息队列添加一条消息。")

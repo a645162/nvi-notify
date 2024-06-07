@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 
+from monitor.info.enum import TaskState
 
 class TaskInfoForSQL:
     def __init__(self, info: Dict, new_state: Optional[str] = None) -> None:
@@ -17,7 +18,7 @@ class TaskInfoForSQL:
         self._gpu_mem_usage_max: str = info.get("task_gpu_memory_max_human", "0MiB")
 
         self._task_state: str = (
-            new_state if new_state is not None else info.get("_state", "newborn")
+            new_state if new_state is not None else info.get("_state", TaskState.NEWBORN)
         )
 
         self._is_debug: bool = info.get("is_debug", True)

@@ -2,6 +2,7 @@ from typing import Dict, Optional
 
 from config.settings import NUM_GPU
 from config.user import UserInfo
+from monitor.info.enum import TaskEvent
 from monitor.info.gpu_info import GPUInfo
 
 
@@ -17,7 +18,9 @@ class TaskInfoForWebHook:
         self._user: UserInfo = info.get("user")
 
         self._running_time_human: Optional[str] = info.get("running_time_human")
-        self._task_gpu_memory_max_human: str = info.get("task_gpu_memory_max_human", "0MiB")
+        self._task_gpu_memory_max_human: str = info.get(
+            "task_gpu_memory_max_human", "0MiB"
+        )
 
         self._is_debug: bool = info.get("is_debug", True)
         self._is_multi_gpu: bool = info.get("is_multi_gpu", False)
@@ -36,11 +39,11 @@ class TaskInfoForWebHook:
 
     @property
     def num_task(self) -> int:
-        if self._task_event == "create":
+        if self._task_event == TaskEvent.CREATE:
             return self._num_task
-        elif self._task_event == "finish":
+        elif self._task_event == TaskEvent.FINISH:
             return max(0, self._num_task - 1)
-    
+
     @num_task.setter
     def num_task(self, value) -> int:
         self._num_task = value
@@ -60,7 +63,7 @@ class TaskInfoForWebHook:
     @property
     def gpu_status(self) -> str:
         return self._gpu_status
-    
+
     @property
     def gpu_status_msg(self) -> str:
         return (

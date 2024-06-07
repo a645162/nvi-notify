@@ -19,8 +19,8 @@ from global_variable.global_gpu import (
     global_gpu_task,
     global_gpu_usage,
 )
-from group_center import group_center
-from monitor.GPU.gpu_process import GPUProcessInfo
+from notify import group_center
+from monitor.GPU.gpu_process import GPUProcessInfo, TaskState
 from monitor.info.gpu_info import GPUInfo, gpu_name_filter
 from notify.send_task_msg import (
     send_gpu_monitor_start_msg,
@@ -162,7 +162,7 @@ class NvidiaMonitor:
                 for pid in self.processes:
                     self.processes[pid].gpu_status = self.update_gpu_status()
                     self.processes[pid].update_gpu_process_info()
-                    if self.processes[pid].state == "newborn":
+                    if self.processes[pid].state == TaskState.NEWBORN:
                         self.processes[pid].update_cmd()
 
                 # check death process pid
@@ -172,7 +172,7 @@ class NvidiaMonitor:
                     if pid not in cur_gpu_all_processes:
                         del self.processes[pid].gpu_all_tasks_msg[pid]
                         self.processes[pid].set_finish_time()
-                        self.processes[pid].state = "death"
+                        self.processes[pid].state = TaskState.DEATH
                         del self.processes[pid]
                 del tmp_process
 
@@ -185,9 +185,9 @@ class NvidiaMonitor:
                                     new_process.running_time_in_seconds
                                     > WEBHOOK_DELAY_SEND_SECONDS
                             ):
-                                new_process.state = "working"
+                                new_process.state = TaskState.WORKING
                             else:
-                                new_process.state = "newborn"
+                                new_process.state = TaskState.NEWBORN
                             new_process.gpu_status = self.update_gpu_status()
                             self.processes[pid] = new_process
                         else:

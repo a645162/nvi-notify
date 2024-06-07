@@ -11,6 +11,7 @@ from config.settings import (
     GPU_MONITOR_SAMPLING_INTERVAL,
     NUM_GPU,
     WEBHOOK_DELAY_SEND_SECONDS,
+    GPU_MONITOR_AUTO_RESTART,
     get_emoji,
 )
 from global_variable.global_gpu import (
@@ -232,11 +233,17 @@ class NvidiaMonitor:
                         f"GPU {self.gpu_id} monitor restart times: {restart_times}"
                     )
 
-                try:
+                if GPU_MONITOR_AUTO_RESTART:
+                    # 需要重启不可以报错导致线程崩溃
+                    try:
+                        gpu_monitor_thread()
+                    except Exception as e:
+                        logger.error(f"GPU {self.gpu_id} monitor error: {e}")
+                        time.sleep(60)
+                else:
+                    # 不需要重启就正常报错
                     gpu_monitor_thread()
-                except Exception as e:
-                    logger.error(f"GPU {self.gpu_id} monitor error: {e}")
-                    time.sleep(2)
+                    break
                 restart_times += 1
 
         if self.thread is None or not self.thread.is_alive():

@@ -185,6 +185,10 @@ WEBHOOK_WEWORK_DEV = os.getenv("WEBHOOK_WEWORK_DEV", "").strip()
 WEBHOOK_LARK_DEPLOY = os.getenv("WEBHOOK_LARK_DEPLOY", "").strip()
 WEBHOOK_LARK_DEV = os.getenv("WEBHOOK_LARK_DEV", "").strip()
 
+GPU_MONITOR_AUTO_RESTART = get_bool_from_string(
+    os.getenv("GPU_MONITOR_AUTO_RESTART", "True").strip()
+)
+
 
 def fix_env():
     def fix_url():

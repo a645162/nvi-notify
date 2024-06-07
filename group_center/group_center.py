@@ -130,6 +130,11 @@ class GroupCenterWorkThread(threading.Thread):
         global task_list, access_key
 
         while self.need_work:
+            if access_key == "":
+                hand_shake_to_center(
+                    username=SERVER_NAME_SHORT,
+                    password=GROUP_CENTER_PASSWORD
+                )
             if len(task_list) > 0:
                 data, target = task_list[0]
                 final_data = {

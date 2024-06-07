@@ -14,7 +14,7 @@ from config.settings import (
     GROUP_CENTER_PASSWORD
 )
 
-from utils.security.md5 import get_md5_hash
+from utils.security import get_md5_hash
 
 from utils.logs import get_logger
 

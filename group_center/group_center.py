@@ -14,6 +14,8 @@ from config.settings import (
     GROUP_CENTER_PASSWORD
 )
 
+from utils.security.md5 import get_md5_hash
+
 from utils.logs import get_logger
 
 logger = get_logger()
@@ -45,19 +47,21 @@ def hand_shake_to_center(
     logger.info("[Group Center] Auth Handshake Start")
     url = get_url(target="/auth/client/auth")
     try:
-        logger.info(f"[Group Center] Handshake To: {url}")
-        logger.info(f"[Group Center] Handshake Params: {username} {password}")
+        logger.info(f"[Group Center] Auth To: {url}")
+        password_display = "*" * len(password)
+        password_encoded = get_md5_hash(password)
+        logger.info(f"[Group Center] Auth userName:{username} password:{password_display}")
         response = requests.get(
             url=url,
             params={
                 "userName": username,
-                "password": password
+                "password": password_encoded
             },
             timeout=10
         )
 
         if response.status_code != 200:
-            logger.error(f"[Group Center] Handshake Failed: {response.text}")
+            logger.error(f"[Group Center] Auth Failed: {response.text}")
             return False
 
         response_dict: dict = json.loads(response.text)
@@ -72,7 +76,7 @@ def hand_shake_to_center(
         logger.info(f"[Group Center] Auth Handshake Success: {access_key}")
 
     except Exception as e:
-        logger.error(f"[Group Center] Handshake Failed: {e}")
+        logger.error(f"[Group Center] Auth Handshake Failed: {e}")
         return False
     logger.info("[Group Center] Auth Handshake Finished.")
 

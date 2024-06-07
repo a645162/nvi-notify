@@ -23,7 +23,7 @@ class UserInfo:
 
     @staticmethod
     def get_webhook_info(
-        webhook_dict: dict, webhook_type: str = "weCom"
+            webhook_dict: dict, webhook_type: str = "weCom"
     ) -> Dict[str, list]:
         if webhook_type in webhook_dict.keys():
             mention_id = webhook_dict[webhook_type].get("userId", [""])
@@ -53,8 +53,14 @@ def get_all_user_info(directory_path: str = ""):
     yaml_list = get_files_with_extension(directory_path, "yaml", True)
     for yaml_file_path in yaml_list:
         yaml_content: dict = parse_yaml(yaml_file_path)
-        if yaml_content["version"] == "example":
+        if "version" not in yaml_content.keys():
             continue
+        if "enable" not in yaml_content.keys():
+            continue
+
+        if str(yaml_content["enable"]).lower() != "true":
+            continue
+
         users = {
             UserInfo(user).name_eng: UserInfo(user) for user in yaml_content["userList"]
         }

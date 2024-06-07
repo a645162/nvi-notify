@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import Dict, List
+from typing import Dict
 
 from utils.utils import get_files_with_extension, parse_yaml
 
@@ -43,7 +43,7 @@ class UserInfo:
             }
 
 
-def get_all_user_info(directory_path: str = "") -> List[dict]:
+def get_all_user_info(directory_path: str = ""):
     all_user = {}
 
     if len(directory_path) == 0:
@@ -56,8 +56,7 @@ def get_all_user_info(directory_path: str = "") -> List[dict]:
         if yaml_content["version"] == "example":
             continue
         users = {
-            UserInfo(user).name_eng: UserInfo(user).__dict__
-            for user in yaml_content["userList"]
+            UserInfo(user).name_eng: UserInfo(user) for user in yaml_content["userList"]
         }
         all_user.update(users)
 
@@ -74,7 +73,3 @@ if __name__ == "__main__":
         print(user['name_cn'])
         print(user['keywords'])
         print(user)
-    # user_list: List[dict] = get_user(yaml_content)
-
-    # for user in user_list:
-    #     print(user)

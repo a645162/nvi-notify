@@ -1,7 +1,7 @@
-from monitor.GPU.info import GPU_INFO
+from monitor.info.gpu_info import GPUInfo
 
 
-class GroupCenterGpuTaskInfo:
+class TaskInfoForGroupCenter:
     taskID: str = ""
 
     messageType = ""
@@ -73,7 +73,7 @@ class GroupCenterGpuTaskInfo:
         gpu_process_obj: GPUProcessInfo = gpu_process_obj
 
         # 任务唯一标识符
-        self.taskID = gpu_process_obj.task_task_id
+        self.taskID = gpu_process_obj.task_id
 
         # 任务类型
         self.taskType = "GPU"
@@ -81,7 +81,7 @@ class GroupCenterGpuTaskInfo:
         self.taskStatus = gpu_process_obj.state
 
         # 用户
-        self.taskUser = gpu_process_obj.user_name
+        self.taskUser = gpu_process_obj.user.name_cn
 
         # 进程信息
         self.taskPid = gpu_process_obj.pid
@@ -92,7 +92,7 @@ class GroupCenterGpuTaskInfo:
         self.allTaskMessage = all_tasks_msg
 
         # GPU 信息
-        gpu_status: GPU_INFO = gpu_process_obj.gpu_status
+        gpu_status: GPUInfo = gpu_process_obj.gpu_status
         self.gpuUsagePercent = gpu_status.utl
         self.gpuMemoryUsageString = self.__fix_data_size_str(gpu_status.mem_usage)
         self.gpuMemoryFreeString = self.__fix_data_size_str(gpu_status.mem_free)

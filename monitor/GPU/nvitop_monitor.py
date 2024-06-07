@@ -8,10 +8,10 @@ from typing import Dict, List, Optional
 from nvitop import Device
 
 from config.settings import (
+    GPU_MONITOR_AUTO_RESTART,
     GPU_MONITOR_SAMPLING_INTERVAL,
     NUM_GPU,
     WEBHOOK_DELAY_SEND_SECONDS,
-    GPU_MONITOR_AUTO_RESTART,
     get_emoji,
 )
 from global_variable.global_gpu import (
@@ -19,19 +19,16 @@ from global_variable.global_gpu import (
     global_gpu_task,
     global_gpu_usage,
 )
-from monitor.GPU.info import GPU_INFO, gpu_name_filter
-from monitor.GPU.gpu_process import GPUProcessInfo
-from utils.converter import convert_bytes_to_mb
-from utils.sqlite import get_sql
-
 from group_center import group_center
-
+from monitor.GPU.gpu_process import GPUProcessInfo
+from monitor.info.gpu_info import GPUInfo, gpu_name_filter
 from notify.send_task_msg import (
-    send_process_except_warning_msg,
     send_gpu_monitor_start_msg,
+    send_process_except_warning_msg,
 )
-
+from utils.converter import convert_bytes_to_mb
 from utils.logs import get_logger
+from utils.sqlite import get_sql
 
 logger = get_logger()
 sql = get_sql()
@@ -58,8 +55,8 @@ class NvidiaMonitor:
     def get_device(self):
         self.nvidia_i = Device(self.gpu_id)
 
-    def update_gpu_status(self) -> GPU_INFO:
-        gpu_status = GPU_INFO(
+    def update_gpu_status(self) -> GPUInfo:
+        gpu_status = GPUInfo(
             {
                 # GPU Percent
                 "gpu_usage": self.get_gpu_utl(),
@@ -141,7 +138,7 @@ class NvidiaMonitor:
             debug_emoji = "🐞" if process.is_debug else ""
             task_msg = (
                 f"{idx_emoji}{debug_emoji}"
-                f"用户: {process.user['name']}  "
+                f"用户: {process.user.name_cn}  "
                 f"最大显存: {process.task_gpu_memory_max_human}  "
                 f"运行时长: {process.running_time_human}\n"
             )

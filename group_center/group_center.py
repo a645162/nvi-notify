@@ -1,22 +1,20 @@
-from typing import List, Tuple
-import threading
-import requests
 import json
+import threading
 from time import sleep as time_sleep
+from typing import List, Tuple
 
-from group_center.group_center_type import GroupCenterGpuTaskInfo
+import requests
 
 from config.settings import (
-    USE_GROUP_CENTER,
+    GROUP_CENTER_PASSWORD,
     GROUP_CENTER_URL,
     SERVER_NAME,
     SERVER_NAME_SHORT,
-    GROUP_CENTER_PASSWORD
+    USE_GROUP_CENTER,
 )
-
-from utils.security import get_md5_hash
-
+from monitor.info.group_center_task_info import TaskInfoForGroupCenter
 from utils.logs import get_logger
+from utils.security import get_md5_hash
 
 logger = get_logger()
 
@@ -69,7 +67,7 @@ def hand_shake_to_center(
                 "isAuthenticated" in response_dict.keys() and
                 response_dict["isAuthenticated"]
         )):
-            logger.error(f"[Group Center] Not authorized")
+            logger.error("[Group Center] Not authorized")
             return False
         global access_key
         access_key = response_dict["accessKey"]
@@ -92,7 +90,7 @@ def send_dict_to_center(data: dict, target: str) -> bool:
                 "isAuthenticated" in response_dict.keys() and
                 response_dict["isAuthenticated"]
         )):
-            logger.error(f"[Group Center] Not authorized")
+            logger.error("[Group Center] Not authorized")
             hand_shake_to_center(
                 username=SERVER_NAME_SHORT,
                 password=GROUP_CENTER_PASSWORD
@@ -175,7 +173,7 @@ def gpu_task_message(process_obj, task_status: str):
 
     logger.info(
         f"[Group Center] Task "
-        f"User:{process_obj.user_name} "
+        f"User:{process_obj.user.name_cn} "
         f"PID:{process_obj.pid} "
         f"Status:{task_status}"
     )
@@ -184,8 +182,8 @@ def gpu_task_message(process_obj, task_status: str):
         "messageType": task_status,
     }
 
-    groupCenterGpuTaskInfoObj = GroupCenterGpuTaskInfo(process_obj)
+    taskInfoForGroupCenterGpuObj = TaskInfoForGroupCenter(process_obj)
 
-    data_dict.update(groupCenterGpuTaskInfoObj.__dict__)
+    data_dict.update(taskInfoForGroupCenterGpuObj.__dict__)
 
     add_task_to_center(data_dict, "/api/client/gpu_task/info")

@@ -13,13 +13,12 @@ from config.settings import (
 )
 from global_variable.global_system import global_system_info
 from monitor.hardware_resource.resource_monitor import Memory
-from utils.converter import convert_bytes_to_mb
-from utils.logs import get_logger
-
 from notify.send_task_msg import (
     send_cpu_except_warning_msg,
     send_cpu_temperature_warning_msg,
 )
+from utils.converter import convert_bytes_to_mb
+from utils.logs import get_logger
 
 logger = get_logger()
 

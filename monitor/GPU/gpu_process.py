@@ -9,9 +9,10 @@ from typing import Dict, List, Optional
 import psutil
 from nvitop import GpuProcess
 
-from config.settings import USER_LIST, WEBHOOK_DELAY_SEND_SECONDS
+from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
 from group_center import group_center
-from monitor.GPU.info import GPU_INFO, TASK_INFO_FOR_SQL
+from monitor.info.gpu_info import GPUInfo
+from monitor.info.sql_task_info import TaskInfoForSQL
 from notify.send_task_msg import log_task_info, send_gpu_task_message
 from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
@@ -28,7 +29,7 @@ class GPUProcessInfo:
     DEATH = "death"
 
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
-        self.task_task_id: str = (
+        self.task_id: str = (
             datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
         )
 
@@ -40,7 +41,7 @@ class GPUProcessInfo:
         self.gpu_name: str = gpu_process.device.name()
 
         self.gpu_process: GpuProcess = gpu_process
-        self.gpu_status: Optional[GPU_INFO] = None
+        self.gpu_status: Optional[GPUInfo] = None
         self.gpu_all_tasks_msg: Optional[Dict] = None
         self.num_task: int = 0
         self.process_environ: Optional[dict[str, str]] = None
@@ -99,7 +100,7 @@ class GPUProcessInfo:
             self.get_python_filename()
             self.get_start_time()
 
-            sql.insert_task_data(TASK_INFO_FOR_SQL(self.__dict__))
+            sql.insert_task_data(TaskInfoForSQL(self.__dict__))
 
     def update_cmd(self):
         self.get_cwd()
@@ -219,11 +220,11 @@ class GPUProcessInfo:
             any(keyword in _unit for _unit in cmdline) for keyword in debug_cmd_keywords
         )
 
-    def get_user(self):
+    def get_user_old(self):
         self.user = next(
             (
                 user
-                for user in USER_LIST
+                for user in USERS
                 if self.gpu_process.username() == user["name_eng"]
             ),
             None,
@@ -238,11 +239,11 @@ class GPUProcessInfo:
             },
         }
 
-        def find_user_by_path(user_list: list, path: str):
+        def find_user_by_path(users: list, path: str):
             for path_unit in reversed(path.split("data")[1].split("/")):
                 if len(path_unit) == 0:
                     continue
-                for user in user_list:
+                for user in users:
                     if any(
                         path_unit.lower() == keyword.lower().strip()
                         for keyword in user["keywords"]
@@ -252,16 +253,16 @@ class GPUProcessInfo:
 
         if self.user is None:
             cwd = self.cwd + "/" if self.cwd is not None else ""
-            self.user = find_user_by_path(USER_LIST, cwd) or default_user_dict
+            self.user = find_user_by_path(USERS, cwd) or default_user_dict
 
-    def get_user_new(self):
-        self.user = USER_LIST.get(self.gpu_process.username(), None)
+    def get_user(self):
+        self.user = USERS.get(self.gpu_process.username(), None)
 
-        def find_user_by_path(user_list: dict, path: str):
+        def find_user_by_path(users: dict, path: str):
             for path_unit in reversed(path.split("data")[1].split("/")):
                 if len(path_unit) == 0:
                     continue
-                for user in user_list.keys():
+                for user in users.values():
                     if any(
                         path_unit.lower() == keyword.lower().strip()
                         for keyword in user.keywords
@@ -271,7 +272,7 @@ class GPUProcessInfo:
 
         if self.user is None:
             cwd = self.cwd + "/" if self.cwd is not None else ""
-            self.user = find_user_by_path(USER_LIST, cwd)
+            self.user = find_user_by_path(USERS, cwd)
 
     def get_env_value(self, key: str, default_value: str):
         if self.process_environ is None:
@@ -360,18 +361,6 @@ class GPUProcessInfo:
     def get_cuda_visible_devices(self):
         self.cuda_visible_devices = self.get_env_value("CUDA_VISIBLE_DEVICES", "")
 
-    def get_screen_session_name(self):
-        self.screen_session_name = self.get_env_value("STY", "").strip()
-
-        if self.screen_session_name == "":
-            return
-
-        dot_index = self.screen_session_name.find(".")
-        if dot_index != -1:
-            name_spilt_list = self.screen_session_name.split(".")
-            if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
-                self.screen_session_name = self.screen_session_name[dot_index + 1 :]
-
     def get_cuda_root(self):
         cuda_home = self.get_env_value("CUDA_HOME", "").strip()
         nvcc_path = os.path.join(cuda_home, "bin", "nvcc")
@@ -414,25 +403,36 @@ class GPUProcessInfo:
         except Exception:
             return
 
+    def get_screen_session_name(self):
+        self.screen_session_name = self.get_env_value("STY", "").strip()
+
+        if self.screen_session_name == "":
+            return
+
+        dot_index = self.screen_session_name.find(".")
+        if dot_index != -1:
+            name_spilt_list = self.screen_session_name.split(".")
+            if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
+                self.screen_session_name = self.screen_session_name[dot_index + 1 :].strip()
+
     def get_project_name(self):
         if self.cwd is not None:
-            self.project_name = self.cwd.split("/")[-1]
+            self.project_name = self.cwd.split("/")[-1].strip()
+        else:
+            self.project_name = "".strip()
 
     def get_python_filename(self):
         if self.cmdline is None:
+            self.python_file = ""
             return
 
         file_name = next(
             (cmd_str for cmd_str in self.cmdline if cmd_str.lower().endswith(".py")), ""
         )
-        self.python_file = file_name.split("/")[-1] if "/" in file_name else file_name
-
-    @property
-    def user_name(self):
-        if "name" in self.user.keys():
-            return str(self.user["name"]).strip()
+        if "/" in file_name:
+            self.python_file = file_name.split("/")[-1].strip()
         else:
-            return ""
+            self.python_file = file_name.strip()
 
     @property
     def state(self):
@@ -446,11 +446,11 @@ class GPUProcessInfo:
         if new_state == "newborn" and self._state is None:
             # 新生进程
 
-            log_task_info(self.__dict__, task_type="create")
+            log_task_info(self.__dict__, "create")
         elif new_state == "working" and self._state == "newborn":
             # 新生进程进入正常工作状态
 
-            sql.update_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
+            sql.update_task_data(TaskInfoForSQL(self.__dict__, new_state))
 
             # Group Center
             group_center.gpu_task_message(self, "create")
@@ -460,8 +460,8 @@ class GPUProcessInfo:
         elif new_state == "death" and self._state == "working":
             # 已经进入正常工作状态的进程正常结束
 
-            log_task_info(self.__dict__, task_type="finish")
-            sql.update_finish_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
+            log_task_info(self.__dict__, "finish")
+            sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, new_state))
 
             # Group Center
             group_center.gpu_task_message(self, "finish")
@@ -471,8 +471,8 @@ class GPUProcessInfo:
         elif new_state == "death" and self._state == "newborn":
             # 没有到发信阈值就被杀死的进程
 
-            log_task_info(self.__dict__, task_type="finish")
-            sql.update_finish_task_data(TASK_INFO_FOR_SQL(self.__dict__, new_state))
+            log_task_info(self.__dict__, "finish")
+            sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, new_state))
 
         self._state = new_state
 

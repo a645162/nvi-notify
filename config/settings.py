@@ -9,10 +9,9 @@ from typing import Union
 from dotenv import dotenv_values, load_dotenv
 from nvitop import Device
 
-from config.users.utils import get_all_user_list
-from config.utils import get_interface_ip_dict
-
+from config.user import get_all_user_info
 from utils.logs import get_logger
+from utils.utils import get_interface_ip_dict
 
 logger = get_logger()
 
@@ -127,7 +126,7 @@ load_env()
 IPv4 = get_ip("v4")
 IPv6 = get_ip("v6")
 
-USER_LIST = get_all_user_list(os.path.join(os.getcwd(), "config/users"))
+USERS = get_all_user_info(os.path.join(os.getcwd(), "config/users"))
 NUM_CPU = get_cpu_physics_num()
 NUM_GPU = Device.count()
 
@@ -163,8 +162,7 @@ FLASK_SERVER_PORT = os.getenv("FLASK_SERVER_PORT", "3000")
 GPU_BOARD_WEB_URL = os.getenv("GPU_BOARD_WEB_URL", "")
 
 # Group Center
-USE_GROUP_CENTER_str = os.getenv("USE_GROUP_CENTER", "FALSE")
-USE_GROUP_CENTER: bool = get_bool_from_string(USE_GROUP_CENTER_str)
+USE_GROUP_CENTER: bool = get_bool_from_string(os.getenv("USE_GROUP_CENTER", "FALSE"))
 GROUP_CENTER_URL = os.getenv("GROUP_CENTER_URL", "http://127.0.0.1:8088")
 GROUP_CENTER_PASSWORD = os.getenv("GROUP_CENTER_PASSWORD", "password")
 

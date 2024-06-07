@@ -2,7 +2,7 @@ import os
 import sqlite3
 
 from config.settings import NUM_GPU, SERVER_NAME
-from monitor.GPU.info import TASK_INFO_FOR_SQL
+from monitor.info.sql_task_info import TaskInfoForSQL
 from utils.logs import get_logger
 
 logger = get_logger()
@@ -47,7 +47,7 @@ class SQLite:
             """
             self.cur.execute(sql_text.format(table_name))
 
-    def insert_task_data(self, task_info: TASK_INFO_FOR_SQL):
+    def insert_task_data(self, task_info: TaskInfoForSQL):
         table_name = self.table_name_header + str(task_info.gpu_id)
         self.cur.execute(
             f"SELECT * FROM {table_name} WHERE task_id = ?", (task_info.task_idx,)
@@ -96,7 +96,7 @@ class SQLite:
         )
         self.conn.commit()
 
-    def update_task_data(self, task_info: TASK_INFO_FOR_SQL):
+    def update_task_data(self, task_info: TaskInfoForSQL):
         update_sql_text = (
             "UPDATE {} "
             "SET task_state = ?, "
@@ -115,7 +115,7 @@ class SQLite:
         )
         self.conn.commit()
 
-    def update_finish_task_data(self, task_info: TASK_INFO_FOR_SQL):
+    def update_finish_task_data(self, task_info: TaskInfoForSQL):
         update_sql_text = (
             "UPDATE {} "
             "SET task_state = ?, "

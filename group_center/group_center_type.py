@@ -17,9 +17,9 @@ class GroupCenterGpuTaskInfo:
 
     # GPU
     gpuUsagePercent: float = 0.0
-    gpuMemoryUsage: str = ""
-    gpuMemoryFree: str = ""
-    gpuMemoryTotal: str = ""
+    gpuMemoryUsageString: str = ""
+    gpuMemoryFreeString: str = ""
+    gpuMemoryTotalString: str = ""
     gpuMemoryPercent: float = 0.0
 
     taskGpuId = 0
@@ -53,6 +53,21 @@ class GroupCenterGpuTaskInfo:
     def __init__(self, gpu_process_obj):
         self.update(gpu_process_obj=gpu_process_obj)
 
+    @staticmethod
+    def __fix_data_size_str(size_str: str) -> str:
+        new_size_str = size_str
+
+        while "GiB" in new_size_str:
+            new_size_str = new_size_str.replace("GiB", "GB")
+
+        while "MiB" in new_size_str:
+            new_size_str = new_size_str.replace("MiB", "MB")
+
+        while "KiB" in new_size_str:
+            new_size_str = new_size_str.replace("KiB", "KB")
+
+        return new_size_str
+
     def update(self, gpu_process_obj):
         from monitor.GPU.gpu_process import GPUProcessInfo
         gpu_process_obj: GPUProcessInfo = gpu_process_obj
@@ -79,17 +94,17 @@ class GroupCenterGpuTaskInfo:
         # GPU 信息
         gpu_status: GPU_INFO = gpu_process_obj.gpu_status
         self.gpuUsagePercent = gpu_status.utl
-        self.gpuMemoryUsage = gpu_status.mem_usage
-        self.gpuMemoryFree = gpu_status.mem_free
-        self.gpuMemoryTotal = gpu_status.mem_total
+        self.gpuMemoryUsageString = self.__fix_data_size_str(gpu_status.mem_usage)
+        self.gpuMemoryFreeString = self.__fix_data_size_str(gpu_status.mem_free)
+        self.gpuMemoryTotalString = self.__fix_data_size_str(gpu_status.mem_total)
         self.gpuMemoryPercent = gpu_status.mem_percent
 
         self.taskGpuId = gpu_process_obj.gpu_id
         self.taskGpuName = gpu_process_obj.gpu_name
 
-        self.taskGpuMemoryGb = (gpu_process_obj.task_gpu_memory >> 10 >> 10) / 1024
-        self.taskGpuMemoryHuman = gpu_process_obj.task_gpu_memory_human
-        self.taskGpuMemoryMaxGb = (gpu_process_obj.task_gpu_memory_max >> 10 >> 10) / 1024
+        self.taskGpuMemoryGb = round((gpu_process_obj.task_gpu_memory >> 10 >> 10) / 1024, 2)
+        self.taskGpuMemoryHuman = self.__fix_data_size_str(gpu_process_obj.task_gpu_memory_human)
+        self.taskGpuMemoryMaxGb = round((gpu_process_obj.task_gpu_memory_max >> 10 >> 10) / 1024, 2)
 
         # 多卡
         self.multiDeviceLocalRank = gpu_process_obj.local_rank

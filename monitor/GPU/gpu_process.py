@@ -9,21 +9,13 @@ from typing import Dict, List, Optional
 import psutil
 from nvitop import GpuProcess
 
-from config.settings import (
-    USER_LIST,
-    WEBHOOK_DELAY_SEND_SECONDS
-)
-from monitor.GPU.info import TASK_INFO_FOR_SQL, GPU_INFO
+from config.settings import USER_LIST, WEBHOOK_DELAY_SEND_SECONDS
+from group_center import group_center
+from monitor.GPU.info import GPU_INFO, TASK_INFO_FOR_SQL
+from notify.send_task_msg import log_task_info, send_gpu_task_message
 from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
 from utils.sqlite import get_sql
-
-from group_center import group_center
-
-from notify.send_task_msg import (
-    log_task_info,
-    send_gpu_task_message
-)
 
 logger = get_logger()
 sql = get_sql()
@@ -37,7 +29,7 @@ class GPUProcessInfo:
 
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
         self.task_task_id: str = (
-                datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
+            datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
         )
 
         self.pid: int = pid
@@ -95,37 +87,45 @@ class GPUProcessInfo:
 
     def __init_info__(self):
         self.update_cmd()
+        self.get_all_env()
+        self.judge_is_python()
 
-        self.is_python = self.judge_is_python()
         if self.is_python:
             self.update_gpu_process_info()
             self.get_debug_flag()
             self.get_user()
 
-            self.project_name = self.get_project_name()
-            self.python_file = self.get_python_filename()
-            self.start_time = self.gpu_process.create_time()
+            self.get_project_name()
+            self.get_python_filename()
+            self.get_start_time()
 
-            self.get_task_main_memory_mb()
-
-            self.get_all_env()
-
-            psu_process = psutil.Process(self.pid)
-            self.binary_path = psu_process.exe()
-
-            self.update_python_version()
             sql.insert_task_data(TASK_INFO_FOR_SQL(self.__dict__))
 
     def update_cmd(self):
         self.get_cwd()
         self.get_command()
         self.get_cmdline()
+        self.get_python_version()
+        self.get_process_environ()
 
     def update_gpu_process_info(self):
+        self.get_task_main_memory_mb()
         self.get_task_gpu_memory()
         self.get_task_gpu_memory_human()
         self.get_running_time_in_seconds()
         self.get_running_time_human()
+
+    def get_all_env(self):
+        self.get_screen_session_name()
+        self.get_conda_env_name()
+
+        self.get_world_size()
+        self.get_local_rank()
+        self.get_is_multi_gpu()
+        self.get_cuda_visible_devices()
+
+        self.get_cuda_root()
+        self.get_cuda_version()
 
     def get_cwd(self):
         try:
@@ -148,30 +148,37 @@ class GPUProcessInfo:
             # self.state = "death"
             pass
 
-    # Task Main Memory(Bytes)
-    def get_task_main_memory(self) -> int:
-        return self.gpu_process.memory_info().rss
+    def get_binary_path(self):
+        try:
+            self.binary_path = psutil.Process(self.pid).exe()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            # self.state = "death"
+            pass
 
-    def get_task_main_memory_mb(self) -> int:
-        task_main_memory_mb = self.get_task_main_memory() // 1024 // 1024
+    def get_process_environ(self):
+        try:
+            process = psutil.Process(self.pid)
+            self.process_environ = process.environ().copy()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
+    def get_task_main_memory_mb(self):
+        task_main_memory_mb = self.gpu_process.memory_info().rss // 1024 // 1024
         self.task_main_memory_mb = task_main_memory_mb
-        return task_main_memory_mb
 
     # Task Gpu Memory(Bytes)
-    def get_task_gpu_memory(self) -> int:
+    def get_task_gpu_memory(self):
         task_gpu_memory = self.gpu_process.gpu_memory()
         self.task_gpu_memory = task_gpu_memory
 
         if (
-                self.task_gpu_memory_max is None
-                or self.task_gpu_memory_max < task_gpu_memory
+            self.task_gpu_memory_max is None
+            or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = get_human_str_from_byte(
                 self.task_gpu_memory_max
             )
-
-        return task_gpu_memory
 
     def get_task_gpu_memory_human(self):
         self.task_gpu_memory_human = self.gpu_process.gpu_memory_human()
@@ -181,6 +188,9 @@ class GPUProcessInfo:
 
     def get_running_time_human(self):
         self.running_time_human = self.gpu_process.running_time_human()
+
+    def get_start_time(self):
+        self.start_time = self.gpu_process.create_time()
 
     def set_finish_time(self):
         self.finish_time = datetime.timestamp(datetime.now())
@@ -192,8 +202,9 @@ class GPUProcessInfo:
             e_str = str(e)
             if "process no longer exists" not in e_str:
                 logger.warn(e)
-            return False
-        return gpu_process_name in ["python", "yolo"] or any(
+            self.is_python = False
+            return
+        self.is_python = gpu_process_name in ["python", "yolo"] or any(
             "python" in cmd for cmd in self.cmdline
         )
 
@@ -210,7 +221,11 @@ class GPUProcessInfo:
 
     def get_user(self):
         self.user = next(
-            (user for user in USER_LIST if self.gpu_process.username() == user["name_eng"]),
+            (
+                user
+                for user in USER_LIST
+                if self.gpu_process.username() == user["name_eng"]
+            ),
             None,
         )
 
@@ -229,8 +244,8 @@ class GPUProcessInfo:
                     continue
                 for user in user_list:
                     if any(
-                            path_unit.lower() == keyword.lower().strip()
-                            for keyword in user["keywords"]
+                        path_unit.lower() == keyword.lower().strip()
+                        for keyword in user["keywords"]
                     ):
                         return user
             raise RuntimeWarning("未获取到任务用户名")
@@ -239,12 +254,24 @@ class GPUProcessInfo:
             cwd = self.cwd + "/" if self.cwd is not None else ""
             self.user = find_user_by_path(USER_LIST, cwd) or default_user_dict
 
-    def get_process_environ(self):
-        try:
-            process = psutil.Process(self.pid)
-            self.process_environ = process.environ().copy()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
+    def get_user_new(self):
+        self.user = USER_LIST.get(self.gpu_process.username(), None)
+
+        def find_user_by_path(user_list: dict, path: str):
+            for path_unit in reversed(path.split("data")[1].split("/")):
+                if len(path_unit) == 0:
+                    continue
+                for user in user_list.keys():
+                    if any(
+                        path_unit.lower() == keyword.lower().strip()
+                        for keyword in user.keywords
+                    ):
+                        return user
+            raise RuntimeWarning("未获取到任务用户名")
+
+        if self.user is None:
+            cwd = self.cwd + "/" if self.cwd is not None else ""
+            self.user = find_user_by_path(USER_LIST, cwd)
 
     def get_env_value(self, key: str, default_value: str):
         if self.process_environ is None:
@@ -297,7 +324,7 @@ class GPUProcessInfo:
         except Exception:
             return ""
 
-    def get_conda_env_name(self) -> str:
+    def get_conda_env_name(self):
         pattern = r"envs/(.*?)/bin/python "
         match = re.search(pattern, self.command)
         if match:
@@ -312,89 +339,57 @@ class GPUProcessInfo:
             env_str = "base"
 
         self.conda_env = env_str
-        return env_str
 
-    def update_python_version(self):
+    def get_python_version(self):
         python_version = self.get_python_version_by_path(self.binary_path)
         self.python_version = python_version
 
-    # 多卡任务的进程数
-    def get_world_size(self) -> int:
-        env_str = self.get_env_value("WORLD_SIZE", "").strip()
+    def get_world_size(self):
+        # 多卡任务的进程数
+        world_size = self.get_env_value("WORLD_SIZE", "").strip()
+        self.world_size = int(world_size) if world_size.isdigit() else 0
 
-        return_value = 0
-        if env_str.isdigit():
-            return_value = int(env_str)
+    def get_local_rank(self):
+        # 多卡任务的卡号
+        local_rank = self.get_env_value("LOCAL_RANK", "").strip()
+        self.local_rank = int(local_rank) if local_rank.isdigit() else 0
 
-        self.world_size = return_value
-        return return_value
+    def get_is_multi_gpu(self):
+        self.is_multi_gpu = self.get_local_rank() != "" and self.world_size > 1
 
-    # 多卡任务的卡号
-    def get_local_rank(self) -> int:
-        env_str = self.get_env_value("LOCAL_RANK", "").strip()
-
-        return_value = 0
-        if env_str.isdigit():
-            return_value = int(env_str)
-
-        self.local_rank = return_value
-        return return_value
-
-    def get_is_multi_gpu(self) -> bool:
-        self.is_multi_gpu = (
-                (self.get_world_size() is not None)
-                and self.get_local_rank() != ""
-                and int(self.get_world_size()) > 1
-        )
-
-        return self.is_multi_gpu
-
-    def get_cuda_visible_devices(self) -> str:
+    def get_cuda_visible_devices(self):
         self.cuda_visible_devices = self.get_env_value("CUDA_VISIBLE_DEVICES", "")
-        return self.cuda_visible_devices
 
-    def get_screen_session_name(self) -> str:
+    def get_screen_session_name(self):
         self.screen_session_name = self.get_env_value("STY", "").strip()
 
         if self.screen_session_name == "":
-            return ""
+            return
 
         dot_index = self.screen_session_name.find(".")
         if dot_index != -1:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
-                self.screen_session_name = self.screen_session_name[dot_index + 1:]
+                self.screen_session_name = self.screen_session_name[dot_index + 1 :]
 
-        return self.screen_session_name
-
-    def get_cuda_root(self) -> str:
-        cuda_home = self.get_env_value(
-            "CUDA_HOME", ""
-        ).strip()
+    def get_cuda_root(self):
+        cuda_home = self.get_env_value("CUDA_HOME", "").strip()
         nvcc_path = os.path.join(cuda_home, "bin", "nvcc")
         if os.path.exists(nvcc_path):
             self.cuda_root = cuda_home
             self.cuda_nvcc_bin = nvcc_path
-            return self.cuda_root
+            return
 
-        cuda_toolkit_root = \
-            self.get_env_value(
-                "CUDAToolkit_ROOT", ""
-            ).strip()
+        cuda_toolkit_root = self.get_env_value("CUDAToolkit_ROOT", "").strip()
         nvcc_path = os.path.join(cuda_toolkit_root, "bin", "nvcc")
         if os.path.exists(nvcc_path):
             self.cuda_root = cuda_toolkit_root
             self.cuda_nvcc_bin = nvcc_path
-            return self.cuda_root
+            return
 
-        return ""
-
-    def get_cuda_version(self) -> str:
-        if self.cuda_nvcc_bin.strip() == "":
-            return ""
-
-        if not os.path.exists(self.cuda_nvcc_bin):
-            return ""
+    def get_cuda_version(self):
+        if self.cuda_nvcc_bin.strip() == "" or (not os.path.exists(self.cuda_nvcc_bin)):
+            return
 
         try:
             result = subprocess.run(
@@ -406,7 +401,7 @@ class GPUProcessInfo:
             )
             result = str(result.stdout)
             if "release" not in result:
-                return ""
+                return
             result_list = result.split("\n")
             version = ""
 
@@ -416,39 +411,21 @@ class GPUProcessInfo:
                     break
 
             self.cuda_version = version
-            return version
         except Exception:
-            return ""
+            return
 
-    def get_all_env(self):
-        # 获取所有的环境变量
-        self.get_process_environ()
-
-        self.get_conda_env_name()
-
-        self.get_world_size()
-        self.get_local_rank()
-        self.get_is_multi_gpu()
-
-        self.get_cuda_visible_devices()
-
-        self.get_screen_session_name()
-
-        self.get_cuda_root()
-        self.get_cuda_version()
-
-    def get_project_name(self) -> str:
+    def get_project_name(self):
         if self.cwd is not None:
-            return self.cwd.split("/")[-1]
+            self.project_name = self.cwd.split("/")[-1]
 
-    def get_python_filename(self) -> str:
+    def get_python_filename(self):
         if self.cmdline is None:
-            return ""
+            return
 
         file_name = next(
             (cmd_str for cmd_str in self.cmdline if cmd_str.lower().endswith(".py")), ""
         )
-        return file_name.split("/")[-1] if "/" in file_name else file_name
+        self.python_file = file_name.split("/")[-1] if "/" in file_name else file_name
 
     @property
     def user_name(self):
@@ -506,7 +483,11 @@ class GPUProcessInfo:
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
         # 上次不满足，但是这次满足
-        if new_running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS > self._running_time_in_seconds:
+        if (
+            new_running_time_in_seconds
+            > WEBHOOK_DELAY_SEND_SECONDS
+            > self._running_time_in_seconds
+        ):
             self.state = "working"
 
         self._running_time_in_seconds = new_running_time_in_seconds

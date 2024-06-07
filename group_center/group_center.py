@@ -10,7 +10,8 @@ from config.settings import (
     USE_GROUP_CENTER,
     GROUP_CENTER_URL,
     SERVER_NAME,
-    SERVER_NAME_SHORT
+    SERVER_NAME_SHORT,
+    GROUP_CENTER_PASSWORD
 )
 
 from utils.logs import get_logger
@@ -84,6 +85,10 @@ def send_dict_to_center(data: dict, target: str) -> bool:
                 response_dict["isAuthenticated"]
         )):
             logger.error(f"[Group Center] Not authorized")
+            hand_shake_to_center(
+                username=SERVER_NAME_SHORT,
+                password=GROUP_CENTER_PASSWORD
+            )
             return False
 
         if (not (

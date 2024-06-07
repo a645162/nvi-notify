@@ -10,6 +10,15 @@ class GroupCenterGpuTaskInfo:
     taskPid = 0
     taskMainMemory = 0
 
+    allTaskMessage: str = ""
+
+    # GPU
+    gpuUsagePercent: float = 0.0
+    gpuMemoryUsage: str = ""
+    gpuMemoryFree: str = ""
+    gpuMemoryTotal: str = ""
+    gpuMemoryPercent: float = 0.0
+
     taskGpuId = 0
     taskGpuName = ""
 
@@ -26,8 +35,8 @@ class GroupCenterGpuTaskInfo:
     cudaRoot: str = ""
     cudaVersion: str = ""
 
-    taskStartTime:int = 0
-    taskRunningTimeString:str = ""
+    taskStartTime: int = 0
+    taskRunningTimeString: str = ""
     taskRunningTimeInSeconds = 0
 
     projectName: str = ""
@@ -60,7 +69,18 @@ class GroupCenterGpuTaskInfo:
         self.taskPid = gpu_process_obj.pid
         self.taskMainMemory = gpu_process_obj.task_main_memory_mb
 
+        all_tasks_msg: str = "".join(gpu_process_obj.gpu_all_tasks_msg.values())
+        all_tasks_msg = str(all_tasks_msg).strip()
+        self.allTaskMessage = all_tasks_msg
+
         # GPU 信息
+        gpu_status = gpu_process_obj.gpu_status
+        self.gpuUsagePercent = gpu_status.get("utl", 0.0)
+        self.gpuMemoryUsage = gpu_status.get("mem_usage", "")
+        self.gpuMemoryFree = gpu_status.get("mem_free", "")
+        self.gpuMemoryTotal = gpu_status.get("mem_total", "")
+        self.gpuMemoryPercent = gpu_status.get("mem_percent", 0.0)
+
         self.taskGpuId = gpu_process_obj.gpu_id
         self.taskGpuName = gpu_process_obj.gpu_name
 

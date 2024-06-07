@@ -1,0 +1,3 @@
+/**/*.yaml
+!/users/example.yaml
+!/users_old/template/template.yaml

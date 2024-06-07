@@ -13,7 +13,7 @@ from config.settings import (
     USER_LIST,
     WEBHOOK_DELAY_SEND_SECONDS
 )
-from monitor.GPU.info import TASK_INFO_FOR_SQL
+from monitor.GPU.info import TASK_INFO_FOR_SQL, GPU_INFO
 from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
 from utils.sqlite import get_sql
@@ -48,7 +48,7 @@ class GPUProcessInfo:
         self.gpu_name: str = gpu_process.device.name()
 
         self.gpu_process: GpuProcess = gpu_process
-        self.gpu_status: Optional[Dict] = None
+        self.gpu_status: Optional[GPU_INFO] = None
         self.gpu_all_tasks_msg: Optional[Dict] = None
         self.num_task: int = 0
         self.process_environ: Optional[dict[str, str]] = None

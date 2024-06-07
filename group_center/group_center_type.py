@@ -77,7 +77,7 @@ class GroupCenterGpuTaskInfo:
         self.allTaskMessage = all_tasks_msg
 
         # GPU 信息
-        gpu_status = gpu_process_obj.gpu_status
+        gpu_status: GPU_INFO = gpu_process_obj.gpu_status
         self.gpuUsagePercent = gpu_status.utl
         self.gpuMemoryUsage = gpu_status.mem_usage
         self.gpuMemoryFree = gpu_status.mem_free

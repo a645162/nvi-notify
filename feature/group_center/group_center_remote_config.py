@@ -38,7 +38,7 @@ def get_json_str(target_api: str) -> str:
             if response.status_code == 200:
                 return text
 
-            json_dict = json.dumps(text)
+            json_dict = json.loads(text)
             if (
                     isinstance(json_dict, dict) and
                     "isAuthenticated" in json_dict.keys() and
@@ -62,8 +62,14 @@ def init_remote_env_list():
 
     json_str = get_json_str(target_api="/api/client/config/env_list")
 
-    env_dict = json.dumps(json_str)
+    env_dict = json.loads(json_str)
     if isinstance(env_dict, dict):
+        print("-" * 20)
+        print("Remote Env")
+        for key in env_dict.keys():
+            print(f"{key}: {env_dict[key]}")
+        print("-" * 20)
+
         all_env_dict.update(env_dict)
 
 

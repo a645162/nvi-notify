@@ -30,7 +30,7 @@ def get_env_str(key: str, default_value: str = "") -> str:
     if key in all_env_dict:
         return all_env_dict[key]
 
-    return os.getenv("SERVER_NAME", default_value)
+    return os.getenv(key, default_value)
 
 
 def get_env_int(key: str, default_value: int = 0) -> int:
@@ -157,7 +157,7 @@ SERVER_DOMAIN = get_env_str("SERVER_DOMAIN", "None")
 
 # Group Center
 USE_GROUP_CENTER: bool = get_bool_from_string(get_env_str("USE_GROUP_CENTER", "False"))
-GROUP_CENTER_URL = get_env_str("GROUP_CENTER_URL", "http://127.0.0.1:8088")
+GROUP_CENTER_URL = get_env_str("GROUP_CENTER_URL", "http://localhost:8088")
 GROUP_CENTER_PASSWORD = get_env_str("GROUP_CENTER_PASSWORD", "password")
 
 ENV_FROM_GROUP_CENTER: bool = \
@@ -169,12 +169,6 @@ if ENV_FROM_GROUP_CENTER:
         group_center_remote_config import init_remote_env_list
 
     init_remote_env_list()
-
-    print("-" * 20)
-    print("Remote Env")
-    for key in all_env_dict.keys():
-        print(f"{key}: {all_env_dict[key]}")
-    print("-" * 20)
 
 # CPU Monitor
 CPU_HIGH_TEMPERATURE_THRESHOLD = \

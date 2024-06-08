@@ -1,7 +1,7 @@
 import datetime
 from typing import List
 
-from monitor.GPU.gpu_process import GPUProcessInfo
+from feature.monitor.GPU.gpu_process import GPUProcessInfo
 
 record_latest_timestamp: int = 0
 

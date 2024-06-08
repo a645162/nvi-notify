@@ -19,10 +19,10 @@ from global_variable.global_gpu import (
     global_gpu_task,
     global_gpu_usage,
 )
-from monitor.GPU.gpu_process import GPUProcessInfo, TaskState
-from monitor.info.gpu_info import GPUInfo, gpu_name_filter
+from feature.monitor.GPU.gpu_process import GPUProcessInfo, TaskState
+from feature.monitor.info.gpu_info import GPUInfo, gpu_name_filter
 from feature.group_center import group_center
-from notify.send_task_msg import (
+from feature.notify.send_task_msg import (
     send_gpu_monitor_start_msg,
     send_process_except_warning_msg,
 )

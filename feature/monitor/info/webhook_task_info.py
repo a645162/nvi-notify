@@ -2,8 +2,8 @@ from typing import Dict, Optional
 
 from config.settings import NUM_GPU
 from config.user import UserInfo
-from monitor.info.enum import TaskEvent
-from monitor.info.gpu_info import GPUInfo
+from feature.monitor.info.enum import TaskEvent
+from feature.monitor.info.gpu_info import GPUInfo
 
 
 class TaskInfoForWebHook:

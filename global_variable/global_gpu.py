@@ -2,7 +2,7 @@
 
 from typing import List
 
-from monitor.GPU.gpu_process import GPUProcessInfo
+from feature.monitor.GPU.gpu_process import GPUProcessInfo
 
 from utils.logs import get_logger
 

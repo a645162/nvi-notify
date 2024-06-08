@@ -12,7 +12,7 @@ from config.settings import (
     SERVER_NAME_SHORT,
     USE_GROUP_CENTER,
 )
-from monitor.info.enum import TaskEvent
+from feature.monitor import TaskEvent
 from feature.group_center.group_center_task_info import TaskInfoForGroupCenter
 from utils.logs import get_logger
 from utils.security import get_md5_hash
@@ -169,7 +169,7 @@ def add_task_to_center(data: dict, target: str):
 
 
 def gpu_task_message(process_obj, task_event: TaskEvent):
-    from monitor.GPU.gpu_process import GPUProcessInfo
+    from feature.monitor.GPU.gpu_process import GPUProcessInfo
     process_obj: GPUProcessInfo = process_obj
 
     logger.info(

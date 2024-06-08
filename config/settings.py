@@ -11,7 +11,7 @@ from nvitop import Device
 
 from config.user import get_all_user_info
 from config.utils import get_interface_ip_dict
-from monitor.info.enum import AllWebhookName
+from feature.monitor import AllWebhookName
 from utils.logs import get_logger
 
 logger = get_logger()
@@ -32,7 +32,7 @@ def get_env_time(time_str: str, default: datetime.time = None) -> datetime.time:
         return default
 
     time_str_1 = time_str[:index].strip()
-    time_str_2 = time_str[index + 1 :].strip()
+    time_str_2 = time_str[index + 1:].strip()
 
     try:
         int_1 = int(time_str_1)
@@ -52,7 +52,7 @@ def get_now_time():
 
 
 def is_within_time_range(
-    start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
+        start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
 ):
     current_time = datetime.datetime.now().time()
 
@@ -126,7 +126,6 @@ load_env()
 IPv4 = get_ip("v4")
 IPv6 = get_ip("v6")
 
-USERS = get_all_user_info(os.path.join(os.getcwd(), "config/users"))
 NUM_CPU = get_cpu_physics_num()
 NUM_GPU = Device.count()
 
@@ -162,9 +161,10 @@ FLASK_SERVER_PORT = os.getenv("FLASK_SERVER_PORT", "3000")
 GPU_BOARD_WEB_URL = os.getenv("GPU_BOARD_WEB_URL", "")
 
 # Group Center
-USE_GROUP_CENTER: bool = get_bool_from_string(os.getenv("USE_GROUP_CENTER", "FALSE"))
+USE_GROUP_CENTER: bool = get_bool_from_string(os.getenv("USE_GROUP_CENTER", "False"))
 GROUP_CENTER_URL = os.getenv("GROUP_CENTER_URL", "http://127.0.0.1:8088")
 GROUP_CENTER_PASSWORD = os.getenv("GROUP_CENTER_PASSWORD", "password")
+USER_FROM_GROUP_CENTER: bool = get_bool_from_string(os.getenv("USER_FROM_GROUP_CENTER", "False"))
 
 # WebHook
 WEBHOOK_DELAY_SEND_SECONDS = int(os.getenv("WEBHOOK_DELAY_SEND_SECONDS", 60))
@@ -187,6 +187,8 @@ WEBHOOK_LARK_DEV = os.getenv("WEBHOOK_LARK_DEV", "").strip()
 GPU_MONITOR_AUTO_RESTART = get_bool_from_string(
     os.getenv("GPU_MONITOR_AUTO_RESTART", "True").strip()
 )
+
+USERS = get_all_user_info(os.path.join(os.getcwd(), "config/users"))
 
 
 def fix_env():

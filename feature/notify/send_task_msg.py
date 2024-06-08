@@ -14,9 +14,9 @@ from config.settings import (
     get_now_time,
 )
 from config.user import UserInfo
-from monitor.info.enum import AllWebhookName, MsgType, TaskEvent
-from monitor.info.webhook_task_info import TaskInfoForWebHook
-from notify.webhook import send_text
+from feature.monitor.info.enum import AllWebhookName, MsgType, TaskEvent
+from feature.monitor.info.webhook_task_info import TaskInfoForWebHook
+from feature.notify.webhook import send_text
 from utils.logs import get_logger
 
 logger = get_logger()

@@ -12,8 +12,8 @@ from config.settings import (
     TEMPERATURE_MONITOR_SAMPLING_INTERVAL,
 )
 from global_variable.global_system import global_system_info
-from monitor.hardware_resource.resource_monitor import Memory
-from notify.send_task_msg import (
+from feature.monitor.hardware_resource.resource_monitor import Memory
+from feature.notify.send_task_msg import (
     send_cpu_except_warning_msg,
     send_cpu_temperature_warning_msg,
 )

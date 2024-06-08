@@ -21,7 +21,7 @@ from global_variable.global_gpu import (
     global_gpu_usage,
 )
 from global_variable.global_system import global_system_info
-from monitor.GPU.gpu_process import GPUProcessInfo
+from feature.monitor.GPU.gpu_process import GPUProcessInfo
 from utils.logs import get_logger
 
 logger = get_logger()

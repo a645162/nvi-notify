@@ -3,7 +3,7 @@ import json
 import requests
 from time import sleep as time_sleep
 
-from group_center import (
+from feature.group_center.group_center import (
     access_key,
     group_center_get_url,
     group_center_login
@@ -29,8 +29,10 @@ def get_user_config_json_str() -> str:
                 params=params,
                 timeout=10
             )
+
             if response.status_code == 200:
-                return response.text
+                return response.text.strip()
+
             text = response.text
             json_dict = json.dumps(text)
 

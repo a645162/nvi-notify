@@ -4,7 +4,7 @@ from time import sleep as time_sleep
 import requests
 import json
 
-from group_center import (
+from feature.group_center.group_center import (
     access_key,
     group_center_public_part,
     group_center_get_url,

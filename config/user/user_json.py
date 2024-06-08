@@ -26,7 +26,12 @@ def parse_json_user_config_directory():
 
 
 def get_json_user_config_from_group_center() -> dict[str, UserInfo]:
-    pass
+    from feature.group_center. \
+        group_center_remote_config import get_user_config_json_str
+
+    json_str = get_user_config_json_str()
+
+    return parse_json_user_config(json_str)
 
 
 if __name__ == "__main__":

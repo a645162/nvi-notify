@@ -11,6 +11,8 @@ from nvitop import Device
 
 from config.user.user_info import UserInfo
 from config.user.user_yaml import parse_yaml_user_config_directory
+from config.user.user_json import get_json_user_config_from_group_center
+
 from config.utils import get_interface_ip_dict
 from feature.monitor.info.program_enum import AllWebhookName
 from utils.logs import get_logger
@@ -202,7 +204,13 @@ if USER_FROM_LOCAL_FILES:
     USERS.update(user_list_from_files)
 
 if USER_FROM_GROUP_CENTER:
-    pass
+    user_list_from_group_center = \
+        get_json_user_config_from_group_center()
+    logger.info(
+        "User count from Group Center:"
+        + str(len(user_list_from_group_center))
+    )
+    USERS.update(user_list_from_group_center)
 
 logger.info("Final user count:" + str(len(USERS)))
 

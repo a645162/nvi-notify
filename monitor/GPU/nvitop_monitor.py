@@ -21,7 +21,7 @@ from global_variable.global_gpu import (
 )
 from monitor.GPU.gpu_process import GPUProcessInfo, TaskState
 from monitor.info.gpu_info import GPUInfo, gpu_name_filter
-from notify import group_center
+from feature.group_center import group_center
 from notify.send_task_msg import (
     send_gpu_monitor_start_msg,
     send_process_except_warning_msg,

@@ -13,7 +13,7 @@ from config.settings import (
     USE_GROUP_CENTER,
 )
 from monitor.info.enum import TaskEvent
-from monitor.info.group_center_task_info import TaskInfoForGroupCenter
+from feature.group_center.group_center_task_info import TaskInfoForGroupCenter
 from utils.logs import get_logger
 from utils.security import get_md5_hash
 

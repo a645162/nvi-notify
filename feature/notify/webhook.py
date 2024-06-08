@@ -18,7 +18,7 @@ from config.settings import (
     get_now_time,
     is_within_time_range,
 )
-from config.user import UserInfo
+from config.user.user_info import UserInfo
 from feature.monitor.info.program_enum import AllWebhookName, MsgType, WebhookState
 from utils.logs import get_logger
 

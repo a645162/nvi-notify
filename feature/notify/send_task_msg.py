@@ -13,7 +13,8 @@ from config.settings import (
     get_emoji,
     get_now_time,
 )
-from config.user import UserInfo
+
+from config.user.user_info import UserInfo
 from feature.monitor.info.program_enum import AllWebhookName, MsgType, TaskEvent
 from feature.monitor.info.webhook_task_info import TaskInfoForWebHook
 from feature.notify.webhook import send_text
@@ -37,8 +38,8 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: dict):
 
     for process in all_process_info.values():
         if (
-            process.running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS
-            and not process.is_debug
+                process.running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS
+                and not process.is_debug
         ):
             if process.is_multi_gpu and process.local_rank != 0:
                 continue
@@ -101,9 +102,9 @@ def send_gpu_task_message(process_info: dict, task_event: str):
 
         handle_normal_text(
             msg=msg_header
-            + task.gpu_status_msg
-            + gpu_task_status_info_msg
-            + task.all_task_msg,
+                + task.gpu_status_msg
+                + gpu_task_status_info_msg
+                + task.all_task_msg,
             user=task.user if task_event == TaskEvent.FINISH else None,
         )
 
@@ -194,8 +195,9 @@ def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
     warning_message = f"🤒🤒{SERVER_NAME}的CPU:{cpu_id}温度已达{cpu_temperature}°C\n"
     send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
+
 def send_hard_disk_high_occupancy_warning_msg(
-    name: str, mountpoint: str, total_GB: float, free_GB: float, percentage: float
+        name: str, mountpoint: str, total_GB: float, free_GB: float, percentage: float
 ):
     """
     发送硬盘高占用警告消息函数

@@ -9,7 +9,8 @@ from typing import Union
 from dotenv import dotenv_values, load_dotenv
 from nvitop import Device
 
-from config.user import get_all_user_info, UserInfo
+from config.user.user_info import UserInfo
+from config.user.user_yaml import parse_yaml_user_config_directory
 from config.utils import get_interface_ip_dict
 from feature.monitor.info.program_enum import AllWebhookName
 from utils.logs import get_logger
@@ -187,15 +188,16 @@ GPU_MONITOR_AUTO_RESTART = get_bool_from_string(
     os.getenv("GPU_MONITOR_AUTO_RESTART", "True").strip()
 )
 
+# User
 USER_FROM_GROUP_CENTER: bool = \
     USE_GROUP_CENTER and get_bool_from_string(os.getenv("USER_FROM_GROUP_CENTER", "False"))
 USER_FROM_LOCAL_FILES: bool = get_bool_from_string(os.getenv("USER_FROM_LOCAL_FILES", "True"))
 
-USERS: dict[str, list[UserInfo]] = {}
+USERS: dict[str, UserInfo] = {}
 
 if USER_FROM_LOCAL_FILES:
     user_list_from_files = \
-        get_all_user_info(os.path.join(os.getcwd(), "config/users"))
+        parse_yaml_user_config_directory(os.path.join(os.getcwd(), "config/users"))
     logger.info("User count from file:" + str(len(user_list_from_files)))
     USERS.update(user_list_from_files)
 

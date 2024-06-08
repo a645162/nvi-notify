@@ -10,7 +10,7 @@ import psutil
 from nvitop import GpuProcess
 
 from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
-from config.user import UserInfo
+from config.user.user_info import UserInfo
 from feature.monitor.info.program_enum import TaskEvent, TaskState
 from feature.monitor.info.gpu_info import GPUInfo
 from feature.monitor.info.sql_task_info import TaskInfoForSQL

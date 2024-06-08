@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 
 from config.settings import NUM_GPU
-from config.user import UserInfo
+from config.user.user_info import UserInfo
 from feature.monitor.info.program_enum import TaskEvent
 from feature.monitor.info.gpu_info import GPUInfo
 

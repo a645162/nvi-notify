@@ -78,7 +78,7 @@ class TaskInfoForGroupCenter:
         # 任务类型
         self.taskType = "GPU"
         # 任务状态
-        self.taskStatus = gpu_process_obj.state
+        self.taskStatus = gpu_process_obj.state.value
 
         # 用户
         self.taskUser = gpu_process_obj.user.name_cn

@@ -11,7 +11,7 @@ from nvitop import Device
 
 from config.user import get_all_user_info
 from config.utils import get_interface_ip_dict
-from feature.monitor import AllWebhookName
+from feature.monitor.info.enum import AllWebhookName
 from utils.logs import get_logger
 
 logger = get_logger()

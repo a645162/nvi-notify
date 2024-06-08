@@ -1,4 +1,4 @@
-from feature.monitor.info.enum import Enum
+from enum import Enum
 
 
 class TaskState(Enum):

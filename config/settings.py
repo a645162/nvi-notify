@@ -9,7 +9,7 @@ from typing import Union
 from dotenv import dotenv_values, load_dotenv
 from nvitop import Device
 
-from config.user import get_all_user_info
+from config.user import get_all_user_info, UserInfo
 from config.utils import get_interface_ip_dict
 from feature.monitor.info.program_enum import AllWebhookName
 from utils.logs import get_logger
@@ -164,7 +164,6 @@ GPU_BOARD_WEB_URL = os.getenv("GPU_BOARD_WEB_URL", "")
 USE_GROUP_CENTER: bool = get_bool_from_string(os.getenv("USE_GROUP_CENTER", "False"))
 GROUP_CENTER_URL = os.getenv("GROUP_CENTER_URL", "http://127.0.0.1:8088")
 GROUP_CENTER_PASSWORD = os.getenv("GROUP_CENTER_PASSWORD", "password")
-USER_FROM_GROUP_CENTER: bool = get_bool_from_string(os.getenv("USER_FROM_GROUP_CENTER", "False"))
 
 # WebHook
 WEBHOOK_DELAY_SEND_SECONDS = int(os.getenv("WEBHOOK_DELAY_SEND_SECONDS", 60))
@@ -188,7 +187,22 @@ GPU_MONITOR_AUTO_RESTART = get_bool_from_string(
     os.getenv("GPU_MONITOR_AUTO_RESTART", "True").strip()
 )
 
-USERS = get_all_user_info(os.path.join(os.getcwd(), "config/users"))
+USER_FROM_GROUP_CENTER: bool = \
+    USE_GROUP_CENTER and get_bool_from_string(os.getenv("USER_FROM_GROUP_CENTER", "False"))
+USER_FROM_LOCAL_FILES: bool = get_bool_from_string(os.getenv("USER_FROM_LOCAL_FILES", "True"))
+
+USERS: dict[str, list[UserInfo]] = {}
+
+if USER_FROM_LOCAL_FILES:
+    user_list_from_files = \
+        get_all_user_info(os.path.join(os.getcwd(), "config/users"))
+    logger.info("User count from file:" + str(len(user_list_from_files)))
+    USERS.update(user_list_from_files)
+
+if USER_FROM_GROUP_CENTER:
+    pass
+
+logger.info("Final user count:" + str(len(USERS)))
 
 
 def fix_env():

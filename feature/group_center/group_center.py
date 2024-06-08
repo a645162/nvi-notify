@@ -169,7 +169,7 @@ def add_task_to_center(data: dict, target: str):
 
 
 def gpu_task_message(process_obj, task_event: TaskEvent):
-    from monitor.GPU.gpu_process import GPUProcessInfo
+    from feature.monitor.GPU.gpu_process import GPUProcessInfo
     process_obj: GPUProcessInfo = process_obj
 
     logger.info(

@@ -10,6 +10,7 @@ import psutil
 from nvitop import GpuProcess
 
 from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
+from config.user import UserInfo
 from feature.monitor.info.program_enum import TaskEvent, TaskState
 from feature.monitor.info.gpu_info import GPUInfo
 from feature.monitor.info.sql_task_info import TaskInfoForSQL
@@ -53,7 +54,7 @@ class GPUProcessInfo:
         self.task_gpu_memory_max: Optional[int] = None
         self.task_gpu_memory_human: Optional[str] = None
 
-        self.user: Optional[Dict] = None
+        self.user: Optional[UserInfo] = None
         self.conda_env: Optional[str] = None
         self.project_name: Optional[str] = None
         self.python_file: Optional[str] = None

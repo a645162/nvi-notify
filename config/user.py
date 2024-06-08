@@ -23,7 +23,7 @@ class UserInfo:
 
     @staticmethod
     def get_webhook_info(
-        webhook_dict: dict, webhook_type: str = "weCom"
+            webhook_dict: dict, webhook_type: str = "weCom"
     ) -> Dict[str, list]:
         if webhook_type in webhook_dict.keys():
             mention_id = webhook_dict[webhook_type].get("userId", [""])
@@ -43,7 +43,7 @@ class UserInfo:
             }
 
 
-def get_all_user_info(directory_path: str = ""):
+def get_all_user_info(directory_path: str = "") -> dict[str, list[UserInfo]]:
     all_user = {}
 
     if len(directory_path) == 0:

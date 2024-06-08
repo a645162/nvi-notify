@@ -13,7 +13,7 @@ from utils.logs import get_logger
 
 logger = get_logger()
 
-max_retry_times = 3
+max_retry_times = 5
 
 
 def get_user_config_json_str() -> str:
@@ -21,6 +21,9 @@ def get_user_config_json_str() -> str:
 
     for _ in range(max_retry_times):
         try:
+            if access_key == "":
+                group_center_login()
+
             params = {
                 "accessKey": access_key
             }
@@ -30,12 +33,12 @@ def get_user_config_json_str() -> str:
                 timeout=10
             )
 
+            text = response.text.strip()
+
             if response.status_code == 200:
-                return response.text.strip()
+                return text
 
-            text = response.text
             json_dict = json.dumps(text)
-
             if (
                     isinstance(json_dict, dict) and
                     "isAuthenticated" in json_dict.keys() and

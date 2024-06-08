@@ -31,6 +31,9 @@ def get_json_user_config_from_group_center() -> dict[str, UserInfo]:
 
     json_str = get_user_config_json_str()
 
+    if len(json_str) == 0:
+        return {}
+
     return parse_json_user_config(json_str)
 
 

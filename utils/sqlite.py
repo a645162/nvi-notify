@@ -2,7 +2,7 @@ import os
 import sqlite3
 
 from config.settings import NUM_GPU, SERVER_NAME
-from feature.monitor import TaskState
+from feature.monitor.info.program_enum import TaskState
 from feature.monitor.info.sql_task_info import TaskInfoForSQL
 from utils.logs import get_logger
 

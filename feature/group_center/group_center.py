@@ -12,7 +12,7 @@ from config.settings import (
     SERVER_NAME_SHORT,
     USE_GROUP_CENTER,
 )
-from feature.monitor import TaskEvent
+from feature.monitor.info.program_enum import TaskEvent
 from feature.group_center.group_center_task_info import TaskInfoForGroupCenter
 from utils.logs import get_logger
 from utils.security import get_md5_hash

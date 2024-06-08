@@ -21,7 +21,7 @@ from global_variable.global_gpu import (
 )
 from feature.monitor.GPU.gpu_process import GPUProcessInfo, TaskState
 from feature.monitor.info.gpu_info import GPUInfo, gpu_name_filter
-from feature.group_center import group_center
+from feature.group_center import group_center_message
 from feature.notify.send_task_msg import (
     send_gpu_monitor_start_msg,
     send_process_except_warning_msg,
@@ -201,7 +201,7 @@ class NvidiaMonitor:
 
                 if monitor_start_flag and len(self.processes) > 0:
                     # Send to Group Center
-                    group_center.gpu_monitor_start()
+                    group_center_message.gpu_monitor_start()
 
                     # Send by WebHook
                     send_gpu_monitor_start_msg(self.gpu_id, self.processes)

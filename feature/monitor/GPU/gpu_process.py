@@ -14,7 +14,7 @@ from config.user.user_info import UserInfo
 from feature.monitor.info.program_enum import TaskEvent, TaskState
 from feature.monitor.info.gpu_info import GPUInfo
 from feature.monitor.info.sql_task_info import TaskInfoForSQL
-from feature.group_center import group_center
+from feature.group_center import group_center_message
 from feature.notify.send_task_msg import log_task_info, send_gpu_task_message
 from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
@@ -141,7 +141,7 @@ class GPUProcessInfo:
             self.cmdline = self.gpu_process.cmdline()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             # self.state = "death"
-            pass        
+            pass
 
     def get_process_environ(self):
         try:
@@ -160,8 +160,8 @@ class GPUProcessInfo:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-            self.task_gpu_memory_max is None
-            or self.task_gpu_memory_max < task_gpu_memory
+                self.task_gpu_memory_max is None
+                or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = get_human_str_from_byte(
@@ -216,8 +216,8 @@ class GPUProcessInfo:
                     continue
                 for user in users.values():
                     if any(
-                        path_unit.lower() == keyword.lower().strip()
-                        for keyword in user.keywords
+                            path_unit.lower() == keyword.lower().strip()
+                            for keyword in user.keywords
                     ):
                         return user
             raise RuntimeWarning("未获取到任务用户名")
@@ -326,8 +326,8 @@ class GPUProcessInfo:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
                 self.screen_session_name = self.screen_session_name[
-                    dot_index + 1 :
-                ].strip()
+                                           dot_index + 1:
+                                           ].strip()
 
     def get_project_name(self):
         if self.cwd is not None:
@@ -362,21 +362,21 @@ class GPUProcessInfo:
 
             log_task_info(self.__dict__, TaskEvent.CREATE)
         elif (
-            new_state == TaskState.WORKING
-            and self._state == TaskState.NEWBORN
+                new_state == TaskState.WORKING
+                and self._state == TaskState.NEWBORN
         ):
             # 新生进程进入正常工作状态
 
             sql.update_task_data(TaskInfoForSQL(self.__dict__, new_state))
 
             # Group Center
-            group_center.gpu_task_message(self, TaskEvent.CREATE)
+            group_center_message.gpu_task_message(self, TaskEvent.CREATE)
 
             # WebHook
             send_gpu_task_message(self.__dict__, TaskEvent.CREATE)
         elif (
-            new_state == TaskState.DEATH
-            and self._state == TaskState.WORKING
+                new_state == TaskState.DEATH
+                and self._state == TaskState.WORKING
         ):
             # 已经进入正常工作状态的进程正常结束
 
@@ -384,13 +384,13 @@ class GPUProcessInfo:
             sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, new_state))
 
             # Group Center
-            group_center.gpu_task_message(self, TaskEvent.FINISH)
+            group_center_message.gpu_task_message(self, TaskEvent.FINISH)
 
             # WebHook
             send_gpu_task_message(self.__dict__, TaskEvent.FINISH)
         elif (
-            new_state == TaskState.DEATH
-            and self._state == TaskState.NEWBORN
+                new_state == TaskState.DEATH
+                and self._state == TaskState.NEWBORN
         ):
             # 没有到发信阈值就被杀死的进程
 
@@ -407,9 +407,9 @@ class GPUProcessInfo:
     def running_time_in_seconds(self, new_running_time_in_seconds):
         # 上次不满足，但是这次满足
         if (
-            new_running_time_in_seconds
-            > WEBHOOK_DELAY_SEND_SECONDS
-            > self._running_time_in_seconds
+                new_running_time_in_seconds
+                > WEBHOOK_DELAY_SEND_SECONDS
+                > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 

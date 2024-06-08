@@ -33,10 +33,10 @@ def parse_yaml_user_config_directory(directory_path: str = "") -> dict[str, User
 if __name__ == "__main__":
     # yaml_file_path = os.path.join(os.getcwd(), "config/users/master/2023.yaml")
     # yaml_content: dict = parse_yaml(yaml_file_path)
-    yaml_file_path = os.path.join(os.getcwd(), "config/users_new")
+    yaml_file_path = os.path.join(os.getcwd(), "config/users")
     users = parse_yaml_user_config_directory(yaml_file_path)
 
     for user in users:
-        print(user['name_cn'])
-        print(user['keywords'])
+        print(user.__dict__['name_cn'])
+        print(user.__dict__['keywords'])
         print(user)

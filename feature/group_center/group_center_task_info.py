@@ -1,4 +1,4 @@
-from feature.monitor import GPUInfo
+from feature.monitor.info.gpu_info import GPUInfo
 
 
 class TaskInfoForGroupCenter:

@@ -1,6 +1,6 @@
 from typing import Dict, Optional
 
-from feature.monitor.info.enum import TaskState
+from feature.monitor.info.program_enum import TaskState
 
 
 class TaskInfoForSQL:

@@ -2,8 +2,9 @@ from typing import Dict, Optional
 
 from monitor.info.enum import TaskState
 
+
 class TaskInfoForSQL:
-    def __init__(self, info: Dict, new_state: Optional[str] = None) -> None:
+    def __init__(self, info: Dict, new_state: Optional[TaskState] = None) -> None:
         self._task_idx: str = info.get("task_id", "Unknown")
         self._pid: int = info.get("pid", 0)
         self._gpu_id: int = info.get("gpu_id", 0)

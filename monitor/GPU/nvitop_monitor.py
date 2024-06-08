@@ -19,9 +19,9 @@ from global_variable.global_gpu import (
     global_gpu_task,
     global_gpu_usage,
 )
-from notify import group_center
 from monitor.GPU.gpu_process import GPUProcessInfo, TaskState
 from monitor.info.gpu_info import GPUInfo, gpu_name_filter
+from notify import group_center
 from notify.send_task_msg import (
     send_gpu_monitor_start_msg,
     send_process_except_warning_msg,
@@ -163,7 +163,7 @@ class NvidiaMonitor:
                     self.processes[pid].gpu_status = self.update_gpu_status()
                     self.processes[pid].update_gpu_process_info()
                     if self.processes[pid].state == TaskState.NEWBORN:
-                        self.processes[pid].update_cmd()
+                        self.processes[pid].get_cmd()
 
                 # check death process pid
                 tmp_process = copy.copy(self.processes)

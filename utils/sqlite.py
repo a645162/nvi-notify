@@ -82,7 +82,7 @@ class SQLite:
                 task_info.pid,
                 task_info.gpu_id,
                 task_info.user,
-                task_info.task_state,
+                task_info.task_state.value,
                 task_info.create_timestamp,
                 task_info.finish_timestamp,
                 task_info.running_time_in_seconds,
@@ -108,7 +108,7 @@ class SQLite:
         self.cur.execute(
             update_sql_text.format(self.table_name_header + str(task_info.gpu_id)),
             (
-                task_info.task_state,
+                task_info.task_state.value,
                 task_info.running_time_in_seconds,
                 task_info.gpu_mem_usage_max,
                 task_info.task_idx,
@@ -128,7 +128,7 @@ class SQLite:
         self.cur.execute(
             update_sql_text.format(self.table_name_header + str(task_info.gpu_id)),
             (
-                task_info.task_state,
+                task_info.task_state.value,
                 task_info.finish_timestamp,
                 task_info.running_time_in_seconds,
                 task_info.gpu_mem_usage_max,
@@ -164,7 +164,7 @@ class SQLite:
                 )
                 self.cur.execute(
                     update_sql_text.format(
-                        self.table_name_header + str(gpu_id), TaskState.DEATH
+                        self.table_name_header + str(gpu_id), TaskState.DEATH.value
                     ),
                     (unfinished_task_data[1], gpu_id),
                 )

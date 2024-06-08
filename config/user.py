@@ -3,7 +3,7 @@
 import os
 from typing import Dict
 
-from utils.utils import get_files_with_extension, parse_yaml
+from config.utils import get_files_with_extension, parse_yaml
 
 
 class UserInfo:
@@ -23,7 +23,7 @@ class UserInfo:
 
     @staticmethod
     def get_webhook_info(
-            webhook_dict: dict, webhook_type: str = "weCom"
+        webhook_dict: dict, webhook_type: str = "weCom"
     ) -> Dict[str, list]:
         if webhook_type in webhook_dict.keys():
             mention_id = webhook_dict[webhook_type].get("userId", [""])

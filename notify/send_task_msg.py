@@ -2,7 +2,6 @@
 
 import os
 from pathlib import Path
-from typing import Dict
 
 from config.settings import (
     NUM_GPU,
@@ -15,15 +14,15 @@ from config.settings import (
     get_now_time,
 )
 from config.user import UserInfo
-from monitor.info.webhook_task_info import TaskInfoForWebHook
 from monitor.info.enum import AllWebhookName, MsgType, TaskEvent
+from monitor.info.webhook_task_info import TaskInfoForWebHook
 from notify.webhook import send_text
 from utils.logs import get_logger
 
 logger = get_logger()
 
 
-def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: Dict):
+def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: dict):
     """
     启动GPU监控函数
     :param gpu_id: GPU ID
@@ -61,7 +60,7 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: Dict):
         )
 
 
-def send_gpu_task_message(process_info: Dict, task_event: str):
+def send_gpu_task_message(process_info: dict, task_event: str):
     """
     发送GPU任务消息函数
     :param process_info: 进程信息字典
@@ -88,7 +87,7 @@ def send_gpu_task_message(process_info: Dict, task_event: str):
                 f"{gpu_name_header}☑️"
                 f"{task.user.name_cn}的"
                 f"{multi_gpu_msg}"
-                f"({task.screen_name}{task.project_name}-{task.python_file})启动"
+                f"({task.screen_name}{task.project_name}-{task.python_file})完成，"
                 f"用时{task.running_time_human}，"
                 f"最大显存{task.task_gpu_memory_max_human}"
                 "\n"
@@ -109,7 +108,7 @@ def send_gpu_task_message(process_info: Dict, task_event: str):
         )
 
 
-def log_task_info(process_info: Dict, task_event: str):
+def log_task_info(process_info: dict, task_event: str):
     """
     任务日志函数
     :param process_info: 进程信息字典

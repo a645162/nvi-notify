@@ -15,7 +15,7 @@ logger = get_logger()
 
 
 def get_files_with_extension(
-        directory: str, extension: str, recursive: bool = False
+    directory: str, extension: str, recursive: bool = False
 ) -> List[str]:
     files = []
     if recursive:
@@ -27,9 +27,9 @@ def get_files_with_extension(
     return files
 
 
-def parse_yaml(yaml_file_path: str) -> dict:
+def parse_yaml(yaml_file: str) -> dict:
     # Check Encoding
-    with open(yaml_file_path, "rb") as f:
+    with open(yaml_file, "rb") as f:
         raw_data = f.read()
         result_encoding = chardet.detect(raw_data)
         encoding = result_encoding["encoding"]

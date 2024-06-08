@@ -110,14 +110,10 @@ class TaskInfoForWebHook:
 
     @property
     def screen_name(self) -> str:
-        return self._screen_name
-
-    @screen_name.setter
-    def screen_name(self, screen_session_name) -> None:
-        self._screen_name = (
-            f"[{screen_session_name}]"
-            if len(screen_session_name) > 0
-            else screen_session_name
+        return (
+            f"[{self._screen_name}]"
+            if len(self._screen_name) > 0
+            else self._screen_name
         )
 
     @property

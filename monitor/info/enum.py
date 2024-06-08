@@ -5,6 +5,7 @@ class TaskState(Enum):
     NEWBORN = "newborn"
     WORKING = "working"
     DEATH = "death"
+    DEFAULT = "default"
 
 
 class TaskEvent(Enum):

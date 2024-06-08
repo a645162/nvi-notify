@@ -10,10 +10,10 @@ import psutil
 from nvitop import GpuProcess
 
 from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
-from notify import group_center
 from monitor.info.enum import TaskEvent, TaskState
 from monitor.info.gpu_info import GPUInfo
 from monitor.info.sql_task_info import TaskInfoForSQL
+from notify import group_center
 from notify.send_task_msg import log_task_info, send_gpu_task_message
 from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
@@ -59,7 +59,6 @@ class GPUProcessInfo:
         self.python_file: Optional[str] = None
 
         self.python_version: str = ""
-        self.binary_path: str = ""
 
         self.start_time: Optional[float] = None  # timestamp
         self.finish_time: Optional[float] = None  # timestamp
@@ -75,13 +74,13 @@ class GPUProcessInfo:
         self.cuda_nvcc_bin: str = ""
         self.cuda_version: str = ""
 
-        self._state: Optional[str] = None  # init
+        self._state: Optional[TaskState] = TaskState.DEFAULT  # init
         self._running_time_in_seconds: int = 0  # init
 
         self.__init_info__()
 
     def __init_info__(self):
-        self.update_cmd()
+        self.get_cmd()
         self.get_all_env()
         self.judge_is_python()
 
@@ -96,7 +95,7 @@ class GPUProcessInfo:
 
             sql.insert_task_data(TaskInfoForSQL(self.__dict__))
 
-    def update_cmd(self):
+    def get_cmd(self):
         self.get_cwd()
         self.get_command()
         self.get_cmdline()
@@ -141,14 +140,7 @@ class GPUProcessInfo:
             self.cmdline = self.gpu_process.cmdline()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             # self.state = "death"
-            pass
-
-    def get_binary_path(self):
-        try:
-            self.binary_path = psutil.Process(self.pid).exe()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            # self.state = "death"
-            pass
+            pass        
 
     def get_process_environ(self):
         try:
@@ -214,37 +206,6 @@ class GPUProcessInfo:
             any(keyword in _unit for _unit in cmdline) for keyword in debug_cmd_keywords
         )
 
-    def get_user_old(self):
-        self.user = next(
-            (user for user in USERS if self.gpu_process.username() == user["name_eng"]),
-            None,
-        )
-
-        default_user_dict = {
-            "name": "Unknown",
-            "keywords": [],
-            "wework": {
-                "mention_id": [],
-                "mention_mobile": [],
-            },
-        }
-
-        def find_user_by_path(users: list, path: str):
-            for path_unit in reversed(path.split("data")[1].split("/")):
-                if len(path_unit) == 0:
-                    continue
-                for user in users:
-                    if any(
-                        path_unit.lower() == keyword.lower().strip()
-                        for keyword in user["keywords"]
-                    ):
-                        return user
-            raise RuntimeWarning("未获取到任务用户名")
-
-        if self.user is None:
-            cwd = self.cwd + "/" if self.cwd is not None else ""
-            self.user = find_user_by_path(USERS, cwd) or default_user_dict
-
     def get_user(self):
         self.user = USERS.get(self.gpu_process.username(), None)
 
@@ -270,51 +231,6 @@ class GPUProcessInfo:
 
         return self.process_environ.get(key, default_value)
 
-    @staticmethod
-    def get_conda_python_version(conda_env: str) -> str:
-        try:
-            command = f"conda run -n {conda_env} python --version"
-            result = subprocess.run(
-                command,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            result = str(result.stdout)
-            if "Python" not in result:
-                return ""
-            result = result.replace("Python", "").strip()
-            if "." in result:
-                return result
-            return ""
-        except Exception:
-            return ""
-
-    @staticmethod
-    def get_python_version_by_path(binary_path: str) -> str:
-        if "python" not in binary_path:
-            return ""
-
-        try:
-            command = f"'{binary_path}' --version"
-            result = subprocess.run(
-                command,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            result = str(result.stdout)
-            if "Python" not in result:
-                return ""
-            result = result.replace("Python", "").strip()
-            if "." in result:
-                return result
-            return ""
-        except Exception:
-            return ""
-
     def get_conda_env_name(self):
         pattern = r"envs/(.*?)/bin/python "
         match = re.search(pattern, self.command)
@@ -332,7 +248,12 @@ class GPUProcessInfo:
         self.conda_env = env_str
 
     def get_python_version(self):
-        python_version = self.get_python_version_by_path(self.binary_path)
+        try:
+            binary_path = psutil.Process(self.pid).exe()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            # self.state = "death"
+            binary_path = ""
+        python_version = self.get_python_version_by_path(binary_path)
         self.python_version = python_version
 
     def get_world_size(self):
@@ -431,7 +352,7 @@ class GPUProcessInfo:
         return self._state
 
     @state.setter
-    def state(self, new_state):
+    def state(self, new_state: TaskState.__members__):
         if self._state == new_state:
             return
 
@@ -489,6 +410,51 @@ class GPUProcessInfo:
             > WEBHOOK_DELAY_SEND_SECONDS
             > self._running_time_in_seconds
         ):
-            self.state = "working"
+            self.state = TaskState.WORKING
 
         self._running_time_in_seconds = new_running_time_in_seconds
+
+    @staticmethod
+    def get_conda_python_version(conda_env: str) -> str:
+        try:
+            command = f"conda run -n {conda_env} python --version"
+            result = subprocess.run(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            result = str(result.stdout)
+            if "Python" not in result:
+                return ""
+            result = result.replace("Python", "").strip()
+            if "." in result:
+                return result
+            return ""
+        except Exception:
+            return ""
+
+    @staticmethod
+    def get_python_version_by_path(binary_path: str) -> str:
+        if "python" not in binary_path:
+            return ""
+
+        try:
+            command = f"'{binary_path}' --version"
+            result = subprocess.run(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            result = str(result.stdout)
+            if "Python" not in result:
+                return ""
+            result = result.replace("Python", "").strip()
+            if "." in result:
+                return result
+            return ""
+        except Exception:
+            return ""

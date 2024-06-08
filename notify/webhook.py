@@ -91,9 +91,9 @@ class Webhook:
         if len(webhook_api) == 0:
             logger.error(f"Illegal {self.webhook_name} Webhook!")
             return ""
-        if self.webhook_name == AllWebhookName.WEWORK:
+        if self.webhook_name == AllWebhookName.WEWORK.value:
             webhook_header = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
-        elif self.webhook_name == AllWebhookName.LARK:
+        elif self.webhook_name == AllWebhookName.LARK.value:
             webhook_header = "https://open.feishu.cn/open-apis/bot/v2/hook/"
 
         if webhook_api.startswith(webhook_header):
@@ -111,9 +111,9 @@ class Webhook:
             webhook_url = self.webhook_url_warning
             webhook_secret = self.webhook_warning_secret
 
-        if self.webhook_name == AllWebhookName.WEWORK:
+        if self.webhook_name == AllWebhookName.WEWORK.value:
             self.send_weCom_message(msg, webhook_url, user)
-        elif self.webhook_name == AllWebhookName.LARK:
+        elif self.webhook_name == AllWebhookName.LARK.value:
             self.send_lark_message(msg, webhook_url, webhook_secret, user)
 
     def send_weCom_message(self, msg: str, webhook_url: str, user: UserInfo = None):
@@ -180,7 +180,7 @@ class Webhook:
                 current_msg = self.msg_queue.get()  # msg, msg_type, user
                 self.send_message(*current_msg)
                 logger.info(
-                    f"[{get_now_time()}]{self.webhook_type}消息队列发送一条消息。"
+                    f"[{get_now_time()}]{self.webhook_name}消息队列发送一条消息。"
                 )
 
                 # 每分钟最多20条消息
@@ -188,7 +188,7 @@ class Webhook:
 
             except Exception:
                 logger.warning(
-                    f"[{get_now_time()}]{self.webhook_type}消息队列发送异常。"
+                    f"[{get_now_time()}]{self.webhook_name}消息队列发送异常。"
                 )
                 time.sleep(60)
 
@@ -234,15 +234,16 @@ def send_text(
     user: UserInfo = None,
     enable_webhook_name: Union[List[str], str] = AllWebhookName.ALL,
 ):
-    valid_msg_type_list = [member.value for member in MsgType]
-    valid_webhook_name = [member.value for member in AllWebhookName]
+    valid_msg_type_list = [e for e in MsgType.__members__.values()]
+    valid_webhook_name = [e.value for e in AllWebhookName.__members__.values()]
+    enable_webhook_name = enable_webhook_name.value
 
     assert msg_type in valid_msg_type_list, logger.error("msg_type must be in MsgType")
     if not isinstance(enable_webhook_name, list):
         assert enable_webhook_name in valid_webhook_name, logger.error(
             "enable_webhook_name must be in WEBHOOK_NAME env, or 'AllWebhookName.ALL'"
         )
-        webhook_list = [enable_webhook_name.lower()]
+        webhook_list = [enable_webhook_name]
     else:
         for _webhook_name in enable_webhook_name:
             assert _webhook_name in valid_webhook_name, logger.error(

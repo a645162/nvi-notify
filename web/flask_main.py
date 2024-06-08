@@ -127,7 +127,7 @@ def get_gpu_task():
         task_list.append(
             {
                 "id": process_obj.pid,
-                "name": process_obj.user["name"],
+                "name": process_obj.user.name_cn,
                 "debugMode": process_obj.is_debug,
                 "projectName": process_obj.project_name,
                 "pyFileName": process_obj.python_file,

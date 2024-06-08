@@ -39,6 +39,10 @@ class Webhook:
         self._webhook_url_warning = self.get_webhook_url(
             os.getenv(f"WEBHOOK_{webhook_name.upper()}_DEV")
         )
+
+        self._lark_app_id = os.getenv("LARK_APP_ID", "")
+        self._lark_app_secret = os.getenv("LARK_APP_Secret", "")
+
         self._webhook_main_secret = os.getenv(
             f"WEBHOOK_{webhook_name.upper()}_DEPLOY_SECRET"
         )
@@ -57,6 +61,24 @@ class Webhook:
     def webhook_url_main(self, value):
         if value is not None:
             self._webhook_url_main = value.strip()
+
+    @property
+    def lark_app_id(self):
+        return self._lark_app_id
+
+    @lark_app_id.setter
+    def lark_app_id(self, value):
+        if value is not None:
+            self._lark_app_id = value.strip()
+
+    @property
+    def lark_app_secret(self):
+        return self._lark_app_secret
+
+    @lark_app_secret.setter
+    def lark_app_secret(self, value):
+        if value is not None:
+            self._lark_app_secret = value.strip()
 
     @property
     def webhook_url_warning(self):
@@ -85,7 +107,7 @@ class Webhook:
         if value is not None:
             self._webhook_warning_secret = value.strip()
 
-    def get_webhook_url(self, webhook_api):
+    def get_webhook_url(self, webhook_api: str):
         webhook_api = webhook_api.strip()
 
         if len(webhook_api) == 0:
@@ -95,6 +117,9 @@ class Webhook:
             webhook_header = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
         elif self.webhook_name == AllWebhookName.LARK.value:
             webhook_header = "https://open.feishu.cn/open-apis/bot/v2/hook/"
+        else:
+            logger.error(f"Illegal {self.webhook_name} Webhook!")
+            return ""
 
         if webhook_api.startswith(webhook_header):
             return webhook_api
@@ -111,10 +136,23 @@ class Webhook:
             webhook_url = self.webhook_url_warning
             webhook_secret = self.webhook_warning_secret
 
+        if len(webhook_url) == 0:
+            return
+
         if self.webhook_name == AllWebhookName.WEWORK.value:
             self.send_weCom_message(msg, webhook_url, user)
         elif self.webhook_name == AllWebhookName.LARK.value:
             self.send_lark_message(msg, webhook_url, webhook_secret, user)
+            if (
+                len(self.lark_app_id) > 0
+                and len(self.lark_app_secret) > 0
+                and user is not None
+            ):
+                self.send_lark_message_by_app(
+                    msg,
+                    "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=user_id",
+                    user,
+                )
 
     def send_weCom_message(self, msg: str, webhook_url: str, user: UserInfo = None):
         headers = {"Content-Type": "application/json"}
@@ -169,6 +207,57 @@ class Webhook:
 
         r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
         logger.info(f"Lark[text]{r.text}")
+
+    def send_lark_message_by_app(
+        self, msg: str, webhook_url_header: str, user: UserInfo = None
+    ):
+        if self.get_lark_tenant_access_token() == "":
+            return
+
+        headers = {
+            "Authorization": f"Bearer {self.get_lark_tenant_access_token()}",
+            "Content-Type": "application/json",
+        }
+
+        lark_mention_ids = user.lark_info.get("mention_id", [""])
+
+        if len(lark_mention_ids) == 1 and lark_mention_ids[0] != "":
+            lark_mention_id = lark_mention_ids[0]
+        else:
+            return
+
+        msg = msg.replace("/::D", "[呲牙]")
+        msg = msg.replace(f"{user.name_cn}的", "任务", 1)
+        msg = json.dumps({"text": msg})
+
+        data = {
+            "content": msg,
+            "msg_type": "text",
+            "receive_id": lark_mention_id,
+        }
+        # "{\"text\":\"\"}"
+        r = requests.post(webhook_url_header, headers=headers, data=json.dumps(data))
+        logger.info(f"LarkApp[text]{r.text}")
+
+    def get_lark_tenant_access_token(self) -> str:
+        url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+        payload = json.dumps(
+            {
+                "app_id": self.lark_app_id,
+                "app_secret": self.lark_app_secret,
+            }
+        )
+
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            r = requests.post(url, headers=headers, data=payload)
+            if len(r.text) > 0:
+                return r.text.split(":")[-1].split('"')[1]
+            else:
+                return ""
+        except Exception:
+            return ""
 
     def webhook_send_thread(self) -> None:
         while True:

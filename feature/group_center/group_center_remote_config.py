@@ -16,8 +16,8 @@ logger = get_logger()
 max_retry_times = 5
 
 
-def get_user_config_json_str() -> str:
-    url = group_center_get_url(target_api="/api/client/config/user_list")
+def get_json_str(target_api: str) -> str:
+    url = group_center_get_url(target_api=target_api)
 
     for _ in range(max_retry_times):
         try:
@@ -51,6 +51,20 @@ def get_user_config_json_str() -> str:
 
         time_sleep(10)
     return ""
+
+
+def get_user_config_json_str() -> str:
+    return get_json_str(target_api="/api/client/config/user_list")
+
+
+def init_remote_env_list():
+    from config.settings import all_env_dict
+
+    json_str = get_json_str(target_api="/api/client/config/env_list")
+
+    env_dict = json.dumps(json_str)
+    if isinstance(env_dict, dict):
+        all_env_dict.update(env_dict)
 
 
 if __name__ == "__main__":

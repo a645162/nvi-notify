@@ -27,3 +27,12 @@ class AllWebhookName(Enum):
     WEWORK = "wework"
     LARK = "lark"
     ALL = [WEWORK, LARK]
+
+    def __str__(self):
+        return str(self.value)
+
+
+if __name__ == "__main__":
+    print(str(AllWebhookName.WEWORK))
+    print(str(AllWebhookName.LARK))
+    print(str(AllWebhookName.ALL))

@@ -21,6 +21,24 @@ logger = get_logger()
 
 path_base = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
+all_env_dict: dict[str, str] = {}
+
+
+def get_env_str(key: str, default_value: str = "") -> str:
+    global all_env_dict
+
+    if key in all_env_dict:
+        return all_env_dict[key]
+
+    return os.getenv("SERVER_NAME", default_value)
+
+
+def get_env_int(key: str, default_value: int = 0) -> int:
+    try:
+        return int(get_env_str(key, str(default_value)))
+    except Exception:
+        return default_value
+
 
 def get_ip(ip_type: str = "v4"):
     assert ip_type in ["v4", "v6"]
@@ -133,67 +151,93 @@ NUM_CPU = get_cpu_physics_num()
 NUM_GPU = Device.count()
 
 # Server Info
-SERVER_NAME = os.getenv("SERVER_NAME", None)
-SERVER_NAME_SHORT = os.getenv("SERVER_NAME_SHORT", "")
-SERVER_DOMAIN = os.getenv("SERVER_DOMAIN", None)
+SERVER_NAME = get_env_str("SERVER_NAME", "None")
+SERVER_NAME_SHORT = get_env_str("SERVER_NAME_SHORT", "")
+SERVER_DOMAIN = get_env_str("SERVER_DOMAIN", "None")
+
+# Group Center
+USE_GROUP_CENTER: bool = get_bool_from_string(get_env_str("USE_GROUP_CENTER", "False"))
+GROUP_CENTER_URL = get_env_str("GROUP_CENTER_URL", "http://127.0.0.1:8088")
+GROUP_CENTER_PASSWORD = get_env_str("GROUP_CENTER_PASSWORD", "password")
+
+ENV_FROM_GROUP_CENTER: bool = \
+    USE_GROUP_CENTER and get_bool_from_string(
+        get_env_str("ENV_FROM_GROUP_CENTER", "False")
+    )
+if ENV_FROM_GROUP_CENTER:
+    from feature.group_center. \
+        group_center_remote_config import init_remote_env_list
+
+    init_remote_env_list()
+
+    print("-" * 20)
+    print("Remote Env")
+    for key in all_env_dict.keys():
+        print(f"{key}: {all_env_dict[key]}")
+    print("-" * 20)
 
 # CPU Monitor
-CPU_HIGH_TEMPERATURE_THRESHOLD = int(os.getenv("HIGH_TEMPERATURE_THRESHOLD", 85))
+CPU_HIGH_TEMPERATURE_THRESHOLD = \
+    int(get_env_int("HIGH_TEMPERATURE_THRESHOLD", 85))
 TEMPERATURE_MONITOR_SAMPLING_INTERVAL = int(
-    os.getenv("TEMPERATURE_MONITOR_SAMPLING_INTERVAL", 300)
+    get_env_int("TEMPERATURE_MONITOR_SAMPLING_INTERVAL", 300)
 )
 
 # GPU Monitor
-GPU_MONITOR_SAMPLING_INTERVAL = int(os.getenv("GPU_MONITOR_SAMPLING_INTERVAL", 5))
+GPU_MONITOR_SAMPLING_INTERVAL = \
+    int(get_env_int("GPU_MONITOR_SAMPLING_INTERVAL", 5))
 
 # Hard Disk Monitor
 HARD_DISK_MOUNT_POINT = [
-    m.strip() for m in os.getenv("HARD_DISK_MOUNT_POINT", "/").split(",")
+    m.strip() for m in get_env_str("HARD_DISK_MOUNT_POINT", "/").split(",")
 ]
 HARD_DISK_HIGH_PERCENTAGE_THRESHOLD = int(
-    os.getenv("HARD_DISK_HIGH_PERCENTAGE_THRESHOLD", 95)
+    get_env_int("HARD_DISK_HIGH_PERCENTAGE_THRESHOLD", 95)
 )
-HARD_DISK_LOW_FREE_GB_THRESHOLD = int(os.getenv("HARD_DISK_LOW_FREE_GB_THRESHOLD", 100))
+HARD_DISK_LOW_FREE_GB_THRESHOLD = \
+    int(get_env_int("HARD_DISK_LOW_FREE_GB_THRESHOLD", 100))
 HARD_DISK_MONITOR_SAMPLING_INTERVAL = int(
-    os.getenv("HARD_DISK_MONITOR_SAMPLING_INTERVAL", 3600)
+    get_env_int("HARD_DISK_MONITOR_SAMPLING_INTERVAL", 3600)
 )
 
 # Flask
-FLASK_SERVER_HOST = os.getenv("FLASK_SERVER_HOST", "0,0,0,0")
-FLASK_SERVER_PORT = os.getenv("FLASK_SERVER_PORT", "3000")
-GPU_BOARD_WEB_URL = os.getenv("GPU_BOARD_WEB_URL", "")
-
-# Group Center
-USE_GROUP_CENTER: bool = get_bool_from_string(os.getenv("USE_GROUP_CENTER", "False"))
-GROUP_CENTER_URL = os.getenv("GROUP_CENTER_URL", "http://127.0.0.1:8088")
-GROUP_CENTER_PASSWORD = os.getenv("GROUP_CENTER_PASSWORD", "password")
+FLASK_SERVER_HOST = get_env_str("FLASK_SERVER_HOST", "0,0,0,0")
+FLASK_SERVER_PORT = get_env_str("FLASK_SERVER_PORT", "3000")
+GPU_BOARD_WEB_URL = get_env_str("GPU_BOARD_WEB_URL", "")
 
 # WebHook
-WEBHOOK_DELAY_SEND_SECONDS = int(os.getenv("WEBHOOK_DELAY_SEND_SECONDS", 60))
+WEBHOOK_DELAY_SEND_SECONDS = \
+    int(get_env_int("WEBHOOK_DELAY_SEND_SECONDS", 60))
 WEBHOOK_SLEEP_TIME_START = get_env_time(
-    os.getenv("WEBHOOK_SLEEP_TIME_START", "23:00"), datetime.time(23, 0)
+    get_env_str("WEBHOOK_SLEEP_TIME_START", "23:00"),
+    datetime.time(23, 0)
 )
 WEBHOOK_SLEEP_TIME_END = get_env_time(
-    os.getenv("WEBHOOK_SLEEP_TIME_END", "8:00"), datetime.time(8, 0)
+    get_env_str("WEBHOOK_SLEEP_TIME_END", "8:00"),
+    datetime.time(8, 0)
 )
 
 WEBHOOK_NAME = [
     m.strip().upper()
-    for m in os.getenv("WEBHOOK_NAME", AllWebhookName.WEWORK).split(",")
+    for m in get_env_str("WEBHOOK_NAME", str(AllWebhookName.WEWORK)).split(",")
 ]
-WEBHOOK_WEWORK_DEPLOY = os.getenv("WEBHOOK_WEWORK_DEPLOY", "").strip()
-WEBHOOK_WEWORK_DEV = os.getenv("WEBHOOK_WEWORK_DEV", "").strip()
-WEBHOOK_LARK_DEPLOY = os.getenv("WEBHOOK_LARK_DEPLOY", "").strip()
-WEBHOOK_LARK_DEV = os.getenv("WEBHOOK_LARK_DEV", "").strip()
+WEBHOOK_WEWORK_DEPLOY = get_env_str("WEBHOOK_WEWORK_DEPLOY", "").strip()
+WEBHOOK_WEWORK_DEV = get_env_str("WEBHOOK_WEWORK_DEV", "").strip()
+WEBHOOK_LARK_DEPLOY = get_env_str("WEBHOOK_LARK_DEPLOY", "").strip()
+WEBHOOK_LARK_DEV = get_env_str("WEBHOOK_LARK_DEV", "").strip()
 
 GPU_MONITOR_AUTO_RESTART = get_bool_from_string(
-    os.getenv("GPU_MONITOR_AUTO_RESTART", "True").strip()
+    get_env_str("GPU_MONITOR_AUTO_RESTART", "True").strip()
 )
 
 # User
 USER_FROM_GROUP_CENTER: bool = \
-    USE_GROUP_CENTER and get_bool_from_string(os.getenv("USER_FROM_GROUP_CENTER", "False"))
-USER_FROM_LOCAL_FILES: bool = get_bool_from_string(os.getenv("USER_FROM_LOCAL_FILES", "True"))
+    USE_GROUP_CENTER and get_bool_from_string(
+        get_env_str("USER_FROM_GROUP_CENTER", "False")
+    )
+USER_FROM_LOCAL_FILES: bool = get_bool_from_string(
+    get_env_str("USER_FROM_LOCAL_FILES", "True")
+)
 
 USERS: dict[str, UserInfo] = {}
 

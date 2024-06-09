@@ -37,6 +37,6 @@ if __name__ == "__main__":
     users = parse_yaml_user_config_directory(yaml_file_path)
 
     for user in users:
-        print(user.__dict__['name_cn'])
-        print(user.__dict__['keywords'])
+        print(user.__dict__["name_cn"])
+        print(user.__dict__["keywords"])
         print(user)

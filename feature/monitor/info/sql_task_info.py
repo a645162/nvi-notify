@@ -1,10 +1,10 @@
-from typing import Dict, Optional
+from typing import Optional
 
 from feature.monitor.info.program_enum import TaskState
 
 
 class TaskInfoForSQL:
-    def __init__(self, info: Dict, new_state: Optional[TaskState] = None) -> None:
+    def __init__(self, info: dict, new_state: Optional[TaskState] = None) -> None:
         self._task_idx: str = info.get("task_id", "Unknown")
         self._pid: int = info.get("pid", 0)
         self._gpu_id: int = info.get("gpu_id", 0)
@@ -19,7 +19,9 @@ class TaskInfoForSQL:
         self._gpu_mem_usage_max: str = info.get("task_gpu_memory_max_human", "0MiB")
 
         self._task_state: str = (
-            new_state if new_state is not None else info.get("_state", TaskState.NEWBORN)
+            new_state
+            if new_state is not None
+            else info.get("_state", TaskState.NEWBORN)
         )
 
         self._is_debug: bool = info.get("is_debug", True)
@@ -31,7 +33,7 @@ class TaskInfoForSQL:
         self._python_file: str = info.get("python_file", "Unknown")
 
     @staticmethod
-    def _get_finish_timestamp(info: Dict[str, any]) -> int:
+    def _get_finish_timestamp(info: dict) -> int:
         try:
             return round(info.get("finish_time", 0.0))
         except (TypeError, ValueError):

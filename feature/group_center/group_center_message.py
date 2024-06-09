@@ -1,22 +1,19 @@
-from typing import List, Tuple
-import threading
-from time import sleep as time_sleep
-import requests
 import json
+import threading
+import time
+from typing import Tuple
 
+import requests
+
+from config.settings import USE_GROUP_CENTER
 from feature.group_center.group_center import (
     access_key,
-    group_center_public_part,
     group_center_get_url,
-    group_center_login
+    group_center_login,
+    group_center_public_part,
 )
-
-from config.settings import (
-    USE_GROUP_CENTER,
-)
-
-from feature.monitor.info.program_enum import TaskEvent
 from feature.group_center.group_center_task_info import TaskInfoForGroupCenter
+from feature.monitor.info.program_enum import TaskEvent
 from utils.logs import get_logger
 
 logger = get_logger()
@@ -29,18 +26,15 @@ def send_dict_to_center(data: dict, target: str) -> bool:
 
         response_dict: dict = json.loads(response.text)
 
-        if (not (
-                "isAuthenticated" in response_dict.keys() and
-                response_dict["isAuthenticated"]
-        )):
+        if not (
+            "isAuthenticated" in response_dict.keys()
+            and response_dict["isAuthenticated"]
+        ):
             logger.error("[Group Center] Not authorized")
             group_center_login()
             return False
 
-        if (not (
-                "isSucceed" in response_dict.keys() and
-                response_dict["isSucceed"]
-        )):
+        if not ("isSucceed" in response_dict.keys() and response_dict["isSucceed"]):
             logger.error(f"[Group Center] Send {target} Failed: {response.text}")
             return False
 
@@ -51,7 +45,7 @@ def send_dict_to_center(data: dict, target: str) -> bool:
         return False
 
 
-task_list: List[Tuple[dict, str]] = []
+task_list: list[Tuple[dict, str]] = []
 
 
 class GroupCenterWorkThread(threading.Thread):
@@ -71,18 +65,15 @@ class GroupCenterWorkThread(threading.Thread):
                 final_data = {
                     **group_center_public_part,
                     **data,
-                    "accessKey": access_key
+                    "accessKey": access_key,
                 }
-                if send_dict_to_center(
-                        data=final_data,
-                        target=target
-                ):
+                if send_dict_to_center(data=final_data, target=target):
                     task_list.pop(0)
                 else:
                     # 出错多休息一会儿~
-                    time_sleep(20)
+                    time.sleep(20)
 
-            time_sleep(10)
+            time.sleep(10)
 
 
 work_thread = None
@@ -112,6 +103,7 @@ def gpu_task_message(process_obj, task_event: TaskEvent):
         return
 
     from feature.monitor.GPU.gpu_process import GPUProcessInfo
+
     process_obj: GPUProcessInfo = process_obj
 
     logger.info(

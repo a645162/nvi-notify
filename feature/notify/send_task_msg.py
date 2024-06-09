@@ -46,7 +46,7 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: dict):
 
             send_start_info = True
             gpu_status = process.gpu_status
-            all_tasks_msg = "".join(process.gpu_all_tasks_msg.values())
+            all_tasks_msg = "".join(process.gpu_all_tasks_msg_dict.values())
             break
 
     if send_start_info:
@@ -143,7 +143,7 @@ def log_task_info(process_info: dict, task_event: TaskEvent):
             )
         log_writer.write(f"[{get_now_time()}]+{output_log} + \n")
         logger.info(output_log)
-        print(output_log)
+        # print(output_log)
 
 
 def handle_normal_text(msg: str, user: UserInfo = None):

@@ -4,17 +4,17 @@ import os.path
 import re
 import subprocess
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 
 import psutil
 from nvitop import GpuProcess
 
 from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
 from config.user.user_info import UserInfo
-from feature.monitor.info.program_enum import TaskEvent, TaskState
-from feature.monitor.info.gpu_info import GPUInfo
-from feature.monitor.info.sql_task_info import TaskInfoForSQL
 from feature.group_center import group_center_message
+from feature.monitor.info.gpu_info import GPUInfo
+from feature.monitor.info.program_enum import TaskEvent, TaskState
+from feature.monitor.info.sql_task_info import TaskInfoForSQL
 from feature.notify.send_task_msg import log_task_info, send_gpu_task_message
 from utils.converter import get_human_str_from_byte
 from utils.logs import get_logger
@@ -37,14 +37,14 @@ class GPUProcessInfo:
 
         self.gpu_process: GpuProcess = gpu_process
         self.gpu_status: Optional[GPUInfo] = None
-        self.gpu_all_tasks_msg: Optional[Dict] = None
+        self.gpu_all_tasks_msg_dict: Optional[dict[int, str]] = None
         self.num_task: int = 0
         self.process_environ: Optional[dict[str, str]] = None
 
         # current process
         self.cwd: Optional[str] = None  # pwd
         self.command: Optional[str] = None
-        self.cmdline: Optional[List] = None
+        self.cmdline: Optional[list] = None
 
         self.is_debug: Optional[bool] = None
 
@@ -61,8 +61,8 @@ class GPUProcessInfo:
 
         self.python_version: str = ""
 
-        self.start_time: float = .0  # timestamp
-        self.finish_time: float = .0  # timestamp
+        self.start_time: float = 0.0  # timestamp
+        self.finish_time: float = 0.0  # timestamp
         self.running_time_human: str = ""
 
         # Props get from env var
@@ -81,34 +81,26 @@ class GPUProcessInfo:
         self.__init_info__()
 
     def __init_info__(self):
-        self.get_cmd()
+        self.get_cwd()
+        self.get_command()
+        self.get_cmdline()
+        self.get_process_environ()
+
         self.get_all_env()
+
         self.judge_is_python()
 
         if self.is_python:
-            self.update_gpu_process_info()
+            self.get_python_version()
             self.get_debug_flag()
             self.get_user()
-
             self.get_project_name()
             self.get_python_filename()
             self.get_start_time()
 
+            self.update_gpu_process_info()
+
             sql.insert_task_data(TaskInfoForSQL(self.__dict__))
-
-    def get_cmd(self):
-        self.get_cwd()
-        self.get_command()
-        self.get_cmdline()
-        self.get_python_version()
-        self.get_process_environ()
-        self.get_task_main_memory_mb()
-
-    def update_gpu_process_info(self):
-        self.get_task_gpu_memory()
-        self.get_task_gpu_memory_human()
-        self.get_running_time_in_seconds()
-        self.get_running_time_human()
 
     def get_all_env(self):
         self.get_screen_session_name()
@@ -121,6 +113,13 @@ class GPUProcessInfo:
 
         self.get_cuda_root()
         self.get_cuda_version()
+
+    def update_gpu_process_info(self):
+        self.get_task_main_memory_mb()
+        self.get_task_gpu_memory()
+        self.get_task_gpu_memory_human()
+        self.get_running_time_in_seconds()
+        self.get_running_time_human()
 
     def get_cwd(self):
         try:
@@ -151,8 +150,10 @@ class GPUProcessInfo:
             pass
 
     def get_task_main_memory_mb(self):
-        task_main_memory_mb = self.gpu_process.memory_info().rss // 1024 // 1024
-        self.task_main_memory_mb = task_main_memory_mb
+        try:
+            self.task_main_memory_mb = self.gpu_process.memory_info().rss // 1024 // 1024
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
 
     # Task Gpu Memory(Bytes)
     def get_task_gpu_memory(self):
@@ -160,8 +161,8 @@ class GPUProcessInfo:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-                self.task_gpu_memory_max is None
-                or self.task_gpu_memory_max < task_gpu_memory
+            self.task_gpu_memory_max is None
+            or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = get_human_str_from_byte(
@@ -216,8 +217,8 @@ class GPUProcessInfo:
                     continue
                 for user in users.values():
                     if any(
-                            path_unit.lower() == keyword.lower().strip()
-                            for keyword in user.keywords
+                        path_unit.lower() == keyword.lower().strip()
+                        for keyword in user.keywords
                     ):
                         return user
             raise RuntimeWarning("未获取到任务用户名")
@@ -326,8 +327,8 @@ class GPUProcessInfo:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
                 self.screen_session_name = self.screen_session_name[
-                                           dot_index + 1:
-                                           ].strip()
+                    dot_index + 1 :
+                ].strip()
 
     def get_project_name(self):
         if self.cwd is not None:
@@ -357,14 +358,11 @@ class GPUProcessInfo:
         if self._state == new_state:
             return
 
-        if new_state == TaskState.NEWBORN and self._state is None:
+        if new_state == TaskState.NEWBORN and self._state is TaskState.DEFAULT:
             # 新生进程
 
             log_task_info(self.__dict__, TaskEvent.CREATE)
-        elif (
-                new_state == TaskState.WORKING
-                and self._state == TaskState.NEWBORN
-        ):
+        elif new_state == TaskState.WORKING and self._state == TaskState.NEWBORN:
             # 新生进程进入正常工作状态
 
             sql.update_task_data(TaskInfoForSQL(self.__dict__, new_state))
@@ -374,10 +372,7 @@ class GPUProcessInfo:
 
             # WebHook
             send_gpu_task_message(self.__dict__, TaskEvent.CREATE)
-        elif (
-                new_state == TaskState.DEATH
-                and self._state == TaskState.WORKING
-        ):
+        elif new_state == TaskState.DEATH and self._state == TaskState.WORKING:
             # 已经进入正常工作状态的进程正常结束
 
             log_task_info(self.__dict__, TaskEvent.FINISH)
@@ -388,10 +383,7 @@ class GPUProcessInfo:
 
             # WebHook
             send_gpu_task_message(self.__dict__, TaskEvent.FINISH)
-        elif (
-                new_state == TaskState.DEATH
-                and self._state == TaskState.NEWBORN
-        ):
+        elif new_state == TaskState.DEATH and self._state == TaskState.NEWBORN:
             # 没有到发信阈值就被杀死的进程
 
             log_task_info(self.__dict__, TaskEvent.FINISH)
@@ -407,9 +399,9 @@ class GPUProcessInfo:
     def running_time_in_seconds(self, new_running_time_in_seconds):
         # 上次不满足，但是这次满足
         if (
-                new_running_time_in_seconds
-                > WEBHOOK_DELAY_SEND_SECONDS
-                > self._running_time_in_seconds
+            new_running_time_in_seconds
+            > WEBHOOK_DELAY_SEND_SECONDS
+            > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 

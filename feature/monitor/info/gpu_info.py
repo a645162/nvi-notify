@@ -1,8 +1,5 @@
-from typing import Dict
-
-
 class GPUInfo:
-    def __init__(self, info: Dict) -> None:
+    def __init__(self, info: dict) -> None:
         self.utl: int = info.get("gpu_usage", 0)
 
         self.mem_percent: int = info.get("gpu_mem_percent", 0)

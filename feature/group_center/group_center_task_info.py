@@ -71,6 +71,7 @@ class TaskInfoForGroupCenter:
 
     def update(self, gpu_process_obj):
         from feature.monitor.GPU.gpu_process import GPUProcessInfo
+
         gpu_process_obj: GPUProcessInfo = gpu_process_obj
 
         # 任务唯一标识符
@@ -88,8 +89,7 @@ class TaskInfoForGroupCenter:
         self.taskPid = gpu_process_obj.pid
         self.taskMainMemory = gpu_process_obj.task_main_memory_mb
 
-        all_tasks_msg: str = "".join(gpu_process_obj.gpu_all_tasks_msg.values())
-        all_tasks_msg = str(all_tasks_msg).strip()
+        all_tasks_msg: str = "".join(gpu_process_obj.gpu_all_tasks_msg_dict.values())
         self.allTaskMessage = all_tasks_msg
 
         # GPU 信息
@@ -103,9 +103,15 @@ class TaskInfoForGroupCenter:
         self.taskGpuId = gpu_process_obj.gpu_id
         self.taskGpuName = gpu_process_obj.gpu_name
 
-        self.taskGpuMemoryGb = round((gpu_process_obj.task_gpu_memory >> 10 >> 10) / 1024, 2)
-        self.taskGpuMemoryHuman = self.__fix_data_size_str(gpu_process_obj.task_gpu_memory_human)
-        self.taskGpuMemoryMaxGb = round((gpu_process_obj.task_gpu_memory_max >> 10 >> 10) / 1024, 2)
+        self.taskGpuMemoryGb = round(
+            (gpu_process_obj.task_gpu_memory >> 10 >> 10) / 1024, 2
+        )
+        self.taskGpuMemoryHuman = self.__fix_data_size_str(
+            gpu_process_obj.task_gpu_memory_human
+        )
+        self.taskGpuMemoryMaxGb = round(
+            (gpu_process_obj.task_gpu_memory_max >> 10 >> 10) / 1024, 2
+        )
 
         # 多卡
         self.multiDeviceLocalRank = gpu_process_obj.local_rank

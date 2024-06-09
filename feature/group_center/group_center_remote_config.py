@@ -1,14 +1,13 @@
 import json
+from time import sleep as time_sleep
 
 import requests
-from time import sleep as time_sleep
 
 from feature.group_center.group_center import (
     access_key,
     group_center_get_url,
-    group_center_login
+    group_center_login,
 )
-
 from utils.logs import get_logger
 
 logger = get_logger()
@@ -24,14 +23,8 @@ def get_json_str(target_api: str) -> str:
             if access_key == "":
                 group_center_login()
 
-            params = {
-                "accessKey": access_key
-            }
-            response = requests.get(
-                url=url,
-                params=params,
-                timeout=10
-            )
+            params = {"accessKey": access_key}
+            response = requests.get(url=url, params=params, timeout=10)
 
             text = response.text.strip()
 
@@ -40,11 +33,11 @@ def get_json_str(target_api: str) -> str:
 
             json_dict = json.loads(text)
             if (
-                    isinstance(json_dict, dict) and
-                    "isAuthenticated" in json_dict.keys() and
-                    not json_dict["isAuthenticated"]
+                isinstance(json_dict, dict)
+                and "isAuthenticated" in json_dict.keys()
+                and not json_dict["isAuthenticated"]
             ):
-                logger.error(f"[Group Center]Not authorized")
+                logger.error("[Group Center]Not authorized")
                 group_center_login()
         except Exception as e:
             logger.error("get user config json error", e)

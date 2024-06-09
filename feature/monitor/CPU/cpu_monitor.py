@@ -2,7 +2,7 @@
 
 import threading
 import time
-from typing import Dict, Optional
+from typing import Optional
 
 import psutil
 
@@ -101,7 +101,7 @@ def get_cpu_temperature(cpu_id: int) -> float:
         return -1.0
 
 
-def get_cpu_temperature_info() -> Optional[Dict]:
+def get_cpu_temperature_info() -> Optional[dict]:
     if not hasattr(psutil, "sensors_temperatures"):
         return None
     temps = psutil.sensors_temperatures()

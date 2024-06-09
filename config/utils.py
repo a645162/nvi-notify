@@ -3,7 +3,6 @@
 import glob
 import os
 import socket
-from typing import Dict, List
 
 import chardet
 import psutil
@@ -16,7 +15,7 @@ logger = get_logger()
 
 def get_files_with_extension(
     directory: str, extension: str, recursive: bool = False
-) -> List[str]:
+) -> list[str]:
     files = []
     if recursive:
         search_path = os.path.join(directory, f"**/*.{extension}")
@@ -47,7 +46,7 @@ def parse_yaml(yaml_file: str) -> dict:
     return yaml_data
 
 
-def get_interface_ip_dict(ip_type: str = "v4") -> Dict:
+def get_interface_ip_dict(ip_type: str = "v4") -> dict:
     interface_ip_dict = {}
     family = socket.AF_INET if ip_type == "v4" else socket.AF_INET6
 

@@ -10,9 +10,8 @@ from dotenv import dotenv_values, load_dotenv
 from nvitop import Device
 
 from config.user.user_info import UserInfo
-from config.user.user_yaml import parse_yaml_user_config_directory
 from config.user.user_json import get_json_user_config_from_group_center
-
+from config.user.user_yaml import parse_yaml_user_config_directory
 from config.utils import get_interface_ip_dict
 from feature.monitor.info.program_enum import AllWebhookName
 from utils.logs import get_logger
@@ -53,7 +52,7 @@ def get_env_time(time_str: str, default: datetime.time = None) -> datetime.time:
         return default
 
     time_str_1 = time_str[:index].strip()
-    time_str_2 = time_str[index + 1:].strip()
+    time_str_2 = time_str[index + 1 :].strip()
 
     try:
         int_1 = int(time_str_1)
@@ -73,7 +72,7 @@ def get_now_time():
 
 
 def is_within_time_range(
-        start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
+    start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
 ):
     current_time = datetime.datetime.now().time()
 
@@ -160,30 +159,26 @@ USE_GROUP_CENTER: bool = get_bool_from_string(get_env_str("USE_GROUP_CENTER", "F
 GROUP_CENTER_URL = get_env_str("GROUP_CENTER_URL", "http://localhost:8088")
 GROUP_CENTER_PASSWORD = get_env_str("GROUP_CENTER_PASSWORD", "password")
 
-ENV_FROM_GROUP_CENTER: bool = \
-    USE_GROUP_CENTER and get_bool_from_string(
-        get_env_str("ENV_FROM_GROUP_CENTER", "False")
-    )
+ENV_FROM_GROUP_CENTER: bool = USE_GROUP_CENTER and get_bool_from_string(
+    get_env_str("ENV_FROM_GROUP_CENTER", "False")
+)
 if ENV_FROM_GROUP_CENTER:
-    from feature.group_center. \
-        group_center_remote_config import init_remote_env_list
+    from feature.group_center.group_center_remote_config import \
+        init_remote_env_list
 
     init_remote_env_list()
 
 # Init
-WAIT_TIME_BEFORE_START = \
-    int(get_env_int("WAIT_TIME_BEFORE_START", 10))
+WAIT_TIME_BEFORE_START = int(get_env_int("WAIT_TIME_BEFORE_START", 10))
 
 # CPU Monitor
-CPU_HIGH_TEMPERATURE_THRESHOLD = \
-    int(get_env_int("HIGH_TEMPERATURE_THRESHOLD", 85))
+CPU_HIGH_TEMPERATURE_THRESHOLD = int(get_env_int("HIGH_TEMPERATURE_THRESHOLD", 85))
 TEMPERATURE_MONITOR_SAMPLING_INTERVAL = int(
     get_env_int("TEMPERATURE_MONITOR_SAMPLING_INTERVAL", 300)
 )
 
 # GPU Monitor
-GPU_MONITOR_SAMPLING_INTERVAL = \
-    int(get_env_int("GPU_MONITOR_SAMPLING_INTERVAL", 5))
+GPU_MONITOR_SAMPLING_INTERVAL = int(get_env_int("GPU_MONITOR_SAMPLING_INTERVAL", 5))
 
 # Hard Disk Monitor
 HARD_DISK_MOUNT_POINT = [
@@ -192,8 +187,9 @@ HARD_DISK_MOUNT_POINT = [
 HARD_DISK_HIGH_PERCENTAGE_THRESHOLD = int(
     get_env_int("HARD_DISK_HIGH_PERCENTAGE_THRESHOLD", 95)
 )
-HARD_DISK_LOW_FREE_GB_THRESHOLD = \
-    int(get_env_int("HARD_DISK_LOW_FREE_GB_THRESHOLD", 100))
+HARD_DISK_LOW_FREE_GB_THRESHOLD = int(
+    get_env_int("HARD_DISK_LOW_FREE_GB_THRESHOLD", 100)
+)
 HARD_DISK_MONITOR_SAMPLING_INTERVAL = int(
     get_env_int("HARD_DISK_MONITOR_SAMPLING_INTERVAL", 3600)
 )
@@ -204,15 +200,12 @@ FLASK_SERVER_PORT = get_env_str("FLASK_SERVER_PORT", "3000")
 GPU_BOARD_WEB_URL = get_env_str("GPU_BOARD_WEB_URL", "")
 
 # WebHook
-WEBHOOK_DELAY_SEND_SECONDS = \
-    int(get_env_int("WEBHOOK_DELAY_SEND_SECONDS", 60))
+WEBHOOK_DELAY_SEND_SECONDS = int(get_env_int("WEBHOOK_DELAY_SEND_SECONDS", 60))
 WEBHOOK_SLEEP_TIME_START = get_env_time(
-    get_env_str("WEBHOOK_SLEEP_TIME_START", "23:00"),
-    datetime.time(23, 0)
+    get_env_str("WEBHOOK_SLEEP_TIME_START", "23:00"), datetime.time(23, 0)
 )
 WEBHOOK_SLEEP_TIME_END = get_env_time(
-    get_env_str("WEBHOOK_SLEEP_TIME_END", "8:00"),
-    datetime.time(8, 0)
+    get_env_str("WEBHOOK_SLEEP_TIME_END", "8:00"), datetime.time(8, 0)
 )
 
 WEBHOOK_NAME = [
@@ -229,10 +222,9 @@ GPU_MONITOR_AUTO_RESTART = get_bool_from_string(
 )
 
 # User
-USER_FROM_GROUP_CENTER: bool = \
-    USE_GROUP_CENTER and get_bool_from_string(
-        get_env_str("USER_FROM_GROUP_CENTER", "False")
-    )
+USER_FROM_GROUP_CENTER: bool = USE_GROUP_CENTER and get_bool_from_string(
+    get_env_str("USER_FROM_GROUP_CENTER", "False")
+)
 USER_FROM_LOCAL_FILES: bool = get_bool_from_string(
     get_env_str("USER_FROM_LOCAL_FILES", "True")
 )
@@ -240,18 +232,15 @@ USER_FROM_LOCAL_FILES: bool = get_bool_from_string(
 USERS: dict[str, UserInfo] = {}
 
 if USER_FROM_LOCAL_FILES:
-    user_list_from_files = \
-        parse_yaml_user_config_directory(os.path.join(os.getcwd(), "config/users"))
+    user_list_from_files = parse_yaml_user_config_directory(
+        os.path.join(os.getcwd(), "config/users")
+    )
     logger.info("User count from file:" + str(len(user_list_from_files)))
     USERS.update(user_list_from_files)
 
 if USER_FROM_GROUP_CENTER:
-    user_list_from_group_center = \
-        get_json_user_config_from_group_center()
-    logger.info(
-        "User count from Group Center:"
-        + str(len(user_list_from_group_center))
-    )
+    user_list_from_group_center = get_json_user_config_from_group_center()
+    logger.info("User count from Group Center:" + str(len(user_list_from_group_center)))
     USERS.update(user_list_from_group_center)
 
 logger.info("Final user count:" + str(len(USERS)))

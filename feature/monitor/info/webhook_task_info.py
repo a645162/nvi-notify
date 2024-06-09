@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Optional
 
 from config.settings import NUM_GPU
 from config.user.user_info import UserInfo
@@ -7,13 +7,13 @@ from feature.monitor.info.gpu_info import GPUInfo
 
 
 class TaskInfoForWebHook:
-    def __init__(self, info: Dict, task_event: TaskEvent) -> None:
+    def __init__(self, info: dict, task_event: TaskEvent) -> None:
         self._task_event: str = str(task_event)
         self._pid: int = info.get("pid", 0)
         self._gpu_id: int = info.get("gpu_id", 0)
         self._gpu_name: str = f"[GPU:{self._gpu_id}]" if NUM_GPU > 1 else "GPU"
         self._gpu_status: GPUInfo = info.get("gpu_status")
-        self._all_task_msg: dict = info.get("gpu_all_tasks_msg", {})
+        self._all_task_msg: dict = info.get("gpu_all_tasks_msg_dict", {})
 
         self._user: UserInfo = info.get("user")
 

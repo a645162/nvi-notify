@@ -14,17 +14,17 @@ from config.settings import (
     WEBHOOK_DELAY_SEND_SECONDS,
     get_emoji,
 )
+from feature.group_center import group_center_message
+from feature.monitor.GPU.gpu_process import GPUProcessInfo, TaskState
+from feature.monitor.info.gpu_info import GPUInfo, gpu_name_filter
+from feature.notify.send_task_msg import (
+    send_gpu_monitor_start_msg,
+    send_process_except_warning_msg,
+)
 from global_variable.global_gpu import (
     global_gpu_info,
     global_gpu_task,
     global_gpu_usage,
-)
-from feature.monitor.GPU.gpu_process import GPUProcessInfo, TaskState
-from feature.monitor.info.gpu_info import GPUInfo, gpu_name_filter
-from feature.group_center import group_center_message
-from feature.notify.send_task_msg import (
-    send_gpu_monitor_start_msg,
-    send_process_except_warning_msg,
 )
 from utils.converter import convert_bytes_to_mb
 from utils.logs import get_logger
@@ -162,15 +162,13 @@ class NvidiaMonitor:
                 for pid in self.processes:
                     self.processes[pid].gpu_status = self.update_gpu_status()
                     self.processes[pid].update_gpu_process_info()
-                    if self.processes[pid].state == TaskState.NEWBORN:
-                        self.processes[pid].get_cmd()
 
                 # check death process pid
                 tmp_process = copy.copy(self.processes)
                 cur_gpu_all_processes = self.get_gpu_all_processes()
                 for pid in tmp_process:
                     if pid not in cur_gpu_all_processes:
-                        del self.processes[pid].gpu_all_tasks_msg[pid]
+                        del self.processes[pid].gpu_all_tasks_msg_dict[pid]
                         self.processes[pid].set_finish_time()
                         self.processes[pid].state = TaskState.DEATH
                         del self.processes[pid]
@@ -196,7 +194,7 @@ class NvidiaMonitor:
                 # Get gpu staus info for webhook msg
                 all_tasks_msg_dict = self.get_all_tasks_msg(self.processes)
                 for pid in self.processes:
-                    self.processes[pid].gpu_all_tasks_msg = all_tasks_msg_dict
+                    self.processes[pid].gpu_all_tasks_msg_dict = all_tasks_msg_dict
                     self.processes[pid].num_task = len(self.processes)
 
                 if monitor_start_flag and len(self.processes) > 0:

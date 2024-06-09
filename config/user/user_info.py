@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-from typing import Dict
-
-from config.utils import get_files_with_extension, parse_yaml
-
 
 class UserInfo:
     def __init__(self, user_dict: dict) -> None:
@@ -23,8 +18,8 @@ class UserInfo:
 
     @staticmethod
     def get_webhook_info(
-            webhook_dict: dict, webhook_type: str = "weCom"
-    ) -> Dict[str, list]:
+        webhook_dict: dict, webhook_type: str = "weCom"
+    ) -> dict[str, list]:
         if webhook_type in webhook_dict.keys():
             mention_id = webhook_dict[webhook_type].get("userId", [""])
             mention_mobile = webhook_dict[webhook_type].get("userMobilePhone", [""])

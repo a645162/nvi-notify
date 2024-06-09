@@ -7,7 +7,7 @@ import os
 import threading
 import time
 from queue import Queue
-from typing import List, Union
+from typing import Union
 
 import requests
 
@@ -29,7 +29,7 @@ class Webhook:
     def __init__(self, webhook_name: str) -> None:
         valid_webhook = [e.value for e in AllWebhookName.__members__.values()]
         assert (
-                webhook_name.lower() in valid_webhook
+            webhook_name.lower() in valid_webhook
         ), f"{webhook_name}'s webhook is not supported!"
 
         self.webhook_name = webhook_name.lower()
@@ -52,6 +52,7 @@ class Webhook:
         self._webhook_state = WebhookState.WORKING
 
         self.msg_queue = Queue()
+        self.retry_msg_queue = Queue(maxsize=3)
 
     @property
     def webhook_url_main(self):
@@ -127,7 +128,7 @@ class Webhook:
             return webhook_header + webhook_api
 
     def send_message(
-            self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
+        self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
     ):
         if msg_type == MsgType.NORMAL:
             webhook_url = self.webhook_url_main
@@ -144,9 +145,9 @@ class Webhook:
         elif self.webhook_name == AllWebhookName.LARK.value:
             self.send_lark_message(msg, webhook_url, webhook_secret, user)
             if (
-                    len(self.lark_app_id) > 0
-                    and len(self.lark_app_secret) > 0
-                    and user is not None
+                len(self.lark_app_id) > 0
+                and len(self.lark_app_secret) > 0
+                and user is not None
             ):
                 self.send_lark_message_by_app(
                     msg,
@@ -175,7 +176,7 @@ class Webhook:
         logger.info(f"WeCom[text]{r.text}")
 
     def send_lark_message(
-            self, msg: str, webhook_url: str, webhook_secret: str, user: UserInfo = None
+        self, msg: str, webhook_url: str, webhook_secret: str, user: UserInfo = None
     ):
         headers = {"Content-Type": "application/json"}
         msg = msg.replace("/::D", "[呲牙]")
@@ -209,7 +210,7 @@ class Webhook:
         logger.info(f"Lark[text]{r.text}")
 
     def send_lark_message_by_app(
-            self, msg: str, webhook_url_header: str, user: UserInfo = None
+        self, msg: str, webhook_url_header: str, user: UserInfo = None
     ):
         if self.get_lark_tenant_access_token() == "":
             return
@@ -228,17 +229,14 @@ class Webhook:
 
         msg = msg.replace("/::D", "[呲牙]")
         msg = msg.replace(f"{user.name_cn}的", "任务", 1)
-        msg = json.dumps({"text": msg})
 
         data = {
-            "content": msg,
+            "content": json.dumps({"text": msg}),
             "msg_type": "text",
             "receive_id": lark_mention_id,
         }
-        # "{\"text\":\"\"}"
         r = requests.post(webhook_url_header, headers=headers, data=json.dumps(data))
-        # logger.info(f"LarkApp[text]{r.text}")
-        logger.info("LarkApp[text]消息发送成功")
+        logger.info(f"LarkApp[{r.status_code}]消息发送成功")
 
     def get_lark_tenant_access_token(self) -> str:
         url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
@@ -263,24 +261,28 @@ class Webhook:
     def webhook_send_thread(self) -> None:
         while True:
             self.check_webhook_state()
-            if self.msg_queue.empty():
+            if self.msg_queue.empty() and self.retry_msg_queue.empty():
                 time.sleep(5)
                 continue
+
+            current_msg = (
+                self.msg_queue.get()
+                if self.retry_msg_queue.empty()
+                else self.retry_msg_queue.get()
+            )  # msg, msg_type, user
+
             try:
-                current_msg = self.msg_queue.get()  # msg, msg_type, user
                 self.send_message(*current_msg)
                 logger.info(
                     f"[{get_now_time()}]{self.webhook_name}消息队列发送一条消息。"
                 )
-
-                # 每分钟最多20条消息
-                time.sleep(3.1)
-
-            except Exception:
+                time.sleep(3.1)  # 每分钟最多20条消息
+            except Exception as e:
                 logger.warning(
-                    f"[{get_now_time()}]{self.webhook_name}消息队列发送异常。"
+                    f"[{get_now_time()}]{self.webhook_name}消息队列发送异常，进行重试。exception:{e}",
                 )
-                time.sleep(60)
+                self.retry_msg_queue.put(current_msg)
+                time.sleep(5)
 
     def check_webhook_state(self):
         while is_within_time_range(WEBHOOK_SLEEP_TIME_START, WEBHOOK_SLEEP_TIME_END):
@@ -319,10 +321,12 @@ webhook_threads = {}
 
 
 def send_text(
-        msg: str,
-        msg_type: MsgType = MsgType.NORMAL,
-        user: UserInfo = None,
-        enable_webhook_name: Union[List[AllWebhookName], AllWebhookName] = AllWebhookName.ALL,
+    msg: str,
+    msg_type: MsgType = MsgType.NORMAL,
+    user: UserInfo = None,
+    enable_webhook_name: Union[
+        list[AllWebhookName], AllWebhookName
+    ] = AllWebhookName.ALL,
 ):
     valid_msg_type_list = [e for e in MsgType.__members__.values()]
     valid_webhook_name = [e.value for e in AllWebhookName.__members__.values()]

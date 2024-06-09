@@ -2,7 +2,7 @@ from feature.monitor.info.gpu_info import GPUInfo
 
 
 class TaskInfoForGroupCenter:
-    taskID: str = ""
+    taskId: str = ""
 
     messageType = ""
 
@@ -74,7 +74,7 @@ class TaskInfoForGroupCenter:
         gpu_process_obj: GPUProcessInfo = gpu_process_obj
 
         # 任务唯一标识符
-        self.taskID = gpu_process_obj.task_id
+        self.taskId = gpu_process_obj.task_id
 
         # 任务类型
         self.taskType = "GPU"

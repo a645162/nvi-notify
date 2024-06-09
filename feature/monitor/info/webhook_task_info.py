@@ -13,7 +13,7 @@ class TaskInfoForWebHook:
         self._gpu_id: int = info.get("gpu_id", 0)
         self._gpu_name: str = f"[GPU:{self._gpu_id}]" if NUM_GPU > 1 else "GPU"
         self._gpu_status: GPUInfo = info.get("gpu_status")
-        self._all_task_msg = info.get("gpu_all_tasks_msg", "")
+        self._all_task_msg: dict = info.get("gpu_all_tasks_msg", {})
 
         self._user: UserInfo = info.get("user")
 
@@ -131,4 +131,5 @@ class TaskInfoForWebHook:
         if len(self._all_task_msg) == 0:
             return ""
         else:
-            return f"{''.join(self._all_task_msg)}"
+            temp_str = "".join(self._all_task_msg.values())
+            return f"{temp_str}"

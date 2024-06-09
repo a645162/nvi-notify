@@ -32,11 +32,14 @@ class TaskInfoForGroupCenter:
     #    taskGpuMemoryMaxMb = 0
     taskGpuMemoryMaxGb = 0.0
 
+    isMultiGpu: bool = False
     multiDeviceLocalRank: int = 0
     multiDeviceWorldSize: int = 0
 
     cudaRoot: str = ""
     cudaVersion: str = ""
+
+    isDebugMode: bool = False
 
     taskStartTime: int = 0
     taskFinishTime: int = 0
@@ -108,12 +111,15 @@ class TaskInfoForGroupCenter:
         self.taskGpuMemoryMaxGb = round((gpu_process_obj.task_gpu_memory_max >> 10 >> 10) / 1024, 2)
 
         # 多卡
+        self.isMultiGpu = gpu_process_obj.is_multi_gpu
         self.multiDeviceLocalRank = gpu_process_obj.local_rank
         self.multiDeviceWorldSize = gpu_process_obj.world_size
 
         # CUDA 信息
         self.cudaRoot = gpu_process_obj.cuda_root
         self.cudaVersion = gpu_process_obj.cuda_version
+
+        self.isDebugMode = gpu_process_obj.is_debug
 
         # 运行时间
         self.taskStartTime = int(gpu_process_obj.start_time)

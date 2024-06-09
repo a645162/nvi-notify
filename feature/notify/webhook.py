@@ -29,7 +29,7 @@ class Webhook:
     def __init__(self, webhook_name: str) -> None:
         valid_webhook = [e.value for e in AllWebhookName.__members__.values()]
         assert (
-            webhook_name.lower() in valid_webhook
+                webhook_name.lower() in valid_webhook
         ), f"{webhook_name}'s webhook is not supported!"
 
         self.webhook_name = webhook_name.lower()
@@ -127,7 +127,7 @@ class Webhook:
             return webhook_header + webhook_api
 
     def send_message(
-        self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
+            self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
     ):
         if msg_type == MsgType.NORMAL:
             webhook_url = self.webhook_url_main
@@ -144,9 +144,9 @@ class Webhook:
         elif self.webhook_name == AllWebhookName.LARK.value:
             self.send_lark_message(msg, webhook_url, webhook_secret, user)
             if (
-                len(self.lark_app_id) > 0
-                and len(self.lark_app_secret) > 0
-                and user is not None
+                    len(self.lark_app_id) > 0
+                    and len(self.lark_app_secret) > 0
+                    and user is not None
             ):
                 self.send_lark_message_by_app(
                     msg,
@@ -175,7 +175,7 @@ class Webhook:
         logger.info(f"WeCom[text]{r.text}")
 
     def send_lark_message(
-        self, msg: str, webhook_url: str, webhook_secret: str, user: UserInfo = None
+            self, msg: str, webhook_url: str, webhook_secret: str, user: UserInfo = None
     ):
         headers = {"Content-Type": "application/json"}
         msg = msg.replace("/::D", "[呲牙]")
@@ -209,7 +209,7 @@ class Webhook:
         logger.info(f"Lark[text]{r.text}")
 
     def send_lark_message_by_app(
-        self, msg: str, webhook_url_header: str, user: UserInfo = None
+            self, msg: str, webhook_url_header: str, user: UserInfo = None
     ):
         if self.get_lark_tenant_access_token() == "":
             return
@@ -318,10 +318,10 @@ webhook_threads = {}
 
 
 def send_text(
-    msg: str,
-    msg_type: str = MsgType.NORMAL,
-    user: UserInfo = None,
-    enable_webhook_name: Union[List[str], str] = AllWebhookName.ALL,
+        msg: str,
+        msg_type: MsgType = MsgType.NORMAL,
+        user: UserInfo = None,
+        enable_webhook_name: Union[List[AllWebhookName], AllWebhookName] = AllWebhookName.ALL,
 ):
     valid_msg_type_list = [e for e in MsgType.__members__.values()]
     valid_webhook_name = [e.value for e in AllWebhookName.__members__.values()]

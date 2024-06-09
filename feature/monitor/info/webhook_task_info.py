@@ -7,8 +7,8 @@ from feature.monitor.info.gpu_info import GPUInfo
 
 
 class TaskInfoForWebHook:
-    def __init__(self, info: Dict, task_event: str) -> None:
-        self._task_event: str = task_event
+    def __init__(self, info: Dict, task_event: TaskEvent) -> None:
+        self._task_event: str = str(task_event)
         self._pid: int = info.get("pid", 0)
         self._gpu_id: int = info.get("gpu_id", 0)
         self._gpu_name: str = f"[GPU:{self._gpu_id}]" if NUM_GPU > 1 else "GPU"
@@ -45,7 +45,7 @@ class TaskInfoForWebHook:
             return max(0, self._num_task - 1)
 
     @num_task.setter
-    def num_task(self, value) -> int:
+    def num_task(self, value):
         self._num_task = value
 
     @property
@@ -61,7 +61,7 @@ class TaskInfoForWebHook:
         return self._gpu_name
 
     @property
-    def gpu_status(self) -> str:
+    def gpu_status(self) -> GPUInfo:
         return self._gpu_status
 
     @property
@@ -97,7 +97,7 @@ class TaskInfoForWebHook:
         return self._local_rank
 
     @property
-    def world_size(self) -> str:
+    def world_size(self) -> int:
         return self._world_size
 
     @property
@@ -129,4 +129,4 @@ class TaskInfoForWebHook:
         if len(self._all_task_msg) == 0:
             return ""
         else:
-            return f"{''.join(self._all_task_msg.values())}"
+            return f"{''.join(self._all_task_msg)}"

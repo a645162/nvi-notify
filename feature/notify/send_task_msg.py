@@ -61,7 +61,7 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: dict):
         )
 
 
-def send_gpu_task_message(process_info: dict, task_event: str):
+def send_gpu_task_message(process_info: dict, task_event: TaskEvent):
     """
     发送GPU任务消息函数
     :param process_info: 进程信息字典
@@ -93,6 +93,9 @@ def send_gpu_task_message(process_info: dict, task_event: str):
                 f"最大显存{task.task_gpu_memory_max_human}"
                 "\n"
             )
+        else:
+            msg_header = ""
+
         emoji_num_task = get_emoji("呲牙") * (task.num_task)
         gpu_task_status_info_msg = (
             f"{emoji_num_task}{gpu_name}上正在运行{task.num_task}个任务：\n"
@@ -109,7 +112,7 @@ def send_gpu_task_message(process_info: dict, task_event: str):
         )
 
 
-def log_task_info(process_info: dict, task_event: str):
+def log_task_info(process_info: dict, task_event: TaskEvent):
     """
     任务日志函数
     :param process_info: 进程信息字典

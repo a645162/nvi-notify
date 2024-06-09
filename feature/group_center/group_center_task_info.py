@@ -39,6 +39,7 @@ class TaskInfoForGroupCenter:
     cudaVersion: str = ""
 
     taskStartTime: int = 0
+    taskFinishTime: int = 0
     taskRunningTimeString: str = ""
     taskRunningTimeInSeconds = 0
 
@@ -116,6 +117,7 @@ class TaskInfoForGroupCenter:
 
         # 运行时间
         self.taskStartTime = int(gpu_process_obj.start_time)
+        self.taskFinishTime = int(gpu_process_obj.finish_time)
         self.taskRunningTimeString = gpu_process_obj.running_time_human
         self.taskRunningTimeInSeconds = gpu_process_obj.running_time_in_seconds
 

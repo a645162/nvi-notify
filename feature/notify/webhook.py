@@ -237,7 +237,8 @@ class Webhook:
         }
         # "{\"text\":\"\"}"
         r = requests.post(webhook_url_header, headers=headers, data=json.dumps(data))
-        logger.info(f"LarkApp[text]{r.text}")
+        # logger.info(f"LarkApp[text]{r.text}")
+        logger.info("LarkApp[text]消息发送成功")
 
     def get_lark_tenant_access_token(self) -> str:
         url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"

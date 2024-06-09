@@ -50,20 +50,20 @@ class GPUProcessInfo:
 
         self.task_main_memory_mb: int = 0
 
-        self.task_gpu_memory: Optional[int] = None
-        self.task_gpu_memory_max: Optional[int] = None
-        self.task_gpu_memory_human: Optional[str] = None
+        self.task_gpu_memory: int = 0
+        self.task_gpu_memory_max: int = 0
+        self.task_gpu_memory_human: str = ""
 
         self.user: Optional[UserInfo] = None
-        self.conda_env: Optional[str] = None
-        self.project_name: Optional[str] = None
-        self.python_file: Optional[str] = None
+        self.conda_env: str = ""
+        self.project_name: str = ""
+        self.python_file: str = ""
 
         self.python_version: str = ""
 
-        self.start_time: Optional[float] = None  # timestamp
-        self.finish_time: Optional[float] = None  # timestamp
-        self.running_time_human: Optional[str] = None
+        self.start_time: float = .0  # timestamp
+        self.finish_time: float = .0  # timestamp
+        self.running_time_human: str = ""
 
         # Props get from env var
         self.is_multi_gpu: bool = False

@@ -44,6 +44,8 @@ class TaskInfoForWebHook:
         elif self._task_event == TaskEvent.FINISH:
             return max(0, self._num_task - 1)
 
+        return self._num_task
+
     @num_task.setter
     def num_task(self, value):
         self._num_task = value

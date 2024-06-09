@@ -170,6 +170,10 @@ if ENV_FROM_GROUP_CENTER:
 
     init_remote_env_list()
 
+# Init
+WAIT_TIME_BEFORE_START = \
+    int(get_env_int("WAIT_TIME_BEFORE_START", 10))
+
 # CPU Monitor
 CPU_HIGH_TEMPERATURE_THRESHOLD = \
     int(get_env_int("HIGH_TEMPERATURE_THRESHOLD", 85))

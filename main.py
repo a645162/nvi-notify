@@ -2,6 +2,10 @@
 
 import time
 
+from config.settings import (
+    WAIT_TIME_BEFORE_START
+)
+
 from feature.monitor.CPU.cpu_monitor import start_cpu_monitor_all
 from feature.monitor.GPU.nvitop_monitor import start_gpu_monitor_all
 from feature.monitor.hardware_resource.resource_monitor import start_resource_monitor_all
@@ -10,7 +14,7 @@ from feature.web.flask_main import start_web_server_both
 
 logger = get_logger()
 
-wait_time = 10
+wait_time = WAIT_TIME_BEFORE_START
 
 if __name__ == "__main__":
     logger.info("Main program is starting...")
@@ -26,7 +30,7 @@ if __name__ == "__main__":
 
     logger.info("GPU Monitor sub program is starting...")
     start_gpu_monitor_all()
-    
+
     logger.info("Hard Disk Monitor sub program is starting...")
     start_resource_monitor_all()
 

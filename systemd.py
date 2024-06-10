@@ -2,9 +2,10 @@
 
 import argparse
 import os
-from time import sleep as time_sleep
+import time
 
-from utils.command import do_command
+from config.settings import Settings
+from utils.utils import do_command
 
 path_current_py = os.path.realpath(__file__)
 path_base = os.path.dirname(path_current_py)
@@ -48,10 +49,6 @@ cd "{}" || exit
     """.strip()
     + "\n"
 )
-
-
-def check_sudo():
-    return os.geteuid() == 0
 
 
 def install(auto_start: bool = False):
@@ -120,7 +117,7 @@ def uninstall():
     os.system(command)
 
     # Kill
-    time_sleep(5)
+    time.sleep(5)
     command = "sudo systemctl kill {}".format(service_name)
     print("Command:", command)
     os.system(command)
@@ -178,7 +175,7 @@ def main():
 
 if __name__ == "__main__":
     print_info()
-    if not check_sudo():
+    if not Settings.check_sudo_permission():
         print("Please run this program as root(Using 'sudo').")
         exit(-1)
 

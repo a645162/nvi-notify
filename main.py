@@ -2,25 +2,24 @@
 
 import time
 
-from config.settings import WAIT_TIME_BEFORE_START
-from feature.monitor.CPU.cpu_monitor import start_cpu_monitor_all
-from feature.monitor.GPU.nvitop_monitor import start_gpu_monitor_all
-from feature.monitor.hardware_resource.resource_monitor import (
-    start_resource_monitor_all,
-)
+from config.settings import get_settings
+from feature.monitor.cpu.monitor import start_cpu_monitor_all
+from feature.monitor.gpu.monitor import start_gpu_monitor_all
+from feature.monitor.hard_disk.monitor import start_resource_monitor_all
 from feature.web.flask_main import start_web_server_both
 from utils.logs import get_logger
 
 logger = get_logger()
+settings = get_settings()
 
 if __name__ == "__main__":
     logger.info("Main program is starting...")
 
     # For check env settings
-    logger.info(f"Waiting for {WAIT_TIME_BEFORE_START} seconds...")
+    logger.info(f"Waiting for {settings.WAIT_TIME_BEFORE_START} seconds...")
     logger.info("You can check the environment settings in the meantime.")
     logger.info("Press Ctrl+C to stop the program.")
-    time.sleep(WAIT_TIME_BEFORE_START)
+    time.sleep(settings.WAIT_TIME_BEFORE_START)
 
     logger.info("CPU Monitor sub program is starting...")
     start_cpu_monitor_all()

@@ -1,4 +1,4 @@
-from feature.monitor.info.gpu_info import GPUInfo
+from feature.monitor.gpu.gpu import GPUInfo
 
 
 class TaskInfoForGroupCenter:
@@ -73,7 +73,7 @@ class TaskInfoForGroupCenter:
         return new_size_str
 
     def update(self, gpu_process_obj):
-        from feature.monitor.GPU.gpu_process import GPUProcessInfo
+        from feature.monitor.gpu.gpu_process import GPUProcessInfo
 
         gpu_process_obj: GPUProcessInfo = gpu_process_obj
 

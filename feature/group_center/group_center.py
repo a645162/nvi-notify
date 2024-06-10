@@ -2,34 +2,29 @@ import json
 
 import requests
 
-from config.settings import (
-    GROUP_CENTER_PASSWORD,
-    GROUP_CENTER_URL,
-    SERVER_NAME,
-    SERVER_NAME_SHORT,
-)
+from config.settings import get_settings
 from utils.logs import get_logger
-from utils.security import get_md5_hash
+from utils.utils import get_md5_hash
 
 logger = get_logger()
-
+settings = get_settings()
 
 def group_center_get_url(target_api: str):
-    if GROUP_CENTER_URL.endswith("/"):
+    if settings.GROUP_CENTER_URL.endswith("/"):
         if target_api.startswith("/"):
             target_api = target_api[1:]
     else:
         if not target_api.startswith("/"):
             target_api = "/" + target_api
 
-    return GROUP_CENTER_URL + target_api
+    return settings.GROUP_CENTER_URL + target_api
 
 
 access_key = ""
 
 group_center_public_part: dict = {
-    "serverName": SERVER_NAME,
-    "serverNameEng": SERVER_NAME_SHORT,
+    "serverName": settings.SERVER_NAME,
+    "serverNameEng": settings.SERVER_NAME_SHORT,
 }
 
 
@@ -74,5 +69,5 @@ def __group_center_login(username: str, password: str) -> bool:
 
 def group_center_login() -> bool:
     return __group_center_login(
-        username=SERVER_NAME_SHORT, password=GROUP_CENTER_PASSWORD
+        username=settings.SERVER_NAME_SHORT, password=settings.GROUP_CENTER_PASSWORD
     )

@@ -1,12 +1,13 @@
 import os
 import sqlite3
 
-from config.settings import NUM_GPU, SERVER_NAME
-from feature.monitor.info.program_enum import TaskState
-from feature.monitor.info.sql_task_info import TaskInfoForSQL
+from config.settings import get_settings
+from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
+from feature.monitor.monitor_enum import TaskState
 from utils.logs import get_logger
 
 logger = get_logger()
+settings = get_settings()
 
 
 class SQLite:
@@ -196,9 +197,9 @@ except Exception as e:
     exit(1)
 
 
-task_sql = SQLite(os.path.join(task_sql_dir, f"{SERVER_NAME}_task_info.db"))
+task_sql = SQLite(os.path.join(task_sql_dir, f"{settings.SERVER_NAME}_task_info.db"))
 
-for gpu_id in range(NUM_GPU):
+for gpu_id in range(settings.NUM_GPU):
     task_sql.create_table(gpu_id)
 
 

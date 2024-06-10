@@ -11,18 +11,13 @@ from typing import Union
 
 import requests
 
-from config.settings import (
-    WEBHOOK_NAME,
-    WEBHOOK_SLEEP_TIME_END,
-    WEBHOOK_SLEEP_TIME_START,
-    get_now_time,
-    is_within_time_range,
-)
+from config.settings import get_settings
 from config.user.user_info import UserInfo
-from feature.monitor.info.program_enum import AllWebhookName, MsgType, WebhookState
+from feature.monitor.monitor_enum import AllWebhookName, MsgType, WebhookState
 from utils.logs import get_logger
 
 logger = get_logger()
+settings = get_settings()
 
 
 class Webhook:
@@ -274,18 +269,18 @@ class Webhook:
             try:
                 self.send_message(*current_msg)
                 logger.info(
-                    f"[{get_now_time()}]{self.webhook_name}消息队列发送一条消息。"
+                    f"[{settings.now_time_str}]{self.webhook_name}消息队列发送一条消息。"
                 )
                 time.sleep(3.1)  # 每分钟最多20条消息
             except Exception as e:
                 logger.warning(
-                    f"[{get_now_time()}]{self.webhook_name}消息队列发送异常，进行重试。exception:{e}",
+                    f"[{settings.now_time_str}]{self.webhook_name}消息队列发送异常，进行重试。exception:{e}",
                 )
                 self.retry_msg_queue.put(current_msg)
                 time.sleep(5)
 
-    def check_webhook_state(self):
-        while is_within_time_range(WEBHOOK_SLEEP_TIME_START, WEBHOOK_SLEEP_TIME_END):
+    def check_webhook_state(self) -> None:
+        while settings.is_webhook_sleep_time:
             if self._webhook_state != WebhookState.SLEEPING:
                 self.webhook_state = WebhookState.SLEEPING
             time.sleep(60)
@@ -293,14 +288,14 @@ class Webhook:
             self.webhook_state = WebhookState.WORKING
 
     @property
-    def webhook_state(self):
+    def webhook_state(self) -> WebhookState:
         return self._webhook_state
 
     @webhook_state.setter
-    def webhook_state(self, cur_webhook_state):
+    def webhook_state(self, cur_webhook_state) -> None:
         if self._webhook_state != cur_webhook_state:
             logger.debug(
-                f"[{get_now_time()}][{self.webhook_type}]webhook状态切换为{cur_webhook_state}。"
+                f"[{self.webhook_name}]webhook状态切换为{cur_webhook_state}。"
             )
             self._webhook_state = cur_webhook_state
 
@@ -350,7 +345,7 @@ def send_text(
         logger.warning("Message is empty!")
         return
 
-    for webhook_name in WEBHOOK_NAME:  # 仅实例化环境变量中的
+    for webhook_name in settings.WEBHOOK_NAME:  # 仅实例化环境变量中的
         webhook_name = webhook_name.lower()
         if webhook_name not in webhook_threads:
             webhook_threads[webhook_name] = Webhook(webhook_name)
@@ -364,4 +359,6 @@ def send_text(
         if webhook_threads.get(webhook_name, None):  # 环境变量中不包含的Webhook则跳过
             webhook_threads[webhook_name].msg_queue.put((msg, msg_type, user))
 
-            logger.info(f"[{get_now_time()}]{webhook_name}消息队列添加一条消息。")
+            logger.info(
+                f"{webhook_name}消息队列添加一条消息。"
+            )

@@ -3,25 +3,15 @@
 import os
 from pathlib import Path
 
-from config.settings import (
-    NUM_GPU,
-    SERVER_DOMAIN,
-    SERVER_NAME,
-    WEBHOOK_DELAY_SEND_SECONDS,
-    IPv4,
-    IPv6,
-    get_emoji,
-    get_now_time,
-)
-
+from config.settings import get_settings
 from config.user.user_info import UserInfo
-from feature.monitor.info.program_enum import AllWebhookName, MsgType, TaskEvent
-from feature.monitor.info.webhook_task_info import TaskInfoForWebHook
+from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
+from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent
 from feature.notify.webhook import send_text
 from utils.logs import get_logger
 
 logger = get_logger()
-
+settings = get_settings()
 
 def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: dict):
     """
@@ -29,7 +19,7 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: dict):
     :param gpu_id: GPU ID
     :param all_process_info: 所有进程信息字典
     """
-    gpu_name = f"[GPU:{gpu_id}]" if NUM_GPU > 1 else "GPU"
+    gpu_name = f"[GPU:{gpu_id}]" if settings.NUM_GPU > 1 else "GPU"
 
     gpu_status = None
     send_start_info = False
@@ -38,8 +28,8 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: dict):
 
     for process in all_process_info.values():
         if (
-                process.running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS
-                and not process.is_debug
+            process.running_time_in_seconds > settings.WEBHOOK_DELAY_SEND_SECONDS
+            and not process.is_debug
         ):
             if process.is_multi_gpu and process.local_rank != 0:
                 continue
@@ -52,7 +42,7 @@ def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: dict):
     if send_start_info:
         handle_normal_text(
             f"{gpu_name}监控启动\n"
-            f"{get_emoji('呲牙') * len(all_process_info)}"
+            f"{TaskInfoForWebHook.get_emoji('呲牙') * len(all_process_info)}"
             f"{gpu_name}上正在运行{len(all_process_info)}个任务：\n"
             f"{all_tasks_msg}\n"
             f"🌀{gpu_name}核心占用: {gpu_status.utl}%\n"
@@ -69,7 +59,7 @@ def send_gpu_task_message(process_info: dict, task_event: TaskEvent):
     """
     task = TaskInfoForWebHook(process_info, task_event)
     gpu_name = task.gpu_name
-    gpu_name_header = gpu_name + '\n' if NUM_GPU > 1 else ''
+    gpu_name_header = gpu_name + "\n" if settings.NUM_GPU > 1 else ""
     if not task.is_debug:
         multi_gpu_msg = task.multi_gpu_msg
         if multi_gpu_msg == "-1":  # 非第一个使用的GPU不发送消息
@@ -96,7 +86,7 @@ def send_gpu_task_message(process_info: dict, task_event: TaskEvent):
         else:
             msg_header = ""
 
-        emoji_num_task = get_emoji("呲牙") * (task.num_task)
+        emoji_num_task = TaskInfoForWebHook.get_emoji("呲牙") * (task.num_task)
         gpu_task_status_info_msg = (
             f"{emoji_num_task}{gpu_name}上正在运行{task.num_task}个任务：\n"
         )
@@ -105,9 +95,9 @@ def send_gpu_task_message(process_info: dict, task_event: TaskEvent):
 
         handle_normal_text(
             msg=msg_header
-                + task.gpu_status_msg
-                + gpu_task_status_info_msg
-                + task.all_task_msg,
+            + task.gpu_status_msg
+            + gpu_task_status_info_msg
+            + task.all_task_msg,
             user=task.user if task_event == TaskEvent.FINISH else None,
         )
 
@@ -141,7 +131,7 @@ def log_task_info(process_info: dict, task_event: TaskEvent):
                 f" finish {task.user.name_cn}'s {'debug ' if task.is_debug else ''}"
                 f"task: {task.pid}，用时{task.running_time_human}"
             )
-        log_writer.write(f"[{get_now_time()}]+{output_log} + \n")
+        log_writer.write(f"[{settings.now_time_str}]+{output_log} + \n")
         logger.info(output_log)
         # print(output_log)
 
@@ -153,13 +143,13 @@ def handle_normal_text(msg: str, user: UserInfo = None):
     :param mentioned_id: 提及的用户ID
     :param mentioned_mobile: 提及的用户手机号码
     """
-    if SERVER_DOMAIN is None:
-        msg += f"📈http://{IPv4}\n"
-        # msg += f"http://[{IPv6}]\n"
+    if settings.SERVER_DOMAIN is None:
+        msg += f"📈http://{settings.IPv4}\n"
+        # msg += f"http://[{settings.IPv6}]\n"
     else:
-        msg += f"📈http://{SERVER_DOMAIN}\n"
+        msg += f"📈http://{settings.SERVER_DOMAIN}\n"
 
-    msg += f"⏰{get_now_time()}"
+    msg += f"⏰{settings.now_time_str}"
     send_text(msg, MsgType.NORMAL, user, AllWebhookName.ALL)
 
 
@@ -169,9 +159,9 @@ def handle_warning_text(msg: str) -> str:
     :param msg: 消息内容
     :return: 处理后的消息内容
     """
-    msg += f"http://{IPv4}\n"
-    msg += f"http://[{IPv6}]\n"
-    msg += f"⏰{get_now_time()}"
+    msg += f"http://{settings.IPv4}\n"
+    msg += f"http://[{settings.IPv6}]\n"
+    msg += f"⏰{settings.now_time_str}"
     return msg
 
 
@@ -179,7 +169,7 @@ def send_process_except_warning_msg():
     """
     发送进程异常警告消息函数
     """
-    warning_message = f"⚠️⚠️{SERVER_NAME}获取进程失败！⚠️⚠️\n"
+    warning_message = f"⚠️⚠️{settings.SERVER_NAME}获取进程失败！⚠️⚠️\n"
     send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
 
@@ -187,7 +177,7 @@ def send_cpu_except_warning_msg(cpu_id: int):
     """
     发送CPU异常警告消息函数
     """
-    warning_message = f"⚠️⚠️{SERVER_NAME}获取CPU:{cpu_id}温度失败！⚠️⚠️\n"
+    warning_message = f"⚠️⚠️{settings.SERVER_NAME}获取CPU:{cpu_id}温度失败！⚠️⚠️\n"
     send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
 
@@ -195,22 +185,15 @@ def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
     """
     发送CPU温度异常警告消息函数
     """
-    warning_message = f"🤒🤒{SERVER_NAME}的CPU:{cpu_id}温度已达{cpu_temperature}°C\n"
+    warning_message = f"🤒🤒{settings.SERVER_NAME}的CPU:{cpu_id}温度已达{cpu_temperature}°C\n"
     send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
 
-def send_hard_disk_high_occupancy_warning_msg(
-        name: str, mountpoint: str, total_GB: float, free_GB: float, percentage: float
-):
+def send_hard_disk_high_occupancy_warning_msg(disk_info: str):
     """
     发送硬盘高占用警告消息函数
     """
-    hard_disk_name_for_msg = {"system": "系统盘", "data": "数据盘"}
 
-    warning_message = (
-        f"⚠️【硬盘可用空间不足】⚠️\n"
-        f"{hard_disk_name_for_msg.get(name, 'Unknown')}(挂载点为{mountpoint})"
-        f"剩余可用容量为{free_GB:.2f}GB，总容量为{total_GB:.2f}GB，占用率为{percentage:.2f}%\n"
-    )
+    warning_message = f"⚠️【硬盘可用空间不足】⚠️\n{disk_info}"
 
     handle_normal_text(msg=warning_message)

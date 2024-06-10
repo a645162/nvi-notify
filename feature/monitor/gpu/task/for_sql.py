@@ -1,6 +1,6 @@
 from typing import Optional
 
-from feature.monitor.info.program_enum import TaskState
+from feature.monitor.monitor_enum import TaskState
 
 
 class TaskInfoForSQL:

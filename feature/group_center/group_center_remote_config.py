@@ -1,5 +1,5 @@
 import json
-from time import sleep as time_sleep
+import time
 
 import requests
 
@@ -42,7 +42,7 @@ def get_json_str(target_api: str) -> str:
         except Exception as e:
             logger.error("get user config json error", e)
 
-        time_sleep(10)
+        time.sleep(10)
     return ""
 
 

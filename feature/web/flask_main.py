@@ -9,22 +9,18 @@ import requests
 from flask import Flask, Response, redirect, render_template, request
 # from flask_cors import CORS
 
-from config.settings import (
-    FLASK_SERVER_HOST,
-    FLASK_SERVER_PORT,
-    GPU_BOARD_WEB_URL,
-    SERVER_NAME,
-)
+from config.settings import get_settings
+from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from global_variable.global_gpu import (
     global_gpu_info,
     global_gpu_task,
     global_gpu_usage,
 )
 from global_variable.global_system import global_system_info
-from feature.monitor.GPU.gpu_process import GPUProcessInfo
 from utils.logs import get_logger
 
 logger = get_logger()
+settings = get_settings()
 
 logger.info("Flask server is starting...")
 app = Flask(__name__)
@@ -158,18 +154,20 @@ def get_gpu_task():
 
 @app.route("/")
 def index():
-    if len(GPU_BOARD_WEB_URL) != 0:
+    if len(settings.GPU_BOARD_WEB_URL) != 0:
         try:
-            response = requests.get(GPU_BOARD_WEB_URL)
+            response = requests.get(settings.GPU_BOARD_WEB_URL)
             if response.status_code == 200:
-                return redirect(GPU_BOARD_WEB_URL)
+                return redirect(settings.GPU_BOARD_WEB_URL)
         except requests.exceptions.RequestException:
             pass
     else:
         logger.info("GPU board URL is not set or cannot be accessed.")
 
     command_result = run_command("nvitop -U")
-    return render_template("index.html", result=command_result, page_title=SERVER_NAME)
+    return render_template(
+        "index.html", result=command_result, page_title=settings.SERVER_NAME
+    )
 
 
 def run_command(command):
@@ -182,12 +180,12 @@ def run_command(command):
 
 def start_web_server_ipv4():
     logger.info("Starting Flask server(IPV4)...")
-    app.run(host=FLASK_SERVER_HOST, port=FLASK_SERVER_PORT, debug=False)
+    app.run(host=settings.FLASK_SERVER_HOST, port=settings.FLASK_SERVER_PORT, debug=False)
 
 
 def start_web_server_both():
     logger.info("Starting Flask server(Both IPV4 and IPV6)...")
-    app.run(host="::", port=FLASK_SERVER_PORT, threaded=True)
+    app.run(host="::", port=settings.FLASK_SERVER_PORT, threaded=True)
 
 
 if __name__ == "__main__":

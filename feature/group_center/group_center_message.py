@@ -5,7 +5,7 @@ from typing import Tuple
 
 import requests
 
-from config.settings import USE_GROUP_CENTER
+from config.settings import get_settings
 from feature.group_center.group_center import (
     access_key,
     group_center_get_url,
@@ -13,9 +13,10 @@ from feature.group_center.group_center import (
     group_center_public_part,
 )
 from feature.group_center.group_center_task_info import TaskInfoForGroupCenter
-from feature.monitor.info.program_enum import TaskEvent
+from feature.monitor.monitor_enum import TaskEvent
 from utils.logs import get_logger
 
+settings = get_settings()
 logger = get_logger()
 
 
@@ -80,7 +81,7 @@ work_thread = None
 
 
 def add_task_to_center(data: dict, target: str):
-    if not USE_GROUP_CENTER:
+    if not settings.USE_GROUP_CENTER:
         return
 
     global task_list, work_thread
@@ -92,17 +93,17 @@ def add_task_to_center(data: dict, target: str):
 
 
 def gpu_monitor_start():
-    if not USE_GROUP_CENTER:
+    if not settings.USE_GROUP_CENTER:
         return
 
     logger.info("[Group Center] Gpu Monitor Start")
 
 
 def gpu_task_message(process_obj, task_event: TaskEvent):
-    if not USE_GROUP_CENTER:
+    if not settings.USE_GROUP_CENTER:
         return
 
-    from feature.monitor.GPU.gpu_process import GPUProcessInfo
+    from feature.monitor.gpu.gpu_process import GPUProcessInfo
 
     process_obj: GPUProcessInfo = process_obj
 

@@ -1,9 +1,11 @@
-from typing import Optional
+from typing import Optional, Union
 
-from config.settings import NUM_GPU
+from config.settings import get_settings
 from config.user.user_info import UserInfo
-from feature.monitor.info.program_enum import TaskEvent
-from feature.monitor.info.gpu_info import GPUInfo
+from feature.monitor.gpu.gpu import GPUInfo
+from feature.monitor.monitor_enum import TaskEvent
+
+settings = get_settings()
 
 
 class TaskInfoForWebHook:
@@ -11,7 +13,7 @@ class TaskInfoForWebHook:
         self._task_event: str = str(task_event)
         self._pid: int = info.get("pid", 0)
         self._gpu_id: int = info.get("gpu_id", 0)
-        self._gpu_name: str = f"[GPU:{self._gpu_id}]" if NUM_GPU > 1 else "GPU"
+        self._gpu_name: str = f"[GPU:{self._gpu_id}]" if settings.NUM_GPU > 1 else "GPU"
         self._gpu_status: GPUInfo = info.get("gpu_status")
         self._all_task_msg: dict = info.get("gpu_all_tasks_msg_dict", {})
 
@@ -133,3 +135,23 @@ class TaskInfoForWebHook:
         else:
             temp_str = "".join(self._all_task_msg.values())
             return f"{temp_str}"
+
+    @staticmethod
+    def get_emoji(key: Union[int, str]) -> str:
+        EMOJI_DICT = {
+            0: "0️⃣",
+            1: "1️⃣",
+            2: "2️⃣",
+            3: "3️⃣",
+            4: "4️⃣",
+            5: "5️⃣",
+            6: "6️⃣",
+            7: "7️⃣",
+            8: "8️⃣",
+            9: "9️⃣",
+            10: "🔟",
+            "呲牙": "/::D",
+        }
+        if key not in EMOJI_DICT.keys():
+            return "Unknown Emoji"
+        return EMOJI_DICT[key]

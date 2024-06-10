@@ -2,27 +2,26 @@
 
 import os.path
 import re
-import subprocess
 from datetime import datetime
 from typing import Optional
 
 import psutil
 from nvitop import GpuProcess
 
-from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
+from config.settings import get_settings
 from config.user.user_info import UserInfo
 from feature.group_center import group_center_message
-from feature.monitor.info.gpu_info import GPUInfo
-from feature.monitor.info.program_enum import TaskEvent, TaskState
-from feature.monitor.info.sql_task_info import TaskInfoForSQL
+from feature.monitor.gpu.gpu import GPUInfo
+from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
+from feature.monitor.monitor_enum import TaskEvent, TaskState
 from feature.notify.send_task_msg import log_task_info, send_gpu_task_message
-from utils.converter import get_human_str_from_byte
+from feature.sql.sqlite import get_sql
 from utils.logs import get_logger
-from utils.sqlite import get_sql
+from utils.utils import do_command
 
 logger = get_logger()
 sql = get_sql()
-
+settings = get_settings()
 
 class GPUProcessInfo:
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
@@ -116,10 +115,10 @@ class GPUProcessInfo:
 
     def update_gpu_process_info(self):
         self.get_task_main_memory_mb()
-        self.get_task_gpu_memory()
         self.get_task_gpu_memory_human()
-        self.get_running_time_in_seconds()
+        self.get_task_gpu_memory()
         self.get_running_time_human()
+        self.get_running_time_in_seconds()
 
     def get_cwd(self):
         try:
@@ -151,7 +150,9 @@ class GPUProcessInfo:
 
     def get_task_main_memory_mb(self):
         try:
-            self.task_main_memory_mb = self.gpu_process.memory_info().rss // 1024 // 1024
+            self.task_main_memory_mb = (
+                self.gpu_process.memory_info().rss // 1024 // 1024
+            )
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
 
@@ -165,9 +166,7 @@ class GPUProcessInfo:
             or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
-            self.task_gpu_memory_max_human = get_human_str_from_byte(
-                self.task_gpu_memory_max
-            )
+            self.task_gpu_memory_max_human = self.task_gpu_memory_human
 
     def get_task_gpu_memory_human(self):
         self.task_gpu_memory_human = self.gpu_process.gpu_memory_human()
@@ -209,7 +208,7 @@ class GPUProcessInfo:
         )
 
     def get_user(self):
-        self.user = USERS.get(self.gpu_process.username(), None)
+        self.user = settings.USERS.get(self.gpu_process.username(), None)
 
         def find_user_by_path(users: dict, path: str):
             for path_unit in reversed(path.split("data")[1].split("/")):
@@ -225,7 +224,7 @@ class GPUProcessInfo:
 
         if self.user is None:
             cwd = self.cwd + "/" if self.cwd is not None else ""
-            self.user = find_user_by_path(USERS, cwd)
+            self.user = find_user_by_path(settings.USERS, cwd)
 
     def get_env_value(self, key: str, default_value: str):
         if self.process_environ is None:
@@ -255,8 +254,19 @@ class GPUProcessInfo:
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             # self.state = "death"
             binary_path = ""
-        python_version = self.get_python_version_by_path(binary_path)
-        self.python_version = python_version
+        self.get_python_version_by_path(binary_path)
+
+    def get_conda_python_version(self, conda_env: str) -> str:
+        command = f"conda run -n {conda_env} python --version"
+        self.python_version = self.get_python_version_by_command(command)
+
+    def get_python_version_by_path(self, binary_path: str) -> str:
+        if "python" not in binary_path:
+            self.python_version = ""
+
+        command = f"'{binary_path}' --version"
+        self.python_version = self.get_python_version_by_command(command)
+
 
     def get_world_size(self):
         # 多卡任务的进程数
@@ -294,14 +304,9 @@ class GPUProcessInfo:
             return
 
         try:
-            result = subprocess.run(
-                f"{self.cuda_nvcc_bin} --version",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            result = str(result.stdout)
+            cmd = f"{self.cuda_nvcc_bin} --version"
+            _, result, _ = do_command(cmd)
+
             if "release" not in result:
                 return
             result_list = result.split("\n")
@@ -400,49 +405,19 @@ class GPUProcessInfo:
         # 上次不满足，但是这次满足
         if (
             new_running_time_in_seconds
-            > WEBHOOK_DELAY_SEND_SECONDS
+            > settings.WEBHOOK_DELAY_SEND_SECONDS
             > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 
         self._running_time_in_seconds = new_running_time_in_seconds
 
-    @staticmethod
-    def get_conda_python_version(conda_env: str) -> str:
-        try:
-            command = f"conda run -n {conda_env} python --version"
-            result = subprocess.run(
-                command,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            result = str(result.stdout)
-            if "Python" not in result:
-                return ""
-            result = result.replace("Python", "").strip()
-            if "." in result:
-                return result
-            return ""
-        except Exception:
-            return ""
 
     @staticmethod
-    def get_python_version_by_path(binary_path: str) -> str:
-        if "python" not in binary_path:
-            return ""
-
+    def get_python_version_by_command(command) -> str:
         try:
-            command = f"'{binary_path}' --version"
-            result = subprocess.run(
-                command,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            result = str(result.stdout)
+            _, result, _ = do_command(command)
+
             if "Python" not in result:
                 return ""
             result = result.replace("Python", "").strip()

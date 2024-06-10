@@ -1,34 +1,34 @@
 from enum import Enum
 
 
-class ProgramEnum(Enum):
+class MonitorEnum(Enum):
     def __str__(self):
         return str(self.value)
 
 
-class TaskState(ProgramEnum):
+class TaskState(MonitorEnum):
     NEWBORN = "newborn"
     WORKING = "working"
     DEATH = "death"
     DEFAULT = "default"
 
 
-class TaskEvent(ProgramEnum):
+class TaskEvent(MonitorEnum):
     CREATE = "create"
     FINISH = "finish"
 
 
-class MsgType(ProgramEnum):
+class MsgType(MonitorEnum):
     NORMAL = "normal"
     WARNING = "warning"
 
 
-class WebhookState(ProgramEnum):
+class WebhookState(MonitorEnum):
     WORKING = "working"
     SLEEPING = "sleeping"
 
 
-class AllWebhookName(ProgramEnum):
+class AllWebhookName(MonitorEnum):
     WEWORK = "wework"
     LARK = "lark"
     ALL = [WEWORK, LARK]

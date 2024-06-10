@@ -11,5 +11,6 @@ requests
 chardet
 pyyaml
 python-dotenv
+packaging
 
 loguru

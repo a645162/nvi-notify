@@ -1,37 +1,34 @@
 # -*- coding: utf-8 -*-
 
 import copy
+import sys
 import threading
 import time
 from typing import Dict, List, Optional
 
 from nvitop import Device
 
-from config.settings import (
-    GPU_MONITOR_AUTO_RESTART,
-    GPU_MONITOR_SAMPLING_INTERVAL,
-    NUM_GPU,
-    WEBHOOK_DELAY_SEND_SECONDS,
-    get_emoji,
-)
+from config.settings import get_settings
 from feature.group_center import group_center_message
-from feature.monitor.GPU.gpu_process import GPUProcessInfo, TaskState
-from feature.monitor.info.gpu_info import GPUInfo, gpu_name_filter
+from feature.monitor.gpu.gpu import GPUInfo
+from feature.monitor.gpu.gpu_process import GPUProcessInfo, TaskState
+from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
+from feature.monitor.utils import Converter
 from feature.notify.send_task_msg import (
     send_gpu_monitor_start_msg,
     send_process_except_warning_msg,
 )
+from feature.sql.sqlite import get_sql
 from global_variable.global_gpu import (
     global_gpu_info,
     global_gpu_task,
     global_gpu_usage,
 )
-from utils.converter import convert_bytes_to_mb
 from utils.logs import get_logger
-from utils.sqlite import get_sql
 
 logger = get_logger()
 sql = get_sql()
+settings = get_settings()
 
 
 class NvidiaMonitor:
@@ -76,8 +73,8 @@ class NvidiaMonitor:
         global_gpu_usage[self.gpu_id]["coreUsage"] = gpu_status.utl
         global_gpu_usage[self.gpu_id]["memoryUsage"] = gpu_status.mem_percent
 
-        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = convert_bytes_to_mb(
-            gpu_status.mem_total_bytes
+        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = (
+            Converter.convert_bytes_to_mb(gpu_status.mem_total_bytes)
         )
 
         global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = gpu_status.mem_usage
@@ -99,7 +96,7 @@ class NvidiaMonitor:
         return self.nvidia_i.name()
 
     def get_gpu_name_short(self) -> str:
-        return gpu_name_filter(self.get_gpu_name())
+        return GPUInfo.gpu_name_filter(self.get_gpu_name())
 
     def get_gpu_utl(self):
         return self.nvidia_i.gpu_utilization()
@@ -134,7 +131,7 @@ class NvidiaMonitor:
     def get_all_tasks_msg(self, process_info: Dict) -> Dict:
         all_tasks_msg_dict = {}
         for idx, process in enumerate(process_info.values()):
-            idx_emoji = get_emoji(idx)
+            idx_emoji = TaskInfoForWebHook.get_emoji((idx))
             debug_emoji = "🐞" if process.is_debug else ""
             task_msg = (
                 f"{idx_emoji}{debug_emoji}"
@@ -180,8 +177,8 @@ class NvidiaMonitor:
                         new_process = GPUProcessInfo(pid, self.gpu_id, gpu_process)
                         if new_process.is_python:
                             if (
-                                    new_process.running_time_in_seconds
-                                    > WEBHOOK_DELAY_SEND_SECONDS
+                                new_process.running_time_in_seconds
+                                > settings.WEBHOOK_DELAY_SEND_SECONDS
                             ):
                                 new_process.state = TaskState.WORKING
                             else:
@@ -197,7 +194,11 @@ class NvidiaMonitor:
                     self.processes[pid].gpu_all_tasks_msg_dict = all_tasks_msg_dict
                     self.processes[pid].num_task = len(self.processes)
 
-                if monitor_start_flag and len(self.processes) > 0:
+                if (
+                    monitor_start_flag
+                    and len(self.processes) > 0
+                    and not sys.gettrace()
+                ):
                     # Send to Group Center
                     group_center_message.gpu_monitor_start()
 
@@ -214,7 +215,7 @@ class NvidiaMonitor:
                 global_gpu_task[self.gpu_id].clear()
                 global_gpu_task[self.gpu_id].extend(current_gpu_list)
 
-                time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
+                time.sleep(settings.GPU_MONITOR_SAMPLING_INTERVAL)
                 # 线程周期结束
 
             logger.info(f"GPU {self.gpu_id} monitor stop")
@@ -228,7 +229,7 @@ class NvidiaMonitor:
                         f"GPU {self.gpu_id} monitor restart times: {restart_times}"
                     )
 
-                if GPU_MONITOR_AUTO_RESTART:
+                if settings.GPU_MONITOR_AUTO_RESTART and not sys.gettrace():
                     # 需要重启不可以报错导致线程崩溃
                     try:
                         gpu_monitor_thread()
@@ -253,7 +254,7 @@ class NvidiaMonitor:
 
 
 def start_gpu_monitor_all():
-    for idx in range(NUM_GPU):
+    for idx in range(settings.NUM_GPU):
         # Initialize global variables
         global_gpu_info.append(
             {

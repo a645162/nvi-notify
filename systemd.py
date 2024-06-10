@@ -4,7 +4,7 @@ import argparse
 import os
 import time
 
-from config.settings import Settings
+from config.settings import check_sudo_permission
 from utils.utils import do_command
 
 path_current_py = os.path.realpath(__file__)
@@ -175,7 +175,7 @@ def main():
 
 if __name__ == "__main__":
     print_info()
-    if not Settings.check_sudo_permission():
+    if not check_sudo_permission():
         print("Please run this program as root(Using 'sudo').")
         exit(-1)
 

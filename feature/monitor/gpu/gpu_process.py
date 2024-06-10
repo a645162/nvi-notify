@@ -8,7 +8,7 @@ from typing import Optional
 import psutil
 from nvitop import GpuProcess
 
-from config.settings import get_settings
+from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
 from config.user.user_info import UserInfo
 from feature.group_center import group_center_message
 from feature.monitor.gpu.gpu import GPUInfo
@@ -21,7 +21,7 @@ from utils.utils import do_command
 
 logger = get_logger()
 sql = get_sql()
-settings = get_settings()
+
 
 class GPUProcessInfo:
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
@@ -208,7 +208,7 @@ class GPUProcessInfo:
         )
 
     def get_user(self):
-        self.user = settings.USERS.get(self.gpu_process.username(), None)
+        self.user = USERS.get(self.gpu_process.username(), None)
 
         def find_user_by_path(users: dict, path: str):
             for path_unit in reversed(path.split("data")[1].split("/")):
@@ -224,7 +224,7 @@ class GPUProcessInfo:
 
         if self.user is None:
             cwd = self.cwd + "/" if self.cwd is not None else ""
-            self.user = find_user_by_path(settings.USERS, cwd)
+            self.user = find_user_by_path(USERS, cwd)
 
     def get_env_value(self, key: str, default_value: str):
         if self.process_environ is None:
@@ -266,7 +266,6 @@ class GPUProcessInfo:
 
         command = f"'{binary_path}' --version"
         self.python_version = self.get_python_version_by_command(command)
-
 
     def get_world_size(self):
         # 多卡任务的进程数
@@ -405,13 +404,12 @@ class GPUProcessInfo:
         # 上次不满足，但是这次满足
         if (
             new_running_time_in_seconds
-            > settings.WEBHOOK_DELAY_SEND_SECONDS
+            > WEBHOOK_DELAY_SEND_SECONDS
             > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 
         self._running_time_in_seconds = new_running_time_in_seconds
-
 
     @staticmethod
     def get_python_version_by_command(command) -> str:

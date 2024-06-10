@@ -1,7 +1,8 @@
-from config.settings import get_settings
+from config.settings import (
+    HARD_DISK_HIGH_PERCENTAGE_THRESHOLD,
+    HARD_DISK_LOW_FREE_GB_THRESHOLD,
+)
 from feature.monitor.monitor_enum import MonitorEnum
-
-settings = get_settings()
 
 
 class DiskPurpose(MonitorEnum):
@@ -136,10 +137,8 @@ class HardDisk:
         else:
             self.purpose = DiskPurpose.DATA
             self.purpose_cn = DiskPurpose.DATA_CN
-            self.high_percentage_used_threshold = (
-                settings.HARD_DISK_HIGH_PERCENTAGE_THRESHOLD
-            )
-            self.low_free_space_threshold = settings.HARD_DISK_LOW_FREE_GB_THRESHOLD
+            self.high_percentage_used_threshold = HARD_DISK_HIGH_PERCENTAGE_THRESHOLD
+            self.low_free_space_threshold = HARD_DISK_LOW_FREE_GB_THRESHOLD
         self._mount_point = value
 
     @property

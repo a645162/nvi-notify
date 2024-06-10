@@ -1,11 +1,9 @@
 from typing import Optional, Union
 
-from config.settings import get_settings
+from config.settings import NUM_GPU
 from config.user.user_info import UserInfo
 from feature.monitor.gpu.gpu import GPUInfo
 from feature.monitor.monitor_enum import TaskEvent
-
-settings = get_settings()
 
 
 class TaskInfoForWebHook:
@@ -13,7 +11,7 @@ class TaskInfoForWebHook:
         self._task_event: str = str(task_event)
         self._pid: int = info.get("pid", 0)
         self._gpu_id: int = info.get("gpu_id", 0)
-        self._gpu_name: str = f"[GPU:{self._gpu_id}]" if settings.NUM_GPU > 1 else "GPU"
+        self._gpu_name: str = f"[GPU:{self._gpu_id}]" if NUM_GPU > 1 else "GPU"
         self._gpu_status: GPUInfo = info.get("gpu_status")
         self._all_task_msg: dict = info.get("gpu_all_tasks_msg_dict", {})
 

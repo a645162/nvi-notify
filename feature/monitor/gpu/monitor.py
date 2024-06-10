@@ -8,7 +8,13 @@ from typing import Dict, List, Optional
 
 from nvitop import Device
 
-from config.settings import get_settings
+from config.settings import (
+    GPU_MONITOR_AUTO_RESTART,
+    GPU_MONITOR_SAMPLING_INTERVAL,
+    NUM_GPU,
+    WEBHOOK_DELAY_SEND_SECONDS,
+    WEBHOOK_SEND_LAUNCH_MESSAGE,
+)
 from feature.group_center import group_center_message
 from feature.monitor.gpu.gpu import GPUInfo
 from feature.monitor.gpu.gpu_process import GPUProcessInfo, TaskState
@@ -28,7 +34,6 @@ from utils.logs import get_logger
 
 logger = get_logger()
 sql = get_sql()
-settings = get_settings()
 
 
 class NvidiaMonitor:
@@ -178,7 +183,7 @@ class NvidiaMonitor:
                         if new_process.is_python:
                             if (
                                 new_process.running_time_in_seconds
-                                > settings.WEBHOOK_DELAY_SEND_SECONDS
+                                > WEBHOOK_DELAY_SEND_SECONDS
                             ):
                                 new_process.state = TaskState.WORKING
                             else:
@@ -198,6 +203,7 @@ class NvidiaMonitor:
                     monitor_start_flag
                     and len(self.processes) > 0
                     and not sys.gettrace()
+                    and WEBHOOK_SEND_LAUNCH_MESSAGE
                 ):
                     # Send to Group Center
                     group_center_message.gpu_monitor_start()
@@ -215,7 +221,7 @@ class NvidiaMonitor:
                 global_gpu_task[self.gpu_id].clear()
                 global_gpu_task[self.gpu_id].extend(current_gpu_list)
 
-                time.sleep(settings.GPU_MONITOR_SAMPLING_INTERVAL)
+                time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
                 # 线程周期结束
 
             logger.info(f"GPU {self.gpu_id} monitor stop")
@@ -229,7 +235,7 @@ class NvidiaMonitor:
                         f"GPU {self.gpu_id} monitor restart times: {restart_times}"
                     )
 
-                if settings.GPU_MONITOR_AUTO_RESTART and not sys.gettrace():
+                if GPU_MONITOR_AUTO_RESTART and not sys.gettrace():
                     # 需要重启不可以报错导致线程崩溃
                     try:
                         gpu_monitor_thread()
@@ -254,7 +260,7 @@ class NvidiaMonitor:
 
 
 def start_gpu_monitor_all():
-    for idx in range(settings.NUM_GPU):
+    for idx in range(NUM_GPU):
         # Initialize global variables
         global_gpu_info.append(
             {

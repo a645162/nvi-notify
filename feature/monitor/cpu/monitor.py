@@ -6,7 +6,11 @@ from typing import Optional
 
 import psutil
 
-from config.settings import get_settings
+from config.settings import (
+    CPU_HIGH_TEMPERATURE_THRESHOLD,
+    NUM_CPU,
+    TEMPERATURE_MONITOR_SAMPLING_INTERVAL,
+)
 from feature.monitor.memory.memory import Memory
 from feature.monitor.utils import Converter
 from feature.notify.send_task_msg import (
@@ -16,9 +20,7 @@ from feature.notify.send_task_msg import (
 from global_variable.global_system import global_system_info
 from utils.logs import get_logger
 
-
 logger = get_logger()
-settings = get_settings()
 
 
 class CPUMonitor:
@@ -59,7 +61,7 @@ class CPUMonitor:
                 )
                 # global_system_info["memory_swap_free_mb"] = Converter.convert_bytes_to_gb(memory_swap.free)
 
-                time.sleep(settings.TEMPERATURE_MONITOR_SAMPLING_INTERVAL)
+                time.sleep(TEMPERATURE_MONITOR_SAMPLING_INTERVAL)
 
             logger.info(f"CPU {self.cpu_id} monitor stop")
 
@@ -76,7 +78,7 @@ class CPUMonitor:
     @temperature.setter
     def temperature(self, new_temperature):
         self.high_temperature_trigger = (
-            new_temperature > settings.CPU_HIGH_TEMPERATURE_THRESHOLD > self._temperature
+            new_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD > self._temperature
         )
 
         self._temperature = new_temperature
@@ -110,11 +112,11 @@ def get_cpu_temperature_info() -> Optional[dict]:
 
 
 def start_cpu_monitor_all():
-    if settings.NUM_CPU is None:
+    if NUM_CPU is None:
         logger.error("Cannot get the number of CPU.")
         return
 
-    for idx in range(settings.NUM_CPU):
+    for idx in range(NUM_CPU):
         cpu_monitor_idx = CPUMonitor(idx)
         cpu_monitor_idx.start_monitor()
 

@@ -4,19 +4,24 @@ import threading
 import time
 from typing import Union
 
-from config.settings import get_settings
+
+from config.settings import (
+    HARD_DISK_MONITOR_SAMPLING_INTERVAL,
+    HARD_DISK_MOUNT_POINT,
+    SUDO_PERMISSION,
+    is_webhook_sleep_time,
+)
 from feature.monitor.hard_disk.hard_disk import HardDisk
 from feature.notify.send_task_msg import send_hard_disk_high_occupancy_warning_msg
 from utils.logs import get_logger
 from utils.utils import do_command
 
 logger = get_logger()
-settings = get_settings()
 
 
 class HardDiskMonitor:
     def __init__(self, mount_points: Union[set, list]):
-        self.mount_points: str = mount_points
+        self.mount_points: Union[set, list] = mount_points
         self.hard_disk_dict: dict[str, HardDisk] = self.get_hard_disk_obj()
 
         self.send_warning_msg_trigger: bool = False
@@ -54,11 +59,11 @@ class HardDiskMonitor:
                 for hard_disk in self.hard_disk_dict.values():
                     if hard_disk.size_warning_trigger:
                         logger.info(f"[硬盘{hard_disk.mount_point}]容量不足！")
-                        if not settings.is_webhook_sleep_time:
+                        if not is_webhook_sleep_time():
                             send_hard_disk_high_occupancy_warning_msg(
                                 hard_disk.disk_info()
                             )
-                time.sleep(settings.HARD_DISK_MONITOR_SAMPLING_INTERVAL)
+                time.sleep(HARD_DISK_MONITOR_SAMPLING_INTERVAL)
 
             logger.info("Hrad disk monitor stop")
 
@@ -69,7 +74,7 @@ class HardDiskMonitor:
         # self.thread.join()
 
     def get_smart_info(device) -> None | str:
-        if not settings.SUDO_PERMISSION:
+        if not SUDO_PERMISSION:
             return
 
         command = f"sudo smartctl -H {device}"
@@ -89,11 +94,11 @@ class HardDiskMonitor:
 
 
 def start_resource_monitor_all():
-    if settings.HARD_DISK_MOUNT_POINT is None:
+    if HARD_DISK_MOUNT_POINT is None:
         logger.error("Cannot get the mountpoint of hard disk.")
         return
 
-    hard_disk_monitor = HardDiskMonitor(settings.HARD_DISK_MOUNT_POINT)
+    hard_disk_monitor = HardDiskMonitor(HARD_DISK_MOUNT_POINT)
     hard_disk_monitor.start_monitor()
 
 

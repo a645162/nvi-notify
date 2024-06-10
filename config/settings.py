@@ -194,7 +194,6 @@ def get_interface_ip_dict(ip_type: str = "v4") -> dict:
     return interface_ip_dict
 
 
-@property
 def now_time_str() -> str:
     current_time = datetime.datetime.now()
     formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")

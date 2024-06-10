@@ -38,10 +38,10 @@ class Webhook:
         self._lark_app_secret = os.getenv("LARK_APP_Secret", "")
 
         self._webhook_main_secret = os.getenv(
-            f"WEBHOOK_{webhook_name.upper()}_DEPLOY_SECRET"
+            f"WEBHOOK_{webhook_name.upper()}_DEPLOY_SECRET", ""
         )
         self.webhook_warning_secret = os.getenv(
-            f"WEBHOOK_{webhook_name.upper()}_DEV_SECRET"
+            f"WEBHOOK_{webhook_name.upper()}_DEV_SECRET", ""
         )
         self._webhook_state = WebhookState.WORKING
 

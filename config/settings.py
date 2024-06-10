@@ -13,7 +13,7 @@ from packaging import version
 
 from config.user.user_info import UserInfo
 from config.user.user_parser import UserConfigParser
-from feature.monitor.cpu.cpu import CPUInfo
+from feature.monitor.CPU.cpu import CPUInfo
 from feature.monitor.monitor_enum import AllWebhookName
 from utils.logs import get_logger
 from utils.utils import do_command
@@ -26,6 +26,9 @@ all_env_dict: dict[str, str] = {}
 
 
 def get_env_str(var: str, default: str) -> str:
+    if var in all_env_dict:
+        return all_env_dict[var].strip()
+
     return os.getenv(var, default).strip()
 
 
@@ -129,7 +132,7 @@ def check_sudo_permission() -> bool:
     return os.geteuid() == 0
 
 
-def check_python_version(min_required_version: str) -> bool:
+def check_python_version(min_required_version: str) -> str:
     """
     Check if the current Python version is greater than or equal to the minimum required version.
 
@@ -200,7 +203,7 @@ def now_time_str() -> str:
 
 
 def is_within_time_range(
-    start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
+        start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
 ) -> bool:
     current_time = datetime.datetime.now().time()
 
@@ -230,7 +233,7 @@ load_env()
 # Init
 WAIT_TIME_BEFORE_START = int(get_env_int("WAIT_TIME_BEFORE_START", 10))
 SUDO_PERMISSION = check_sudo_permission()
-PYTHON_VERSION = check_python_version("3.6")
+PYTHON_VERSION = check_python_version("3.10")
 
 # Network
 IPv4 = get_ip("v4")
@@ -268,7 +271,6 @@ TEMPERATURE_MONITOR_SAMPLING_INTERVAL = int(
 # GPU Monitor
 GPU_MONITOR_SAMPLING_INTERVAL = int(get_env_int("GPU_MONITOR_SAMPLING_INTERVAL", 5))
 GPU_MONITOR_AUTO_RESTART = get_env_bool("GPU_MONITOR_AUTO_RESTART", True)
-
 
 # Hard Disk Monitor
 HARD_DISK_MOUNT_POINT = set(
@@ -325,8 +327,8 @@ def fix_env():
 
     fix_url()
 
-fix_env()
 
+fix_env()
 
 if __name__ == "__main__":
     load_dotenv(dotenv_path="", verbose=True)

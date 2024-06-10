@@ -139,7 +139,7 @@ def log_task_info(process_info: dict, task_event: TaskEvent):
                 f" finish {task.user.name_cn}'s {'debug ' if task.is_debug else ''}"
                 f"task: {task.pid}，用时{task.running_time_human}"
             )
-        log_writer.write(f"[{now_time_str}]+{output_log} + \n")
+        log_writer.write(f"[{now_time_str()}]+{output_log} + \n")
         logger.info(output_log)
         # print(output_log)
 
@@ -157,7 +157,7 @@ def handle_normal_text(msg: str, user: UserInfo = None):
     else:
         msg += f"📈http://{SERVER_DOMAIN}\n"
 
-    msg += f"⏰{now_time_str}"
+    msg += f"⏰{now_time_str()}"
     send_text(msg, MsgType.NORMAL, user, AllWebhookName.ALL)
 
 
@@ -169,7 +169,7 @@ def handle_warning_text(msg: str) -> str:
     """
     msg += f"http://{IPv4}\n"
     msg += f"http://[{IPv6}]\n"
-    msg += f"⏰{now_time_str}"
+    msg += f"⏰{now_time_str()}"
     return msg
 
 

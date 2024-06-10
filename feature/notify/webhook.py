@@ -268,12 +268,12 @@ class Webhook:
             try:
                 self.send_message(*current_msg)
                 logger.info(
-                    f"[{now_time_str}]{self.webhook_name}消息队列发送一条消息。"
+                    f"[{now_time_str()}]{self.webhook_name}消息队列发送一条消息。"
                 )
                 time.sleep(3.1)  # 每分钟最多20条消息
             except Exception as e:
                 logger.warning(
-                    f"[{now_time_str}]{self.webhook_name}消息队列发送异常，进行重试。exception:{e}",
+                    f"[{now_time_str()}]{self.webhook_name}消息队列发送异常，进行重试。exception:{e}",
                 )
                 self.retry_msg_queue.put(current_msg)
                 time.sleep(5)

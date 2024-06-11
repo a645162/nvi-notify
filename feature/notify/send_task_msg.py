@@ -4,10 +4,8 @@ import os
 from pathlib import Path
 
 from config.settings import (
-    NUM_GPU,
     SERVER_DOMAIN,
     SERVER_NAME,
-    WEBHOOK_DELAY_SEND_SECONDS,
     IPv4,
     IPv6,
     now_time_str,
@@ -19,95 +17,6 @@ from feature.notify.webhook import send_text
 from utils.logs import get_logger
 
 logger = get_logger()
-
-
-def send_gpu_monitor_start_msg(gpu_id: int, all_process_info: dict):
-    """
-    启动GPU监控函数
-    :param gpu_id: GPU ID
-    :param all_process_info: 所有进程信息字典
-    """
-    gpu_name = f"[GPU:{gpu_id}]" if NUM_GPU > 1 else "GPU"
-
-    gpu_status = None
-    send_start_info = False
-
-    all_tasks_msg = ""
-
-    for process in all_process_info.values():
-        if (
-            process.running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS
-            and not process.is_debug
-        ):
-            if process.is_multi_gpu and process.local_rank != 0:
-                continue
-
-            send_start_info = True
-            gpu_status = process.gpu_status
-            all_tasks_msg = "".join(process.gpu_all_tasks_msg_dict.values())
-            break
-
-    if send_start_info:
-        handle_normal_text(
-            f"{gpu_name}监控启动\n"
-            f"{TaskInfoForWebHook.get_emoji('呲牙') * len(all_process_info)}"
-            f"{gpu_name}上正在运行{len(all_process_info)}个任务：\n"
-            f"{all_tasks_msg}\n"
-            f"🌀{gpu_name}核心占用: {gpu_status.utl}%\n"
-            f"🌀{gpu_name}显存占用: {gpu_status.mem_usage}/{gpu_status.mem_total} "
-            f"({gpu_status.mem_percent}%)，{gpu_status.mem_free}空闲\n",
-        )
-
-
-def send_gpu_task_message(process_info: dict, task_event: TaskEvent):
-    """
-    发送GPU任务消息函数
-    :param process_info: 进程信息字典
-    :param task_event: 任务状态
-    """
-    task = TaskInfoForWebHook(process_info, task_event)
-    gpu_name = task.gpu_name
-    gpu_name_header = gpu_name + "\n" if NUM_GPU > 1 else ""
-    if not task.is_debug:
-        multi_gpu_msg = task.multi_gpu_msg
-        if multi_gpu_msg == "-1":  # 非第一个使用的GPU不发送消息
-            return
-
-        if task_event == TaskEvent.CREATE:
-            msg_header = (
-                f"{gpu_name_header}🚀"
-                f"{task.user.name_cn}的"
-                f"{multi_gpu_msg}"
-                f"({task.screen_name}{task.project_name}-{task.python_file})启动"
-                "\n"
-            )
-        elif task_event == TaskEvent.FINISH:
-            msg_header = (
-                f"{gpu_name_header}☑️"
-                f"{task.user.name_cn}的"
-                f"{multi_gpu_msg}"
-                f"({task.screen_name}{task.project_name}-{task.python_file})完成，"
-                f"用时{task.running_time_human}，"
-                f"最大显存{task.task_gpu_memory_max_human}"
-                "\n"
-            )
-        else:
-            msg_header = ""
-
-        emoji_num_task = TaskInfoForWebHook.get_emoji("呲牙") * (task.num_task)
-        gpu_task_status_info_msg = (
-            f"{emoji_num_task}{gpu_name}上正在运行{task.num_task}个任务：\n"
-        )
-        if task.num_task == 0:
-            gpu_task_status_info_msg = f"{gpu_name}当前无任务\n"
-
-        handle_normal_text(
-            msg=msg_header
-            + task.gpu_status_msg
-            + gpu_task_status_info_msg
-            + task.all_task_msg,
-            user=task.user if task_event == TaskEvent.FINISH else None,
-        )
 
 
 def log_task_info(process_info: dict, task_event: TaskEvent):
@@ -181,11 +90,11 @@ def send_process_except_warning_msg():
     send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
 
-def send_cpu_except_warning_msg(cpu_id: int):
+def send_cpu_except_warning_msg():
     """
     发送CPU异常警告消息函数
     """
-    warning_message = f"⚠️⚠️{SERVER_NAME}获取CPU:{cpu_id}温度失败！⚠️⚠️\n"
+    warning_message = f"⚠️⚠️{SERVER_NAME}获取CPU温度失败！⚠️⚠️\n"
     send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
 
@@ -197,7 +106,7 @@ def send_cpu_temperature_warning_msg(cpu_id: int, cpu_temperature: float):
     send_text(msg=handle_warning_text(warning_message), msg_type=MsgType.WARNING)
 
 
-def send_hard_disk_high_occupancy_warning_msg(disk_info: str):
+def send_hard_disk_size_warning_msg(disk_info: str):
     """
     发送硬盘高占用警告消息函数
     """

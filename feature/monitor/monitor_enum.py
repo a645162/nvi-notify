@@ -32,9 +32,3 @@ class AllWebhookName(MonitorEnum):
     WEWORK = "wework"
     LARK = "lark"
     ALL = [WEWORK, LARK]
-
-
-if __name__ == "__main__":
-    print(str(AllWebhookName.WEWORK))
-    print(str(AllWebhookName.LARK))
-    print(str(AllWebhookName.ALL))

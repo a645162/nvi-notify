@@ -91,11 +91,11 @@ def add_task_to_center(data: dict, target: str):
         work_thread.start()
 
 
-def gpu_monitor_start():
+def gpu_monitor_start(gpu_id: int):
     if not USE_GROUP_CENTER:
         return
 
-    logger.info("[Group Center] Gpu Monitor Start")
+    logger.info(f"[Group Center] Gpu{gpu_id} Monitor Start")
 
 
 def gpu_task_message(process_obj, task_event: TaskEvent):

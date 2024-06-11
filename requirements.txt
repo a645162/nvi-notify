@@ -12,5 +12,6 @@ chardet
 pyyaml
 python-dotenv
 packaging
+humanfriendly
 
 loguru

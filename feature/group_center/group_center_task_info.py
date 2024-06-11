@@ -1,4 +1,4 @@
-from feature.monitor.gpu.gpu import GPUInfo
+from feature.monitor.gpu.gpu import GPU
 
 
 class TaskInfoForGroupCenter:
@@ -92,19 +92,17 @@ class TaskInfoForGroupCenter:
         self.taskPid = gpu_process_obj.pid
         self.taskMainMemory = gpu_process_obj.task_main_memory_mb
 
-        all_tasks_msg: str = "".join(gpu_process_obj.gpu_all_tasks_msg_dict.values())
-        self.allTaskMessage = all_tasks_msg
-
         # GPU 信息
-        gpu_status: GPUInfo = gpu_process_obj.gpu_status
-        self.gpuUsagePercent = gpu_status.utl
-        self.gpuMemoryUsageString = self.__fix_data_size_str(gpu_status.mem_usage)
-        self.gpuMemoryFreeString = self.__fix_data_size_str(gpu_status.mem_free)
-        self.gpuMemoryTotalString = self.__fix_data_size_str(gpu_status.mem_total)
-        self.gpuMemoryPercent = gpu_status.mem_percent
+        gpu: GPU = gpu_process_obj.gpu
+        self.gpuUsagePercent = gpu.gpu_utilization
+        self.gpuMemoryUsageString = self.__fix_data_size_str(gpu.memory_utilization)
+        self.gpuMemoryFreeString = self.__fix_data_size_str(gpu.memory_free_human)
+        self.gpuMemoryTotalString = self.__fix_data_size_str(gpu.memory_total_human)
+        self.gpuMemoryPercent = gpu.memory_percent
 
-        self.taskGpuId = gpu_process_obj.gpu_id
-        self.taskGpuName = gpu_process_obj.gpu_name
+        self.allTaskMessage = gpu.all_tasks_msg_body
+        self.taskGpuId = gpu.gpu_id
+        self.taskGpuName = gpu.name
 
         self.taskGpuMemoryGb = round(
             (gpu_process_obj.task_gpu_memory >> 10 >> 10) / 1024, 2

@@ -11,10 +11,10 @@ from nvitop import GpuProcess
 from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
 from config.user.user_info import UserInfo
 from feature.group_center import group_center_message
-from feature.monitor.gpu.gpu import GPUInfo
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
+from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import TaskEvent, TaskState
-from feature.notify.send_task_msg import log_task_info, send_gpu_task_message
+from feature.notify.send_msg import handle_normal_text, log_task_info
 from feature.sql.sqlite import get_sql
 from utils.logs import get_logger
 from utils.utils import do_command
@@ -32,11 +32,8 @@ class GPUProcessInfo:
 
         # current GPU
         self.gpu_id: int = gpu_id
-        self.gpu_name: str = gpu_process.device.name()
-
         self.gpu_process: GpuProcess = gpu_process
-        self.gpu_status: Optional[GPUInfo] = None
-        self.gpu_all_tasks_msg_dict: Optional[dict[int, str]] = None
+
         self.num_task: int = 0
         self.process_environ: Optional[dict[str, str]] = None
 
@@ -74,6 +71,7 @@ class GPUProcessInfo:
         self.cuda_nvcc_bin: str = ""
         self.cuda_version: str = ""
 
+        self._gpu = None
         self._state: Optional[TaskState] = TaskState.DEFAULT  # init
         self._running_time_in_seconds: int = 0  # init
 
@@ -119,6 +117,14 @@ class GPUProcessInfo:
         self.get_task_gpu_memory()
         self.get_running_time_human()
         self.get_running_time_in_seconds()
+
+    @property
+    def gpu(self):
+        return self._gpu
+
+    @gpu.setter
+    def gpu(self, value):
+        self._gpu = value
 
     def get_cwd(self):
         try:
@@ -375,7 +381,7 @@ class GPUProcessInfo:
             group_center_message.gpu_task_message(self, TaskEvent.CREATE)
 
             # WebHook
-            send_gpu_task_message(self.__dict__, TaskEvent.CREATE)
+            self.send_gpu_task_message_new(TaskEvent.CREATE)
         elif new_state == TaskState.DEATH and self._state == TaskState.WORKING:
             # 已经进入正常工作状态的进程正常结束
 
@@ -386,7 +392,7 @@ class GPUProcessInfo:
             group_center_message.gpu_task_message(self, TaskEvent.FINISH)
 
             # WebHook
-            send_gpu_task_message(self.__dict__, TaskEvent.FINISH)
+            self.send_gpu_task_message_new(TaskEvent.FINISH)
         elif new_state == TaskState.DEATH and self._state == TaskState.NEWBORN:
             # 没有到发信阈值就被杀死的进程
 
@@ -424,3 +430,29 @@ class GPUProcessInfo:
             return ""
         except Exception:
             return ""
+
+    def send_gpu_task_message_new(self, task_event: TaskEvent):
+        """
+        发送GPU任务消息函数
+        :param task_event: 任务状态
+        """
+        task = TaskInfoForWebHook(self.__dict__, task_event)
+        # gpu_name = task.gpu_name
+        # gpu_name_header = gpu_name + "\n" if NUM_GPU > 1 else ""
+        if task.is_debug:
+            return
+
+        # multi_gpu_msg = task.multi_gpu_msg
+        # if multi_gpu_msg == "-1":  # 非第一个使用的GPU不发送消息
+        #     return
+
+        handle_normal_text(
+            msg=self.gpu.name_for_msg_header
+            + "\n"
+            + task.task_msg_body(TaskEvent.FINISH)
+            + self.gpu.gpu_status_msg
+            + "\n"
+            + self.gpu.gpu_tasks_num_msg_header
+            + self.gpu.all_tasks_msg_body,
+            user=task.user if task_event == TaskEvent.FINISH else None,
+        )

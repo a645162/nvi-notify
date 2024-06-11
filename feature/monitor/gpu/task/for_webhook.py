@@ -2,7 +2,6 @@ from typing import Optional, Union
 
 from config.settings import NUM_GPU
 from config.user.user_info import UserInfo
-from feature.monitor.gpu.gpu import GPUInfo
 from feature.monitor.monitor_enum import TaskEvent
 
 
@@ -12,8 +11,7 @@ class TaskInfoForWebHook:
         self._pid: int = info.get("pid", 0)
         self._gpu_id: int = info.get("gpu_id", 0)
         self._gpu_name: str = f"[GPU:{self._gpu_id}]" if NUM_GPU > 1 else "GPU"
-        self._gpu_status: GPUInfo = info.get("gpu_status")
-        self._all_task_msg: dict = info.get("gpu_all_tasks_msg_dict", {})
+        self._gpu_status_msg: str = info.get("gpu_status_msg", "")
 
         self._user: UserInfo = info.get("user")
 
@@ -61,18 +59,6 @@ class TaskInfoForWebHook:
     @property
     def gpu_name(self) -> str:
         return self._gpu_name
-
-    @property
-    def gpu_status(self) -> GPUInfo:
-        return self._gpu_status
-
-    @property
-    def gpu_status_msg(self) -> str:
-        return (
-            f"🌀{self.gpu_name}核心占用: {self.gpu_status.utl}%\n"
-            f"🌀{self.gpu_name}显存占用: {self.gpu_status.mem_usage}/{self.gpu_status.mem_total} "
-            f"({self.gpu_status.mem_percent}%)，{self.gpu_status.mem_free}空闲\n\n"
-        )
 
     @property
     def user(self) -> UserInfo:
@@ -127,12 +113,31 @@ class TaskInfoForWebHook:
         return self._python_file
 
     @property
-    def all_task_msg(self) -> str:
-        if len(self._all_task_msg) == 0:
-            return ""
+    def task_msg_body(self) -> str:
+        if self.task_event == TaskEvent.CREATE:
+            return self.task_msg_body_for_create
+        elif self.task_event == TaskEvent.FINISH:
+            return self.task_msg_body_for_finish
         else:
-            temp_str = "".join(self._all_task_msg.values())
-            return f"{temp_str}"
+            return ""
+
+    @property
+    def task_msg_body_for_create(self) -> str:
+        return (
+            f"🚀{self.user.name_cn}的"
+            f"({self.screen_name}{self.project_name}-{self.python_file})启动"
+            "\n"
+        )
+
+    @property
+    def task_msg_body_for_finish(self) -> str:
+        return (
+            f"☑️{self.user.name_cn}的"
+            f"({self.screen_name}{self.project_name}-{self.python_file})完成，"
+            f"用时{self.running_time_human}，"
+            f"最大显存{self.task_gpu_memory_max_human}"
+            "\n"
+        )
 
     @staticmethod
     def get_emoji(key: Union[int, str]) -> str:

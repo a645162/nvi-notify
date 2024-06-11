@@ -1,7 +1,6 @@
 import os
 import sqlite3
 
-
 from config.settings import NUM_GPU, SERVER_NAME
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.monitor_enum import TaskState

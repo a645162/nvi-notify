@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import threading
 import time
 from typing import Union
-
 
 from config.settings import (
     HARD_DISK_MONITOR_SAMPLING_INTERVAL,
@@ -12,20 +10,20 @@ from config.settings import (
     is_webhook_sleep_time,
 )
 from feature.monitor.hard_disk.hard_disk import HardDisk
-from feature.notify.send_task_msg import send_hard_disk_high_occupancy_warning_msg
+from feature.monitor.monitor import Monitor
+from feature.notify.send_msg import send_hard_disk_size_warning_msg
 from utils.logs import get_logger
 from utils.utils import do_command
 
 logger = get_logger()
 
 
-class HardDiskMonitor:
+class HardDiskMonitor(Monitor):
     def __init__(self, mount_points: Union[set, list]):
         self.mount_points: Union[set, list] = mount_points
         self.hard_disk_dict: dict[str, HardDisk] = self.get_hard_disk_obj()
-
-        self.send_warning_msg_trigger: bool = False
-        self.thread = None
+        self.monitor_name = "Hard Disk"
+        self._init_thread_()
 
     def get_hard_disk_obj(self) -> dict[str, HardDisk]:
         hard_disk_dict = {}
@@ -48,30 +46,17 @@ class HardDiskMonitor:
                 self.hard_disk_dict[mount_point].update_info(fields)
                 logger.info(f'[硬盘"{mount_point}"]获取容量信息成功')
 
-    monitor_thread_work = False
-
-    def start_monitor(self):
-        def harddisk_monitor_thread():
-            logger.info("Hrad disk monitor start")
-            while monitor_thread_work:
-                self.update_disk_detail_info()
-
-                for hard_disk in self.hard_disk_dict.values():
-                    if hard_disk.size_warning_trigger:
-                        logger.info(f"[硬盘{hard_disk.mount_point}]容量不足！")
-                        if not is_webhook_sleep_time():
-                            send_hard_disk_high_occupancy_warning_msg(
-                                hard_disk.disk_info()
-                            )
-                time.sleep(HARD_DISK_MONITOR_SAMPLING_INTERVAL)
-
-            logger.info("Hrad disk monitor stop")
-
-        if self.thread is None or not self.thread.is_alive():
-            self.thread = threading.Thread(target=harddisk_monitor_thread)
-        monitor_thread_work = True
-        self.thread.start()
-        # self.thread.join()
+    def harddisk_monitor_thread(self):
+        while self.monitor_thread_work:
+            self.update_disk_detail_info()
+            for hard_disk in self.hard_disk_dict.values():
+                if not hard_disk.size_warning_trigger:
+                    continue
+                logger.info(f"[硬盘{hard_disk.mount_point}]容量不足！")
+                if is_webhook_sleep_time():
+                    continue
+                send_hard_disk_size_warning_msg(hard_disk.disk_info())
+            time.sleep(HARD_DISK_MONITOR_SAMPLING_INTERVAL)
 
     def get_smart_info(device) -> None | str:
         if not SUDO_PERMISSION:
@@ -99,7 +84,7 @@ def start_resource_monitor_all():
         return
 
     hard_disk_monitor = HardDiskMonitor(HARD_DISK_MOUNT_POINT)
-    hard_disk_monitor.start_monitor()
+    hard_disk_monitor.start_monitor(hard_disk_monitor.harddisk_monitor_thread)
 
 
 if __name__ == "__main__":

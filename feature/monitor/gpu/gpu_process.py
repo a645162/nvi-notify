@@ -449,7 +449,7 @@ class GPUProcessInfo:
         handle_normal_text(
             msg=self.gpu.name_for_msg_header
             + "\n"
-            + task.task_msg_body(TaskEvent.FINISH)
+            + task.task_msg_body
             + self.gpu.gpu_status_msg
             + "\n"
             + self.gpu.gpu_tasks_num_msg_header

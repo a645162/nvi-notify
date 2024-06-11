@@ -95,7 +95,7 @@ class TaskInfoForGroupCenter:
         # GPU 信息
         gpu: GPU = gpu_process_obj.gpu
         self.gpuUsagePercent = gpu.gpu_utilization
-        self.gpuMemoryUsageString = self.__fix_data_size_str(gpu.memory_utilization)
+        self.gpuMemoryUsageString = self.__fix_data_size_str(gpu.memory_used_human)
         self.gpuMemoryFreeString = self.__fix_data_size_str(gpu.memory_free_human)
         self.gpuMemoryTotalString = self.__fix_data_size_str(gpu.memory_total_human)
         self.gpuMemoryPercent = gpu.memory_percent

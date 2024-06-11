@@ -6,7 +6,6 @@ import time
 from config.settings import (
     GPU_MONITOR_SAMPLING_INTERVAL,
     NUM_GPU,
-    WEBHOOK_DELAY_SEND_SECONDS,
     WEBHOOK_SEND_LAUNCH_MESSAGE,
 )
 from feature.group_center import group_center_message

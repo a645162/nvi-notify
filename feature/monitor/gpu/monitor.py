@@ -94,7 +94,7 @@ class NvidiaMonitor(Monitor):
                 continue
             launch_msg_text.append(
                 process.gpu.gpu_tasks_num_msg_header
-                + "".join(process.gpu.all_tasks_msg.values())
+                + "".join(process.gpu.all_tasks_msg_body.values())
                 + "\n"
                 + process.gpu.gpu_status_msg
             )

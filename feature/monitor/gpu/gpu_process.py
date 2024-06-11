@@ -360,48 +360,6 @@ class GPUProcessInfo:
             self.python_file = file_name.strip()
 
     @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, new_state: TaskState.__members__):
-        if self._state == new_state:
-            return
-
-        if new_state == TaskState.NEWBORN and self._state is TaskState.DEFAULT:
-            # 新生进程
-
-            log_task_info(self.__dict__, TaskEvent.CREATE)
-        elif new_state == TaskState.WORKING and self._state == TaskState.NEWBORN:
-            # 新生进程进入正常工作状态
-
-            sql.update_task_data(TaskInfoForSQL(self.__dict__, new_state))
-
-            # Group Center
-            group_center_message.gpu_task_message(self, TaskEvent.CREATE)
-
-            # WebHook
-            self.send_gpu_task_message_new(TaskEvent.CREATE)
-        elif new_state == TaskState.DEATH and self._state == TaskState.WORKING:
-            # 已经进入正常工作状态的进程正常结束
-
-            log_task_info(self.__dict__, TaskEvent.FINISH)
-            sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, new_state))
-
-            # Group Center
-            group_center_message.gpu_task_message(self, TaskEvent.FINISH)
-
-            # WebHook
-            self.send_gpu_task_message_new(TaskEvent.FINISH)
-        elif new_state == TaskState.DEATH and self._state == TaskState.NEWBORN:
-            # 没有到发信阈值就被杀死的进程
-
-            log_task_info(self.__dict__, TaskEvent.FINISH)
-            sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, new_state))
-
-        self._state = new_state
-
-    @property
     def running_time_in_seconds(self):
         return self._running_time_in_seconds
 
@@ -417,28 +375,70 @@ class GPUProcessInfo:
 
         self._running_time_in_seconds = new_running_time_in_seconds
 
-    @staticmethod
-    def get_python_version_by_command(command) -> str:
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, new_state: TaskState.__members__):
+        if not isinstance(new_state, TaskState):
+            raise ValueError(
+                f"new_state must be an instance of TaskState, got {new_state}"
+            )
+
+        if self._state == new_state:
+            return
+
+        if not TaskState.is_valid_transition(self._state, new_state):
+            raise ValueError(
+                f"Invalid state transition from {self._state} to {new_state}"
+            )
+
         try:
-            _, result, _ = do_command(command)
+            self._handle_state_change(new_state)
+        except Exception as e:
+            logger.error(f"Error during state change: {e}")
+            raise
 
-            if "Python" not in result:
-                return ""
-            result = result.replace("Python", "").strip()
-            if "." in result:
-                return result
-            return ""
-        except Exception:
-            return ""
+        self._state = new_state
 
-    def send_gpu_task_message_new(self, task_event: TaskEvent):
+    def _handle_state_change(self, new_state):
+        if new_state == TaskState.NEWBORN and self._state is TaskState.DEFAULT:
+            self._transition_to_newborn()
+        elif new_state == TaskState.WORKING and self._state == TaskState.NEWBORN:
+            self._transition_newborn_to_working()
+        elif new_state == TaskState.DEATH and self._state == TaskState.WORKING:
+            self._transition_working_to_death()
+        elif new_state == TaskState.DEATH and self._state == TaskState.NEWBORN:
+            self._transition_newborn_to_death()
+
+    def _transition_to_newborn(self):
+        log_task_info(self.__dict__, TaskEvent.CREATE)
+
+    def _transition_newborn_to_working(self):
+        log_task_info(self.__dict__, TaskEvent.CREATE)
+        sql.update_task_data(TaskInfoForSQL(self.__dict__, TaskState.WORKING))
+
+        group_center_message.gpu_task_message(self, TaskEvent.CREATE)
+        self._send_gpu_task_message(TaskEvent.CREATE)
+
+    def _transition_working_to_death(self):
+        log_task_info(self.__dict__, TaskEvent.FINISH)
+        sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, TaskState.DEATH))
+
+        group_center_message.gpu_task_message(self, TaskEvent.FINISH)
+        self._send_gpu_task_message(TaskEvent.FINISH)
+
+    def _transition_newborn_to_death(self):
+        log_task_info(self.__dict__, TaskEvent.FINISH)
+        sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, TaskState.DEATH))
+
+    def _send_gpu_task_message(self, task_event: TaskEvent):
         """
         发送GPU任务消息函数
         :param task_event: 任务状态
         """
         task = TaskInfoForWebHook(self.__dict__, task_event)
-        # gpu_name = task.gpu_name
-        # gpu_name_header = gpu_name + "\n" if NUM_GPU > 1 else ""
         if task.is_debug:
             return
 
@@ -456,3 +456,17 @@ class GPUProcessInfo:
             + self.gpu.all_tasks_msg_body,
             user=task.user if task_event == TaskEvent.FINISH else None,
         )
+
+    @staticmethod
+    def get_python_version_by_command(command) -> str:
+        try:
+            _, result, _ = do_command(command)
+
+            if "Python" not in result:
+                return ""
+            result = result.replace("Python", "").strip()
+            if "." in result:
+                return result
+            return ""
+        except Exception:
+            return ""

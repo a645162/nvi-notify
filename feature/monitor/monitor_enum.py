@@ -12,6 +12,17 @@ class TaskState(MonitorEnum):
     DEATH = "death"
     DEFAULT = "default"
 
+    @classmethod
+    def is_valid_transition(cls, state, new_state) -> bool:
+        allowed_transitions = [
+            (cls.DEFAULT, cls.WORKING),  # monitor start
+            (cls.DEFAULT, cls.NEWBORN),  # process start
+            (cls.NEWBORN, cls.WORKING),
+            (cls.WORKING, cls.DEATH),
+            (cls.NEWBORN, cls.DEATH),
+        ]
+        return (state, new_state) in allowed_transitions
+
 
 class TaskEvent(MonitorEnum):
     CREATE = "create"

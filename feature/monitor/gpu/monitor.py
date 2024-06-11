@@ -67,45 +67,25 @@ class NvidiaMonitor(Monitor):
             time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
 
     def should_send_monitor_launch_msg(self):
-        self.monitor_launch_flag = False
+        if not self.monitor_launch_flag:
+            return False
+        else:
+            self.monitor_launch_flag = False
         return WEBHOOK_SEND_LAUNCH_MESSAGE and self.total_num_task > 0
 
     def send_gpu_monitor_launch_msg(self):
-        """
-        启动GPU监控函数
-        :param all_gpu_process_info: 所有进程信息字典
-        """
-
-        send_start_info = True
-
         launch_msg_text = []
-        cur_gpu_idx = 0
 
-        for process in self.all_processes.values():
-            if (
-                process.running_time_in_seconds < WEBHOOK_DELAY_SEND_SECONDS
-                or process.is_debug
-            ):
-                send_start_info = False
-                continue
-
-            # if process.is_multi_gpu and process.local_rank != 0:
-            #     continue
-
-            if cur_gpu_idx != process.gpu_id:
-                continue
-
-            process.gpu.get_all_tasks_msg_body()
+        for gpu in self.gpu_obj_dict.values():
+            gpu.get_all_tasks_msg_body()
             launch_msg_text.append(
                 "\n"
-                + process.gpu.gpu_tasks_num_msg_header
-                + process.gpu.all_tasks_msg_body
-                + process.gpu.gpu_status_msg
+                + gpu.gpu_tasks_num_msg_header
+                + gpu.all_tasks_msg_body
+                + gpu.gpu_status_msg
             )
 
-            cur_gpu_idx += 1
-
-        if send_start_info:
+        if len(launch_msg_text) > 0:
             handle_normal_text("GPU监控启动" + "".join(launch_msg_text))
 
 

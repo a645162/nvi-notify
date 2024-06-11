@@ -11,7 +11,7 @@ from config.settings import (
 )
 from feature.monitor.hard_disk.hard_disk import HardDisk
 from feature.monitor.monitor import Monitor
-from feature.notify.send_task_msg import send_hard_disk_size_warning_msg
+from feature.notify.send_msg import send_hard_disk_size_warning_msg
 from utils.logs import get_logger
 from utils.utils import do_command
 

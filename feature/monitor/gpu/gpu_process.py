@@ -14,10 +14,7 @@ from feature.group_center import group_center_message
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import TaskEvent, TaskState
-from feature.notify.send_task_msg import (
-    handle_normal_text,
-    log_task_info,
-)
+from feature.notify.send_msg import handle_normal_text, log_task_info
 from feature.sql.sqlite import get_sql
 from utils.logs import get_logger
 from utils.utils import do_command

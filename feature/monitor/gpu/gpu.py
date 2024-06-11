@@ -9,7 +9,7 @@ from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import TaskState
 from feature.monitor.utils import Converter
-from feature.notify.send_task_msg import send_process_except_warning_msg
+from feature.notify.send_msg import send_process_except_warning_msg
 from feature.sql.sqlite import get_sql
 from global_variable.global_gpu import (
     global_gpu_info,

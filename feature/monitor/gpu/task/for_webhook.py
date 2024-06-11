@@ -8,7 +8,7 @@ from feature.monitor.monitor_enum import TaskEvent
 
 class TaskInfoForWebHook:
     def __init__(self, info: dict, task_event: TaskEvent) -> None:
-        self._task_event: str = str(task_event)
+        self._task_event: TaskEvent = task_event
         self._pid: int = info.get("pid", 0)
         self._gpu_id: int = info.get("gpu_id", 0)
         self._gpu_name: str = f"[GPU:{self._gpu_id}]" if NUM_GPU > 1 else "GPU"
@@ -39,9 +39,9 @@ class TaskInfoForWebHook:
 
     @property
     def num_task(self) -> int:
-        if self._task_event == TaskEvent.CREATE:
+        if self.task_event == TaskEvent.CREATE:
             return self._num_task
-        elif self._task_event == TaskEvent.FINISH:
+        elif self.task_event == TaskEvent.FINISH:
             return max(0, self._num_task - 1)
 
         return self._num_task

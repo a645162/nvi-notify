@@ -437,17 +437,19 @@ class GPUProcessInfo:
         #     return
 
         msg = handle_normal_text(
-            msg=self.gpu.name_for_msg_header
+            self.gpu.name_for_msg_header
             + "\n"
             + task.task_msg_body
             + self.gpu.gpu_status_msg
             + "\n"
             + self.gpu.gpu_tasks_num_msg_header
             + self.gpu.all_tasks_msg_body,
-            user=task.user if task_event == TaskEvent.FINISH else None,
         )
         Webhook.enqueue_msg_to_webhook(
-            msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
+            msg,
+            MsgType.NORMAL,
+            task.user if task_event == TaskEvent.FINISH else None,
+            enable_webhook_name=AllWebhookName.ALL,
         )
 
     @staticmethod

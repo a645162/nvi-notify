@@ -32,8 +32,7 @@ def do_command(cmd: str, text: bool = True) -> Tuple[int, str, str]:
         return_code = e.returncode
         output_stderr = e.output
     except Exception as e:
-        # 处理其他可能发生的异常
-        return_code = 1
+        return_code = -1
         output_stderr = str(e)
 
     return return_code, output_stdout, output_stderr

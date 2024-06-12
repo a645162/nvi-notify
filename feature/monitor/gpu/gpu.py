@@ -23,9 +23,9 @@ sql = get_sql()
 
 
 class GPU:
-    def __init__(self, gpu_id: int, is_multi_gpu_mechine: bool):
+    def __init__(self, gpu_id: int, multi_gpu_machine_flag: bool):
         self.gpu_id = gpu_id
-        self.is_multi_gpu_mechine = is_multi_gpu_mechine
+        self.is_multi_gpu_machine = multi_gpu_machine_flag
 
         self.processes: dict = {}
         self.nvidia_i: Device = Device(self.gpu_id)
@@ -121,14 +121,14 @@ class GPU:
 
     @property
     def name_for_msg(self) -> str:
-        if self.is_multi_gpu_mechine:
+        if self.is_multi_gpu_machine:
             return f"[GPU:{self.gpu_id}]"
         else:
             return "GPU"
 
     @property
     def name_for_msg_header(self) -> str:
-        if self.is_multi_gpu_mechine:
+        if self.is_multi_gpu_machine:
             return f"[GPU:{self.gpu_id}]"
         else:
             return ""

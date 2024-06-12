@@ -12,7 +12,9 @@ from feature.group_center import group_center_message
 from feature.monitor.gpu.gpu import GPU
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.monitor import Monitor
+from feature.monitor.monitor_enum import AllWebhookName, MsgType
 from feature.notify.send_msg import handle_normal_text
+from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from global_variable.global_gpu import (
     global_gpu_info,
@@ -27,44 +29,46 @@ sql = get_sql()
 
 class NvidiaMonitor(Monitor):
     def __init__(self, num_gpu: int):
+        super().__init__("GPU")
         self.num_gpu = num_gpu
-        self.is_multi_gpu_mechine: bool = num_gpu > 1
+        self.is_multi_gpu_machine: bool = num_gpu > 1
+        self.monitor_launch_flag = True
+        self.total_num_task = 0
 
         self.gpu_obj_dict: dict[int, GPU] = self.get_gpu_obj()
         self.all_processes: dict[int, GPUProcessInfo] = {}
 
-        self.monitor_name = "GPU"
-        self._init_thread_()
-
     def get_gpu_obj(self) -> dict[int, GPU]:
         gpu_dict = {}
         for idx in range(NUM_GPU):
-            gpu_dict[idx] = GPU(idx, self.is_multi_gpu_mechine)
+            gpu_dict[idx] = GPU(idx, self.is_multi_gpu_machine)
 
         return gpu_dict
 
     def gpu_monitor_thread(self):
-        self.monitor_launch_flag = True
         while self.monitor_thread_work:
             self.total_num_task = 0
             for idx, gpu in self.gpu_obj_dict.items():
                 gpu.update()
                 self.total_num_task += gpu.num_task
+                self.all_processes.update(gpu.processes)
 
-                # Get gpu staus info for webhook msg
+                # Get gpu status info for webhook msg
                 if sys.gettrace() or not self.monitor_launch_flag:
                     continue
 
                 # Send to Group Center
                 group_center_message.gpu_monitor_start(idx)
                 sql.check_finish_task(gpu.processes, idx)
-                self.all_processes.update(gpu.processes)  # only for start msg
 
-            if self.should_send_monitor_launch_msg():
+            self.all_processes.clear()
+
+            if self.should_send_monitor_launch_msg:
                 self.send_gpu_monitor_launch_msg()
 
             time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
 
+    @property
     def should_send_monitor_launch_msg(self):
         if not self.monitor_launch_flag:
             return False
@@ -85,7 +89,10 @@ class NvidiaMonitor(Monitor):
             )
 
         if len(launch_msg_text) > 0:
-            handle_normal_text("GPU监控启动" + "".join(launch_msg_text))
+            msg = handle_normal_text("GPU监控启动" + "".join(launch_msg_text))
+            Webhook.enqueue_msg_to_webhook(
+                msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
+            )
 
 
 def init_global_gpu_var():

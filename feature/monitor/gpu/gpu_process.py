@@ -13,8 +13,9 @@ from config.user.user_info import UserInfo
 from feature.group_center import group_center_message
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
-from feature.monitor.monitor_enum import TaskEvent, TaskState
+from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent, TaskState
 from feature.notify.send_msg import handle_normal_text, log_task_info
+from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from utils.logs import get_logger
 from utils.utils import do_command
@@ -216,21 +217,11 @@ class GPUProcessInfo:
     def get_user(self):
         self.user = USERS.get(self.gpu_process.username(), None)
 
-        def find_user_by_path(users: dict, path: str):
-            for path_unit in reversed(path.split("data")[1].split("/")):
-                if len(path_unit) == 0:
-                    continue
-                for user in users.values():
-                    if any(
-                        path_unit.lower() == keyword.lower().strip()
-                        for keyword in user.keywords
-                    ):
-                        return user
-            raise RuntimeWarning("未获取到任务用户名")
+        if self.user is not None:
+            return
 
-        if self.user is None:
-            cwd = self.cwd + "/" if self.cwd is not None else ""
-            self.user = find_user_by_path(USERS, cwd)
+        cwd = self.cwd + "/" if self.cwd is not None else ""
+        self.user = UserInfo.find_user_by_path(USERS, cwd, is_project_path=True)
 
     def get_env_value(self, key: str, default_value: str):
         if self.process_environ is None:
@@ -389,7 +380,7 @@ class GPUProcessInfo:
         if self._state == new_state:
             return
 
-        if not TaskState.is_valid_transition(self._state, new_state):
+        if not TaskState.check_valid_transition(self._state, new_state):
             raise ValueError(
                 f"Invalid state transition from {self._state} to {new_state}"
             )
@@ -416,7 +407,6 @@ class GPUProcessInfo:
         log_task_info(self.__dict__, TaskEvent.CREATE)
 
     def _transition_newborn_to_working(self):
-        log_task_info(self.__dict__, TaskEvent.CREATE)
         sql.update_task_data(TaskInfoForSQL(self.__dict__, TaskState.WORKING))
 
         group_center_message.gpu_task_message(self, TaskEvent.CREATE)
@@ -446,7 +436,7 @@ class GPUProcessInfo:
         # if multi_gpu_msg == "-1":  # 非第一个使用的GPU不发送消息
         #     return
 
-        handle_normal_text(
+        msg = handle_normal_text(
             msg=self.gpu.name_for_msg_header
             + "\n"
             + task.task_msg_body
@@ -455,6 +445,9 @@ class GPUProcessInfo:
             + self.gpu.gpu_tasks_num_msg_header
             + self.gpu.all_tasks_msg_body,
             user=task.user if task_event == TaskEvent.FINISH else None,
+        )
+        Webhook.enqueue_msg_to_webhook(
+            msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
         )
 
     @staticmethod

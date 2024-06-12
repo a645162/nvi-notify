@@ -19,10 +19,9 @@ logger = get_logger()
 
 class CPUMonitor(Monitor):
     def __init__(self, num_cpu: int):
+        super().__init__("CPU")
         self.num_cpu: int = num_cpu
         self.cpu_dict: dict[int, CPU] = self.get_cpu_obj()
-        self.monitor_name = "CPU"
-        self._init_thread_()
 
     def get_cpu_obj(self) -> dict[int, CPU]:
         cpu_dict: dict[int, CPU] = {}
@@ -62,9 +61,10 @@ class CPUMonitor(Monitor):
             if name != "coretemp":
                 continue
             for entry in entries:
-                if "Package" in entry.label or "Package" in name:
-                    cpu_temperature_info.update({idx: entry.current})
-                    idx += 1
+                if not ("Package" in entry.label or "Package" in name):
+                    continue
+                cpu_temperature_info.update({idx: entry.current})
+                idx += 1
 
         return cpu_temperature_info
 

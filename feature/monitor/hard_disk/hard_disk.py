@@ -23,24 +23,25 @@ class DiskType(MonitorEnum):
 
 class HardDisk:
     def __init__(self, mount_point: str) -> None:
-        self._low_free_bytes_trigger: bool = False
-        self._high_percentage_used_trigger: bool = False
-
         self._name: str = ""
+        self._mount_point: str = ""
+        self._high_percentage_used_threshold: int = 0
+        self._low_free_bytes_threshold: int = 0
+        self._high_percentage_used_trigger: bool = False
+        self._low_free_bytes_trigger: bool = False
+        self._purpose: DiskPurpose = None
+        self._purpose_cn: DiskPurpose = None
+
+        self.mount_point = mount_point
         self._total: str = ""
         self._used: str = ""
         self._free_str: str = ""
-        self._percentage_used_str: str = ""
-        self._mount_point: str = ""
-        self._free_bytes: int = 24_189_255_811_072  # max free bytes(22TiB) 
+        self._free_bytes: int = humanfriendly.parse_size(
+            "22TB", binary=True
+        )  # init max free bytes (22TiB)
         self._percentage_used_int: int = 0
+        self._percentage_used_str: str = ""
         self._type: DiskType = None
-        self._purpose: DiskPurpose = None
-        self._purpose_cn: DiskPurpose = None
-        self._high_percentage_used_threshold: int = 0
-        self._low_free_bytes_threshold: int = 0
-
-        self.mount_point = mount_point
 
     def update_info(self, info: list):
         self.name = info[0]
@@ -61,22 +62,6 @@ class HardDisk:
         else:
             self.type = DiskType.HDD
         self._name = value
-
-    @property
-    def total(self) -> str:
-        return self._total
-
-    @total.setter
-    def total(self, value: str) -> None:
-        self._total = value
-
-    @property
-    def used(self) -> str:
-        return self._used
-
-    @used.setter
-    def used(self, value: str) -> None:
-        self._used = value
 
     @property
     def free_str(self) -> str:
@@ -129,7 +114,7 @@ class HardDisk:
             self.purpose_cn = DiskPurpose.SYSTEM_CN
             self.high_percentage_used_threshold = 85
             self.low_free_bytes_threshold = humanfriendly.parse_size(
-                f"{50}GB", binary=True
+                "50GB", binary=True
             )
         else:
             self.purpose = DiskPurpose.DATA
@@ -205,6 +190,7 @@ class HardDisk:
         elif self.purpose == DiskPurpose.DATA:
             return self.low_free_bytes_trigger and self.high_percentage_used_trigger
 
+    @property
     def disk_info(self) -> str:
         return (
             f"{self.purpose_cn}(挂载点为{self.mount_point})"

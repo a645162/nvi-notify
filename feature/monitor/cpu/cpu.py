@@ -8,10 +8,10 @@ class CPUInfo:
     @staticmethod
     def get_cpu_num() -> int:
         command = "cat /proc/cpuinfo | grep 'physical id' | sort -u | wc -l"
-        result = do_command(command)
+        result_code, result, result_err = do_command(command)
 
-        if result[0] == 0:
-            return int(result[1].strip())
+        if result_code == 0:
+            return int(result.strip())
         else:
             return 0
 

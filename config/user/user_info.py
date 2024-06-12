@@ -17,22 +17,41 @@ class UserInfo:
         )
 
     @staticmethod
+    def find_user_by_path(users: dict, path: str, is_project_path:bool = False):
+        if is_project_path:
+            path = path.split("data")[1]
+        for path_unit in reversed(path.split("/")):
+            if path_unit == "":
+                continue
+            for user in users.values():
+                if any(
+                    path_unit.lower() == keyword.lower().strip()
+                    for keyword in user.keywords
+                ):
+                    return user
+        if is_project_path:
+            raise RuntimeWarning("未获取到任务用户名")
+        return None
+
+    @staticmethod
     def get_webhook_info(
         webhook_dict: dict, webhook_type: str = "weCom"
     ) -> dict[str, list]:
-        if webhook_type in webhook_dict.keys():
-            mention_id = webhook_dict[webhook_type].get("userId", [""])
-            mention_mobile = webhook_dict[webhook_type].get("userMobilePhone", [""])
-            if not isinstance(mention_id, list):
-                mention_id = [mention_id]
-            if not isinstance(mention_mobile, list):
-                mention_mobile = [mention_mobile]
-            return {
-                "mention_id": mention_id,
-                "mention_mobile": mention_mobile,
-            }
-        else:
+        if webhook_type not in webhook_dict.keys():
             return {
                 "mention_id": [""],
                 "mention_mobile": [""],
             }
+
+        mention_id = webhook_dict[webhook_type].get("userId", [""])
+        mention_mobile = webhook_dict[webhook_type].get("userMobilePhone", [""])
+
+        if not isinstance(mention_id, list):
+            mention_id = [mention_id]
+        if not isinstance(mention_mobile, list):
+            mention_mobile = [mention_mobile]
+
+        return {
+            "mention_id": mention_id,
+            "mention_mobile": mention_mobile,
+        }

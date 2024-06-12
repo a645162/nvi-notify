@@ -9,7 +9,8 @@ logger = get_logger()
 
 
 class Monitor:
-    def _init_thread_(self):
+    def __init__(self, monitor_name: str):
+        self.monitor_name = monitor_name
         self.thread = None
         self.monitor_thread_work = False
 

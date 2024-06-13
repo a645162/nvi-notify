@@ -102,13 +102,14 @@ class GPU:
             while keyword_upper in current_str_upper:
                 index = current_str_upper.index(keyword_upper)
                 # 计算关键词在原始字符串中的起始位置
-                index_original = current_str_upper[:index].count(" ") - current_str[
-                    :index
-                ].count(" ")
+                index_original = (
+                        current_str_upper[:index].count(" ")
+                        - current_str[:index].count(" ")
+                )
                 # 删除原始字符串中的关键词
                 current_str = (
-                    current_str[:index_original]
-                    + current_str[index_original + len(keyword) + 1 :]
+                        current_str[:index_original]
+                        + current_str[index_original + len(keyword) + 1:]
                 )
                 current_str_upper = current_str.upper()
         return current_str.strip()

@@ -10,6 +10,11 @@ from config.settings import (
     NUM_GPU,
     WEBHOOK_SEND_LAUNCH_MESSAGE,
 )
+from feature.global_variable.gpu import (
+    global_gpu_info,
+    global_gpu_task,
+    global_gpu_usage,
+)
 from feature.group_center import group_center_message
 from feature.monitor.gpu.gpu import GPU
 from feature.monitor.monitor import Monitor
@@ -17,11 +22,6 @@ from feature.monitor.monitor_enum import AllWebhookName, MsgType
 from feature.notify.send_msg import handle_normal_text
 from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
-from feature.global_variable.gpu import (
-    global_gpu_info,
-    global_gpu_task,
-    global_gpu_usage,
-)
 from feature.utils.logs import get_logger
 
 logger = get_logger()

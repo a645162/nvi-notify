@@ -95,11 +95,11 @@ class Webhook:
         )
 
     def send_message(
-        self,
-        msg: str,
-        msg_type: str = MsgType.NORMAL,
-        user: UserInfo = None,
-        mention_everyone: bool = False,
+            self,
+            msg: str,
+            msg_type: str = MsgType.NORMAL,
+            user: UserInfo = None,
+            mention_everyone: bool = False,
     ):
         raise NotImplementedError(f"{self.webhook_name} should implement this method.")
 
@@ -147,13 +147,13 @@ class Webhook:
 
     @staticmethod
     def enqueue_msg_to_webhook(
-        msg: str,
-        msg_type: MsgType = MsgType.NORMAL,
-        user: UserInfo = None,
-        mention_everyone: bool = False,
-        enable_webhook_name: Union[
-            list[AllWebhookName], AllWebhookName
-        ] = AllWebhookName.ALL,
+            msg: str,
+            msg_type: MsgType = MsgType.NORMAL,
+            user: UserInfo = None,
+            mention_everyone: bool = False,
+            enable_webhook_name: Union[
+                list[AllWebhookName], AllWebhookName
+            ] = AllWebhookName.ALL,
     ):
         assert isinstance(msg_type, MsgType), logger.error(
             "msg_type must be in MsgType"
@@ -185,7 +185,7 @@ class Webhook:
 
     @staticmethod
     def enqueue_warning_msg_for_user_to_webhook(
-        msg: str, user: UserInfo, mention_everyone: bool = False
+            msg: str, user: UserInfo, mention_everyone: bool = False
     ):
         msg = msg.strip()
         if len(msg) == 0:
@@ -240,11 +240,11 @@ class LarkWebhook(Webhook):
             self._lark_app_secret = value.strip()
 
     def send_message(
-        self,
-        msg: str,
-        msg_type: str = MsgType.NORMAL,
-        user: UserInfo = None,
-        mention_everyone: bool = False,
+            self,
+            msg: str,
+            msg_type: MsgType = MsgType.NORMAL,
+            user: UserInfo = None,
+            mention_everyone: bool = False,
     ):
         # send msg to user by lark app
         self.send_lark_message_by_app(msg, msg_type, user)
@@ -262,12 +262,12 @@ class LarkWebhook(Webhook):
         self.send_lark_message(msg, webhook_url, webhook_secret, user, mention_everyone)
 
     def send_lark_message(
-        self,
-        msg: str,
-        webhook_url: str,
-        webhook_secret: str,
-        user: UserInfo = None,
-        mention_everyone: bool = False,
+            self,
+            msg: str,
+            webhook_url: str,
+            webhook_secret: str,
+            user: UserInfo = None,
+            mention_everyone: bool = False,
     ):
         headers = {"Content-Type": "application/json"}
         msg = msg.replace("/::D", "[呲牙]")
@@ -308,15 +308,15 @@ class LarkWebhook(Webhook):
         return mention_header
 
     def send_lark_message_by_app(
-        self, msg: str, msg_type: MsgType, user: UserInfo = None
+            self, msg: str, msg_type: MsgType, user: UserInfo = None
     ):
         tenant_access_token = self.get_lark_app_tenant_access_token()
         if (
-            len(self.lark_app_id) == 0
-            or len(self.lark_app_secret) == 0
-            or len(tenant_access_token) == 0
-            or user is None
-            or msg_type == MsgType.WARNING
+                len(self.lark_app_id) == 0
+                or len(self.lark_app_secret) == 0
+                or len(tenant_access_token) == 0
+                or user is None
+                or msg_type == MsgType.WARNING
         ):
             return
 
@@ -368,11 +368,11 @@ class WeworkWebhook(Webhook):
         super().__init__(webhook_name, webhook_url_header)
 
     def send_message(
-        self,
-        msg: str,
-        msg_type: str = MsgType.NORMAL,
-        user: UserInfo = None,
-        mention_everyone: bool = False,
+            self,
+            msg: str,
+            msg_type: str = MsgType.NORMAL,
+            user: UserInfo = None,
+            mention_everyone: bool = False,
     ):
         keyword = "main" if msg_type == MsgType.NORMAL else "warning"
         webhook_url = getattr(self, f"webhook_url_{keyword}")

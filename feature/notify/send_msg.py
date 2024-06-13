@@ -81,7 +81,7 @@ def send_hard_disk_size_warning_msg(disk_info: str):
 
 
 def send_hard_disk_size_warning_msg_to_user(
-    disk_info: str, dir_path, dir_size_info: str, user: UserInfo
+        disk_info: str, dir_path, dir_size_info: str, user: UserInfo
 ):
     """
     向用户发送硬盘高占用警告消息函数

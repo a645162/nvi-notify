@@ -154,8 +154,8 @@ class SQLite:
 
         for unfinished_task_data in unfinished_task_datas:
             if (
-                unfinished_task_data[1] not in running_task_pids
-                and unfinished_task_data[6] == 0
+                    unfinished_task_data[1] not in running_task_pids
+                    and unfinished_task_data[6] == 0
             ):
                 update_sql_text = (
                     "UPDATE {} "
@@ -194,7 +194,6 @@ except Exception as e:
     print("Cannot write to SQLite directory.")
     print(e)
     exit(1)
-
 
 task_sql = SQLite(os.path.join(task_sql_dir, f"{SERVER_NAME}_task_info.db"))
 

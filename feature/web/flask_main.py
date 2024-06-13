@@ -6,7 +6,6 @@ from html import escape
 
 import requests
 from flask import Flask, Response, redirect, render_template, request
-# from flask_cors import CORS
 
 from config.settings import (
     FLASK_SERVER_HOST,
@@ -21,6 +20,8 @@ from feature.global_variable.gpu import (
 )
 from feature.global_variable.system import global_system_info
 from feature.utils.logs import get_logger
+
+# from flask_cors import CORS
 
 logger = get_logger()
 logger.info("Flask server is starting...")

@@ -12,7 +12,6 @@ from feature.web.flask_main import start_web_server_both
 
 logger = get_logger()
 
-
 if __name__ == "__main__":
     logger.info("Main program is starting...")
 

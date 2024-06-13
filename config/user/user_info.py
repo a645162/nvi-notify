@@ -17,7 +17,7 @@ class UserInfo:
         )
 
     @staticmethod
-    def find_user_by_path(users: dict, path: str, is_project_path:bool = False):
+    def find_user_by_path(users: dict, path: str, is_project_path: bool = False):
         if is_project_path:
             path = path.split("data")[1]
         for path_unit in reversed(path.split("/")):
@@ -25,8 +25,8 @@ class UserInfo:
                 continue
             for user in users.values():
                 if any(
-                    path_unit.lower() == keyword.lower().strip()
-                    for keyword in user.keywords
+                        path_unit.lower() == keyword.lower().strip()
+                        for keyword in user.keywords
                 ):
                     return user
         if is_project_path:
@@ -35,7 +35,7 @@ class UserInfo:
 
     @staticmethod
     def get_webhook_info(
-        webhook_dict: dict, webhook_type: str = "weCom"
+            webhook_dict: dict, webhook_type: str = "weCom"
     ) -> dict[str, list]:
         if webhook_type not in webhook_dict.keys():
             return {

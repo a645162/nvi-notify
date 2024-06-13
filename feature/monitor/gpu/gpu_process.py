@@ -159,7 +159,7 @@ class GPUProcessInfo:
     def get_task_main_memory_mb(self):
         try:
             self.task_main_memory_mb = (
-                self.gpu_process.memory_info().rss // 1024 // 1024
+                    self.gpu_process.memory_info().rss // 1024 // 1024
             )
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -170,8 +170,8 @@ class GPUProcessInfo:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-            self.task_gpu_memory_max is None
-            or self.task_gpu_memory_max < task_gpu_memory
+                self.task_gpu_memory_max is None
+                or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = self.task_gpu_memory_human
@@ -256,14 +256,20 @@ class GPUProcessInfo:
 
     def get_conda_python_version(self, conda_env: str) -> str:
         command = f"conda run -n {conda_env} python --version"
-        self.python_version = self.get_python_version_by_command(command)
+        python_version = self.get_python_version_by_command(command)
+
+        self.python_version = python_version
+        return python_version
 
     def get_python_version_by_path(self, binary_path: str) -> str:
         if "python" not in binary_path:
             self.python_version = ""
 
         command = f"'{binary_path}' --version"
-        self.python_version = self.get_python_version_by_command(command)
+        python_version = self.get_python_version_by_command(command)
+
+        self.python_version = python_version
+        return python_version
 
     def get_world_size(self):
         # 多卡任务的进程数
@@ -328,9 +334,8 @@ class GPUProcessInfo:
         if dot_index != -1:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
-                self.screen_session_name = self.screen_session_name[
-                    dot_index + 1 :
-                ].strip()
+                self.screen_session_name = \
+                    self.screen_session_name[dot_index + 1:].strip()
 
     def get_project_name(self):
         if self.cwd is not None:
@@ -359,9 +364,9 @@ class GPUProcessInfo:
     def running_time_in_seconds(self, new_running_time_in_seconds):
         # 上次不满足，但是这次满足
         if (
-            new_running_time_in_seconds
-            > WEBHOOK_DELAY_SEND_SECONDS
-            > self._running_time_in_seconds
+                new_running_time_in_seconds
+                > WEBHOOK_DELAY_SEND_SECONDS
+                > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 

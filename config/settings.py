@@ -7,6 +7,7 @@ import socket
 import sys
 
 import psutil
+from nvitop import Device
 from dotenv import dotenv_values, load_dotenv
 from packaging import version
 
@@ -238,7 +239,7 @@ IPv4 = get_ip("v4")
 IPv6 = get_ip("v6")
 
 # GPU
-NUM_GPU = 0
+NUM_GPU = Device.count()
 
 # Server Info
 SERVER_NAME = get_env_str("SERVER_NAME", "None")

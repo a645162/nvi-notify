@@ -3,8 +3,6 @@
 import sys
 import time
 
-from nvitop import Device
-
 from config.settings import (
     GPU_MONITOR_SAMPLING_INTERVAL,
     NUM_GPU,
@@ -100,9 +98,6 @@ class NvidiaMonitor(Monitor):
 
 
 def init_global_gpu_var():
-    global NUM_GPU
-    NUM_GPU = Device.count()
-
     default_gpu_info_dict = {
         "gpuName": "NVIDIA GeForce RTX",
         "gpuTDP": "0W",

@@ -9,7 +9,6 @@ class MonitorEnum(Enum):
     def check_value_valid(cls, value) -> bool:
         return value in cls._value2member_map_
 
-
 class TaskState(MonitorEnum):
     NEWBORN = "newborn"
     WORKING = "working"

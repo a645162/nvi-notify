@@ -6,13 +6,13 @@ from datetime import datetime
 from typing import Optional
 
 import psutil
-from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
-from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from nvitop import GpuProcess
 
 from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
 from config.user.user_info import UserInfo
 from feature.group_center import group_center_message
+from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
+from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent, TaskState
 from feature.notify.send_msg import handle_normal_text, log_task_info
 from feature.notify.webhook import Webhook
@@ -158,7 +158,7 @@ class GPUProcessInfo:
     def get_task_main_memory_mb(self):
         try:
             self.task_main_memory_mb = (
-                    self.gpu_process.memory_info().rss // 1024 // 1024
+                self.gpu_process.memory_info().rss // 1024 // 1024
             )
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -169,8 +169,8 @@ class GPUProcessInfo:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-                self.task_gpu_memory_max is None
-                or self.task_gpu_memory_max < task_gpu_memory
+            self.task_gpu_memory_max is None
+            or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = self.task_gpu_memory_human
@@ -328,8 +328,8 @@ class GPUProcessInfo:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
                 self.screen_session_name = self.screen_session_name[
-                                           dot_index + 1:
-                                           ].strip()
+                    dot_index + 1 :
+                ].strip()
 
     def get_project_name(self):
         if self.cwd is not None:
@@ -358,9 +358,9 @@ class GPUProcessInfo:
     def running_time_in_seconds(self, new_running_time_in_seconds):
         # 上次不满足，但是这次满足
         if (
-                new_running_time_in_seconds
-                > WEBHOOK_DELAY_SEND_SECONDS
-                > self._running_time_in_seconds
+            new_running_time_in_seconds
+            > WEBHOOK_DELAY_SEND_SECONDS
+            > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 

@@ -51,7 +51,7 @@ class CPU:
     @temperature.setter
     def temperature(self, new_temperature: float) -> None:
         self.high_temperature_trigger = (
-                new_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD > self._temperature
+            new_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD > self._temperature
         )
 
         self._temperature = new_temperature

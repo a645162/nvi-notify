@@ -94,7 +94,7 @@ class Webhook:
             return self.webhook_header + webhook_api
 
     def send_message(
-            self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
+        self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
     ):
         raise NotImplementedError("Subclasses should implement this method.")
 
@@ -142,12 +142,12 @@ class Webhook:
 
     @staticmethod
     def enqueue_msg_to_webhook(
-            msg: str,
-            msg_type: MsgType = MsgType.NORMAL,
-            user: UserInfo = None,
-            enable_webhook_name: Union[
-                list[AllWebhookName], AllWebhookName
-            ] = AllWebhookName.ALL,
+        msg: str,
+        msg_type: MsgType = MsgType.NORMAL,
+        user: UserInfo = None,
+        enable_webhook_name: Union[
+            list[AllWebhookName], AllWebhookName
+        ] = AllWebhookName.ALL,
     ):
         assert isinstance(msg_type, MsgType), logger.error(
             "msg_type must be in MsgType"
@@ -221,7 +221,7 @@ class LarkWebhook(Webhook):
             self._lark_app_secret = value.strip()
 
     def send_message(
-            self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
+        self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
     ):
         # only send dir size warning msg to user
         if msg_type == MsgType.DISK_WARNING_TO_USER:
@@ -246,7 +246,7 @@ class LarkWebhook(Webhook):
         self.send_lark_message_by_app(msg, user)
 
     def send_lark_message(
-            self, msg: str, webhook_url: str, webhook_secret: str, user: UserInfo = None
+        self, msg: str, webhook_url: str, webhook_secret: str, user: UserInfo = None
     ):
         headers = {"Content-Type": "application/json"}
         msg = msg.replace("/::D", "[呲牙]")
@@ -339,7 +339,7 @@ class WeworkWebhook(Webhook):
         super().__init__(webhook_name, webhook_header)
 
     def send_message(
-            self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
+        self, msg: str, msg_type: str = MsgType.NORMAL, user: UserInfo = None
     ):
         webhook_url = (
             self.webhook_url_main

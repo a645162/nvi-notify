@@ -6,8 +6,9 @@ from html import escape
 from typing import List
 
 import requests
-from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from flask import Flask, Response, redirect, render_template, request
+# from flask_cors import CORS
+
 
 from config.settings import (
     FLASK_SERVER_HOST,
@@ -15,6 +16,7 @@ from config.settings import (
     GPU_BOARD_WEB_URL,
     SERVER_NAME,
 )
+from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from global_variable.global_gpu import (
     global_gpu_info,
     global_gpu_task,
@@ -23,13 +25,11 @@ from global_variable.global_gpu import (
 from global_variable.global_system import global_system_info
 from utils.logs import get_logger
 
-# from flask_cors import CORS
-
 logger = get_logger()
+
 
 logger.info("Flask server is starting...")
 app = Flask(__name__)
-
 
 # 允许所有域进行跨源请求
 # CORS(app)

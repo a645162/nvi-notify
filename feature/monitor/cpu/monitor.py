@@ -3,9 +3,9 @@
 import time
 
 import psutil
-from feature.monitor.cpu.cpu import CPU, CPUInfo
 
 from config.settings import TEMPERATURE_MONITOR_SAMPLING_INTERVAL
+from feature.monitor.cpu.cpu import CPU, CPUInfo
 from feature.monitor.memory.memory import MemoryInfo
 from feature.monitor.monitor import Monitor
 from feature.notify.send_msg import (

@@ -33,9 +33,9 @@ def get_json_str(target_api: str) -> str:
 
             json_dict = json.loads(text)
             if (
-                    isinstance(json_dict, dict)
-                    and "isAuthenticated" in json_dict.keys()
-                    and not json_dict["isAuthenticated"]
+                isinstance(json_dict, dict)
+                and "isAuthenticated" in json_dict.keys()
+                and not json_dict["isAuthenticated"]
             ):
                 logger.error("[Group Center]Not authorized")
                 group_center_login()

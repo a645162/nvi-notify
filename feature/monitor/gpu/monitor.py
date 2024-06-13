@@ -110,9 +110,10 @@ def init_global_gpu_var():
         "gpuPowerUsage": "0",
         "gpuTemperature": "0",
     }
-    global_gpu_info.extend([default_gpu_info_dict for _ in range(NUM_GPU)])
-    global_gpu_usage.extend([default_gpu_usage_dict for _ in range(NUM_GPU)])
-    global_gpu_task.extend([[] for _ in range(NUM_GPU)])
+
+    global_gpu_info.extend(default_gpu_info_dict for _ in range(NUM_GPU))
+    global_gpu_usage.extend(default_gpu_usage_dict for _ in range(NUM_GPU))
+    global_gpu_task.extend([] for _ in range(NUM_GPU))
 
 
 def start_gpu_monitor_all():

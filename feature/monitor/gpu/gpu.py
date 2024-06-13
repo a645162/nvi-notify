@@ -243,8 +243,8 @@ class GPU:
 
     def update_global_gpu_task(self):
         # 在监视线程中就进行处理，哪怕这里阻塞了，也就是相当于多加一点延时
-        current_gpu_list = list(self.processes.values()).copy()
-        current_gpu_list.sort(key=lambda x: x.pid)
+        current_gpu_tasks_list = list(self.processes.values()).copy()
+        current_gpu_tasks_list.sort(key=lambda x: x.pid)
 
         global_gpu_task[self.gpu_id].clear()
-        global_gpu_task[self.gpu_id].extend(current_gpu_list)
+        global_gpu_task[self.gpu_id].extend(current_gpu_tasks_list)

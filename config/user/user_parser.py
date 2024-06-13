@@ -35,7 +35,7 @@ class UserConfigParser:
         return user_info_obj_dict
 
     def get_user_info_by_yaml_from_directory(
-        self, directory: str = ""
+            self, directory: str = ""
     ) -> dict[str, UserInfo]:
         yaml_files_path_list = self.get_user_config_files_path(directory, "yaml")
         dict_list = []
@@ -71,7 +71,7 @@ class UserConfigParser:
 
     @staticmethod
     def get_user_config_files_path(
-        directory: str = "", extension: str = "yaml"
+            directory: str = "", extension: str = "yaml"
     ) -> list:
         if len(directory) == 0:
             directory = os.path.dirname(os.path.abspath(__file__))

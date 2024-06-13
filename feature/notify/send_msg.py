@@ -3,9 +3,10 @@
 import os
 from pathlib import Path
 
+from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
+
 from config.settings import SERVER_DOMAIN, SERVER_NAME, IPv4, IPv6, now_time_str
 from config.user.user_info import UserInfo
-from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent
 from feature.notify.webhook import Webhook
 from utils.logs import get_logger
@@ -119,7 +120,7 @@ def send_hard_disk_size_warning_msg(disk_info: str):
 
 
 def send_hard_disk_size_warning_msg_to_user(
-    disk_info: str, dir_path, dir_size_info: str, user: UserInfo
+        disk_info: str, dir_path, dir_size_info: str, user: UserInfo
 ):
     """
     向用户发送硬盘高占用警告消息函数

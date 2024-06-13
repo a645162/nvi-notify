@@ -1,12 +1,12 @@
 import copy
 
+from feature.monitor.gpu.gpu_process import GPUProcessInfo
+from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from nvitop import Device
 from nvitop.api.process import GpuProcess
 from nvitop.api.utils import NaType
 
 from config.settings import WEBHOOK_DELAY_SEND_SECONDS
-from feature.monitor.gpu.gpu_process import GPUProcessInfo
-from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import TaskState
 from feature.monitor.utils import Converter
 from feature.notify.send_msg import send_process_except_warning_msg
@@ -108,12 +108,12 @@ class GPU:
                 index = current_str_upper.index(keyword_upper)
                 # 计算关键词在原始字符串中的起始位置
                 index_original = current_str_upper[:index].count(" ") - current_str[
-                    :index
-                ].count(" ")
+                                                                        :index
+                                                                        ].count(" ")
                 # 删除原始字符串中的关键词
                 current_str = (
-                    current_str[:index_original]
-                    + current_str[index_original + len(keyword) + 1 :]
+                        current_str[:index_original]
+                        + current_str[index_original + len(keyword) + 1:]
                 )
                 current_str_upper = current_str.upper()
 

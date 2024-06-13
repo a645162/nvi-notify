@@ -201,7 +201,7 @@ def now_time_str() -> str:
 
 
 def is_within_time_range(
-    start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
+        start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
 ) -> bool:
     current_time = datetime.datetime.now().time()
 

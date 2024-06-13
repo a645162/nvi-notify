@@ -27,8 +27,8 @@ def send_dict_to_center(data: dict, target: str) -> bool:
         response_dict: dict = json.loads(response.text)
 
         if not (
-            "isAuthenticated" in response_dict.keys()
-            and response_dict["isAuthenticated"]
+                "isAuthenticated" in response_dict.keys()
+                and response_dict["isAuthenticated"]
         ):
             logger.error("[Group Center] Not authorized")
             group_center_login()

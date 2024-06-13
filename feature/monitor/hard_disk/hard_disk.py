@@ -79,8 +79,8 @@ class HardDisk:
     @free_bytes.setter
     def free_bytes(self, cur_free_bytes: float) -> None:
         self.low_free_bytes_trigger = (
-            cur_free_bytes < self.low_free_bytes_threshold
-        ) and (cur_free_bytes < self._free_bytes)
+                                              cur_free_bytes < self.low_free_bytes_threshold
+                                      ) and (cur_free_bytes < self._free_bytes)
         self._free_bytes = cur_free_bytes
 
     @property
@@ -99,7 +99,7 @@ class HardDisk:
     @percentage_used_int.setter
     def percentage_used_int(self, cur_percentage_used: int) -> None:
         self.high_percentage_used_trigger = (
-            cur_percentage_used > self.high_percentage_used_threshold
+                cur_percentage_used > self.high_percentage_used_threshold
         )
         self._percentage_used_int = cur_percentage_used
 

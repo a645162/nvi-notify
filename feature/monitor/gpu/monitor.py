@@ -3,14 +3,15 @@
 import sys
 import time
 
+from feature.monitor.gpu.gpu import GPU
+from feature.monitor.gpu.gpu_process import GPUProcessInfo
+
 from config.settings import (
     GPU_MONITOR_SAMPLING_INTERVAL,
     NUM_GPU,
     WEBHOOK_SEND_LAUNCH_MESSAGE,
 )
 from feature.group_center import group_center_message
-from feature.monitor.gpu.gpu import GPU
-from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.monitor import Monitor
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
 from feature.notify.send_msg import handle_normal_text

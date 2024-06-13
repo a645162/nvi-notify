@@ -26,6 +26,7 @@ logger = get_logger()
 logger.info("Flask server is starting...")
 app = Flask(__name__)
 
+
 # 允许所有域进行跨源请求
 # CORS(app)
 # logger.info("Set CORS for Flask server.")
@@ -79,6 +80,9 @@ def get_gpu_usage():
             status=400,
             mimetype="application/json",
         )
+
+    # all_gpu_info = global_gpu_info
+    # all_gpu_usage = global_gpu_usage
 
     current_gpu_info = global_gpu_info[gpu_index]
     current_gpu_usage = global_gpu_usage[gpu_index]

@@ -19,8 +19,8 @@ from feature.notify.send_msg import (
     send_hard_disk_size_warning_msg,
     send_hard_disk_size_warning_msg_to_user,
 )
-from utils.logs import get_logger
-from utils.utils import do_command
+from feature.utils.logs import get_logger
+from feature.utils.utils import do_command
 
 logger = get_logger()
 

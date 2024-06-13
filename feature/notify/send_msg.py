@@ -1,49 +1,8 @@
 # -*- coding: utf-8 -*-
-
-import os
-from pathlib import Path
-
 from config.settings import SERVER_DOMAIN, SERVER_NAME, IPv4, IPv6, now_time_str
 from config.user.user_info import UserInfo
-from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
-from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent
+from feature.monitor.monitor_enum import AllWebhookName, MsgType
 from feature.notify.webhook import Webhook
-from utils.logs import get_logger
-
-logger = get_logger()
-
-
-def log_task_info(process_info: dict, task_event: TaskEvent):
-    """
-    任务日志函数
-    :param process_info: 进程信息字典
-    :task_event: 任务类型, `create` or `finish`
-    """
-    if task_event is None:
-        raise ValueError("task_event is None")
-
-    logfile_dir_path = Path("./log")
-    if not os.path.exists(logfile_dir_path):
-        os.makedirs(logfile_dir_path)
-
-    task = TaskInfoForWebHook(process_info, task_event)
-
-    with open(logfile_dir_path / "user_task.log", "a") as log_writer:
-        if task_event == TaskEvent.CREATE:
-            output_log = (
-                f"{task.gpu_name}"
-                f" {task.user.name_cn} "
-                f"create new {'debug ' if task.is_debug else ''}"
-                f"task: {task.pid}"
-            )
-        elif task_event == TaskEvent.FINISH:
-            output_log = (
-                f"{task.gpu_name}"
-                f" finish {task.user.name_cn}'s {'debug ' if task.is_debug else ''}"
-                f"task: {task.pid}，用时{task.running_time_human}"
-            )
-        log_writer.write(f"[{now_time_str()}]+{output_log} + \n")
-        logger.info(output_log)
 
 
 def handle_normal_text(msg: str):
@@ -114,7 +73,10 @@ def send_hard_disk_size_warning_msg(disk_info: str):
     msg = handle_normal_text(warning_message)
 
     Webhook.enqueue_msg_to_webhook(
-        msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
+        msg,
+        MsgType.NORMAL,
+        mention_everyone=True,
+        enable_webhook_name=AllWebhookName.ALL,
     )
 
 
@@ -128,7 +90,7 @@ def send_hard_disk_size_warning_msg_to_user(
     warning_message = (
         f"⚠️【硬盘可用空间不足】⚠️\n"
         f"{disk_info}\n"
-        f"用户{user.name_cn}目录[{dir_path}]占用容量为{dir_size_info}\n"
+        f"⚠️用户{user.name_cn}的个人目录[{dir_path}]占用容量为{dir_size_info}。\n"
     )
     msg = handle_normal_text(warning_message)
     if user is None or user.lark_info["mention_id"] == [""]:

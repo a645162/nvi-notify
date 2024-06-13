@@ -5,18 +5,18 @@ from nvitop.api.process import GpuProcess
 from nvitop.api.utils import NaType
 
 from config.settings import WEBHOOK_DELAY_SEND_SECONDS
+from feature.global_variable.gpu import (
+    global_gpu_info,
+    global_gpu_task,
+    global_gpu_usage,
+)
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import TaskState
 from feature.monitor.utils import Converter
 from feature.notify.send_msg import send_process_except_warning_msg
 from feature.sql.sqlite import get_sql
-from global_variable.global_gpu import (
-    global_gpu_info,
-    global_gpu_task,
-    global_gpu_usage,
-)
-from utils.logs import get_logger
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 sql = get_sql()
@@ -31,7 +31,6 @@ class GPU:
         self.nvidia_i: Device = Device(self.gpu_id)
 
         self._num_task: int = 0
-        self._name_short: str = ""
 
         self.get_gpu_info()
 
@@ -94,10 +93,6 @@ class GPU:
 
     @property
     def name_short(self) -> str:
-        return self._name_short
-
-    @name_short.setter
-    def name_short(self, value):
         current_str = self.name
         current_str_upper = self.name.upper()
         keywords = ["NVIDIA", "GeForce", "Quadro"]
@@ -116,8 +111,7 @@ class GPU:
                     + current_str[index_original + len(keyword) + 1 :]
                 )
                 current_str_upper = current_str.upper()
-
-        self._name_short = current_str.strip()
+        return current_str.strip()
 
     @property
     def name_for_msg(self) -> str:

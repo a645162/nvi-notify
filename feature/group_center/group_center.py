@@ -8,8 +8,8 @@ from config.settings import (
     SERVER_NAME,
     SERVER_NAME_SHORT,
 )
-from utils.logs import get_logger
-from utils.utils import get_md5_hash
+from feature.utils.logs import get_logger
+from feature.group_center.utils import get_md5_hash
 
 logger = get_logger()
 

@@ -3,7 +3,7 @@ import threading
 import time
 
 from config.settings import GPU_MONITOR_AUTO_RESTART
-from utils.logs import get_logger
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 

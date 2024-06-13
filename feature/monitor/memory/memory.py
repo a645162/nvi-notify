@@ -1,7 +1,7 @@
 import psutil
 
+from feature.global_variable.system import global_system_info
 from feature.monitor.utils import Converter
-from global_variable.global_system import global_system_info
 
 
 class MemoryInfo:

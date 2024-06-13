@@ -3,12 +3,10 @@
 import json
 import subprocess
 from html import escape
-from typing import List
 
 import requests
 from flask import Flask, Response, redirect, render_template, request
 # from flask_cors import CORS
-
 
 from config.settings import (
     FLASK_SERVER_HOST,
@@ -16,18 +14,15 @@ from config.settings import (
     GPU_BOARD_WEB_URL,
     SERVER_NAME,
 )
-from feature.monitor.gpu.gpu_process import GPUProcessInfo
-from global_variable.global_gpu import (
+from feature.global_variable.gpu import (
     global_gpu_info,
     global_gpu_task,
     global_gpu_usage,
 )
-from global_variable.global_system import global_system_info
-from utils.logs import get_logger
+from feature.global_variable.system import global_system_info
+from feature.utils.logs import get_logger
 
 logger = get_logger()
-
-
 logger.info("Flask server is starting...")
 app = Flask(__name__)
 
@@ -120,8 +115,9 @@ def get_gpu_task():
             status=400,
             mimetype="application/json",
         )
+    from feature.monitor.gpu.gpu_process import GPUProcessInfo
 
-    current_gpu_processes: List[GPUProcessInfo] = global_gpu_task[gpu_index]
+    current_gpu_processes: list[GPUProcessInfo] = global_gpu_task[gpu_index]
 
     task_list = []
 
@@ -166,9 +162,9 @@ def index():
             if response.status_code == 200:
                 return redirect(GPU_BOARD_WEB_URL)
         except requests.exceptions.RequestException:
-            pass
+            logger.info("GPU board URL cannot be accessed.")
     else:
-        logger.info("GPU board URL is not set or cannot be accessed.")
+        logger.info("GPU board URL is not set.")
 
     command_result = run_command("nvitop -U")
     return render_template("index.html", result=command_result, page_title=SERVER_NAME)

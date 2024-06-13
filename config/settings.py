@@ -14,8 +14,8 @@ from packaging import version
 from config.user.user_info import UserInfo
 from config.user.user_parser import UserConfigParser
 from feature.monitor.monitor_enum import AllWebhookName
-from utils.logs import get_logger
-from utils.utils import do_command
+from feature.utils.logs import get_logger
+from feature.utils.utils import do_command
 
 logger = get_logger()
 

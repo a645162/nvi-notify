@@ -12,7 +12,7 @@ from feature.notify.send_msg import (
     send_cpu_except_warning_msg,
     send_cpu_temperature_warning_msg,
 )
-from utils.logs import get_logger
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 

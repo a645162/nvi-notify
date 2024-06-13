@@ -14,7 +14,7 @@ from feature.group_center.group_center import (
 )
 from feature.group_center.group_center_task_info import TaskInfoForGroupCenter
 from feature.monitor.monitor_enum import TaskEvent
-from utils.logs import get_logger
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 

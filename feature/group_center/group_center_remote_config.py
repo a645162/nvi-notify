@@ -8,7 +8,7 @@ from feature.group_center.group_center import (
     group_center_get_url,
     group_center_login,
 )
-from utils.logs import get_logger
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 

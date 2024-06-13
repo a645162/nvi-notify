@@ -1,24 +1,25 @@
 # -*- coding: utf-8 -*-
-
+import os
 import os.path
 import re
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 import psutil
 from nvitop import GpuProcess
 
-from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS
+from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS, now_time_str
 from config.user.user_info import UserInfo
 from feature.group_center import group_center_message
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent, TaskState
-from feature.notify.send_msg import handle_normal_text, log_task_info
+from feature.notify.send_msg import handle_normal_text
 from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
-from utils.logs import get_logger
-from utils.utils import do_command
+from feature.utils.logs import get_logger
+from feature.utils.utils import do_command
 
 logger = get_logger()
 sql = get_sql()
@@ -465,3 +466,36 @@ class GPUProcessInfo:
             return ""
         except Exception:
             return ""
+
+
+def log_task_info(process_info: dict, task_event: TaskEvent):
+    """
+    任务日志函数
+    :param process_info: 进程信息字典
+    :task_event: 任务类型, `create` or `finish`
+    """
+    if task_event is None:
+        raise ValueError("task_event is None")
+
+    logfile_dir_path = Path("./log")
+    if not os.path.exists(logfile_dir_path):
+        os.makedirs(logfile_dir_path)
+
+    task = TaskInfoForWebHook(process_info, task_event)
+
+    with open(logfile_dir_path / "user_task.log", "a") as log_writer:
+        if task_event == TaskEvent.CREATE:
+            output_log = (
+                f"{task.gpu_name}"
+                f" {task.user.name_cn} "
+                f"create new {'debug ' if task.is_debug else ''}"
+                f"task: {task.pid}"
+            )
+        elif task_event == TaskEvent.FINISH:
+            output_log = (
+                f"{task.gpu_name}"
+                f" finish {task.user.name_cn}'s {'debug ' if task.is_debug else ''}"
+                f"task: {task.pid}，用时{task.running_time_human}"
+            )
+        log_writer.write(f"[{now_time_str()}]+{output_log} + \n")
+        logger.info(output_log)

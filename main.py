@@ -7,8 +7,8 @@ from feature.monitor.cpu.monitor import start_cpu_monitor_all
 from feature.monitor.gpu.monitor import start_gpu_monitor_all
 from feature.monitor.hard_disk.monitor import start_resource_monitor_all
 from feature.notify.webhook import init_webhook
+from feature.utils.logs import get_logger
 from feature.web.flask_main import start_web_server_both
-from utils.logs import get_logger
 
 logger = get_logger()
 

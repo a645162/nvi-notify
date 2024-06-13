@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from utils.logs import get_logger
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 

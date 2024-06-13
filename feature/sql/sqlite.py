@@ -4,7 +4,7 @@ import sqlite3
 from config.settings import NUM_GPU, SERVER_NAME
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.monitor_enum import TaskState
-from utils.logs import get_logger
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 

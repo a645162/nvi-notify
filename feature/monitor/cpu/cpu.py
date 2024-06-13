@@ -1,7 +1,7 @@
 import psutil
 
 from config.settings import CPU_HIGH_TEMPERATURE_THRESHOLD
-from utils.utils import do_command
+from feature.utils.utils import do_command
 
 
 class CPUInfo:

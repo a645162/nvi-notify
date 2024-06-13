@@ -10,18 +10,17 @@ from config.settings import (
 )
 from feature.group_center import group_center_message
 from feature.monitor.gpu.gpu import GPU
-from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.monitor import Monitor
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
 from feature.notify.send_msg import handle_normal_text
 from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
-from global_variable.global_gpu import (
+from feature.global_variable.gpu import (
     global_gpu_info,
     global_gpu_task,
     global_gpu_usage,
 )
-from utils.logs import get_logger
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 sql = get_sql()
@@ -36,6 +35,9 @@ class NvidiaMonitor(Monitor):
         self.total_num_task = 0
 
         self.gpu_obj_dict: dict[int, GPU] = self.get_gpu_obj()
+
+        from feature.monitor.gpu.gpu_process import GPUProcessInfo
+
         self.all_processes: dict[int, GPUProcessInfo] = {}
 
     def get_gpu_obj(self) -> dict[int, GPU]:

@@ -14,7 +14,7 @@ from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import TaskState
 from feature.monitor.utils import Converter
-from feature.notify.send_msg import send_process_except_warning_msg
+from feature.notify.message_handler import MessageHandler
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger
 
@@ -85,7 +85,7 @@ class GPU:
             return self.nvidia_i.processes()
         except Exception as e:
             logger.error(e)
-            send_process_except_warning_msg()
+            MessageHandler.enqueue_except_warning_msg("process")
 
     @property
     def name(self) -> str:

@@ -31,3 +31,8 @@ def do_command(cmd: str, text: bool = True) -> Tuple[int, str, str]:
         output_stderr = str(e)
 
     return return_code, output_stdout, output_stderr
+
+def is_safe_in_shell(value):
+    # 简单示例：确保value不包含任何特殊字符或shell元字符
+    safe_characters = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+    return all(char in safe_characters for char in value)

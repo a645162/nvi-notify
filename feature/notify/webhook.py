@@ -47,38 +47,38 @@ class Webhook:
         self.retry_msg_queue = Queue(maxsize=3)
 
     @property
-    def webhook_url_main(self):
+    def webhook_url_main(self) -> str:
         return self._webhook_url_main
 
     @webhook_url_main.setter
-    def webhook_url_main(self, value):
+    def webhook_url_main(self, value: str) -> None:
         if value:
             self._webhook_url_main = value.strip()
 
     @property
-    def webhook_url_warning(self):
+    def webhook_url_warning(self) -> str:
         return self._webhook_url_warning
 
     @webhook_url_warning.setter
-    def webhook_url_warning(self, value):
+    def webhook_url_warning(self, value: str) -> None:
         if value:
             self._webhook_url_warning = value.strip()
 
     @property
-    def webhook_main_secret(self):
+    def webhook_main_secret(self) -> str:
         return self._webhook_main_secret
 
     @webhook_main_secret.setter
-    def webhook_main_secret(self, value):
+    def webhook_main_secret(self, value: str) -> None:
         if value:
             self._webhook_main_secret = value.strip()
 
     @property
-    def webhook_warning_secret(self):
+    def webhook_warning_secret(self) -> str:
         return self._webhook_warning_secret
 
     @webhook_warning_secret.setter
-    def webhook_warning_secret(self, value):
+    def webhook_warning_secret(self, value: str) -> None:
         if value:
             self._webhook_warning_secret = value.strip()
 
@@ -94,12 +94,19 @@ class Webhook:
             else self.webhook_url_header + webhook_api
         )
 
+    def get_message(self) -> str:
+        if self.retry_msg_queue.empty():
+            msg = self.retry_msg_queue.get()
+        else:  # msg, msg_type, user
+            msg = self.msg_queue.get()  # blocking
+        return msg
+
     def send_message(
-            self,
-            msg: str,
-            msg_type: str = MsgType.NORMAL,
-            user: UserInfo = None,
-            mention_everyone: bool = False,
+        self,
+        msg: str,
+        msg_type: str = MsgType.NORMAL,
+        user: UserInfo = None,
+        mention_everyone: bool = False,
     ):
         raise NotImplementedError(f"{self.webhook_name} should implement this method.")
 
@@ -114,16 +121,7 @@ class Webhook:
     def webhook_send_thread(self) -> None:
         while True:
             self.check_webhook_state()
-            if self.msg_queue.empty() and self.retry_msg_queue.empty():
-                time.sleep(5)
-                continue
-
-            current_msg = (
-                self.msg_queue.get()
-                if self.retry_msg_queue.empty()
-                else self.retry_msg_queue.get()
-            )  # msg, msg_type, user
-
+            current_msg = self.get_message()
             try:
                 self.send_message(*current_msg)
                 logger.info(f"{self.webhook_name}消息队列发送一条消息。")
@@ -147,13 +145,13 @@ class Webhook:
 
     @staticmethod
     def enqueue_msg_to_webhook(
-            msg: str,
-            msg_type: MsgType = MsgType.NORMAL,
-            user: UserInfo = None,
-            mention_everyone: bool = False,
-            enable_webhook_name: Union[
-                list[AllWebhookName], AllWebhookName
-            ] = AllWebhookName.ALL,
+        msg: str,
+        msg_type: MsgType = MsgType.NORMAL,
+        user: UserInfo = None,
+        mention_everyone: bool = False,
+        enable_webhook_name: Union[
+            list[AllWebhookName], AllWebhookName
+        ] = AllWebhookName.ALL,
     ):
         assert isinstance(msg_type, MsgType), logger.error(
             "msg_type must be in MsgType"
@@ -185,7 +183,7 @@ class Webhook:
 
     @staticmethod
     def enqueue_warning_msg_for_user_to_webhook(
-            msg: str, user: UserInfo, mention_everyone: bool = False
+        msg: str, user: UserInfo, mention_everyone: bool = False
     ):
         msg = msg.strip()
         if len(msg) == 0:
@@ -215,11 +213,11 @@ class LarkWebhook(Webhook):
     def __init__(self, webhook_name: str) -> None:
         webhook_url_header = "https://open.feishu.cn/open-apis/bot/v2/hook/"
         super().__init__(webhook_name, webhook_url_header)
-        self._lark_app_id = os.getenv("LARK_APP_ID", "")
-        self._lark_app_secret = os.getenv("LARK_APP_SECRET", "")
         self.lark_app_url = (
             "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=user_id"
         )
+        self._lark_app_id = os.getenv("LARK_APP_ID", "")
+        self._lark_app_secret = os.getenv("LARK_APP_SECRET", "")
 
     @property
     def lark_app_id(self):
@@ -240,11 +238,11 @@ class LarkWebhook(Webhook):
             self._lark_app_secret = value.strip()
 
     def send_message(
-            self,
-            msg: str,
-            msg_type: MsgType = MsgType.NORMAL,
-            user: UserInfo = None,
-            mention_everyone: bool = False,
+        self,
+        msg: str,
+        msg_type: MsgType = MsgType.NORMAL,
+        user: UserInfo = None,
+        mention_everyone: bool = False,
     ):
         # send msg to user by lark app
         self.send_lark_message_by_app(msg, msg_type, user)
@@ -262,12 +260,12 @@ class LarkWebhook(Webhook):
         self.send_lark_message(msg, webhook_url, webhook_secret, user, mention_everyone)
 
     def send_lark_message(
-            self,
-            msg: str,
-            webhook_url: str,
-            webhook_secret: str,
-            user: UserInfo = None,
-            mention_everyone: bool = False,
+        self,
+        msg: str,
+        webhook_url: str,
+        webhook_secret: str,
+        user: UserInfo = None,
+        mention_everyone: bool = False,
     ):
         headers = {"Content-Type": "application/json"}
         msg = msg.replace("/::D", "[呲牙]")
@@ -308,15 +306,15 @@ class LarkWebhook(Webhook):
         return mention_header
 
     def send_lark_message_by_app(
-            self, msg: str, msg_type: MsgType, user: UserInfo = None
+        self, msg: str, msg_type: MsgType, user: UserInfo = None
     ):
         tenant_access_token = self.get_lark_app_tenant_access_token()
         if (
-                len(self.lark_app_id) == 0
-                or len(self.lark_app_secret) == 0
-                or len(tenant_access_token) == 0
-                or user is None
-                or msg_type == MsgType.WARNING
+            len(self.lark_app_id) == 0
+            or len(self.lark_app_secret) == 0
+            or len(tenant_access_token) == 0
+            or user is None
+            or msg_type == MsgType.WARNING
         ):
             return
 
@@ -368,11 +366,11 @@ class WeworkWebhook(Webhook):
         super().__init__(webhook_name, webhook_url_header)
 
     def send_message(
-            self,
-            msg: str,
-            msg_type: str = MsgType.NORMAL,
-            user: UserInfo = None,
-            mention_everyone: bool = False,
+        self,
+        msg: str,
+        msg_type: str = MsgType.NORMAL,
+        user: UserInfo = None,
+        mention_everyone: bool = False,
     ):
         keyword = "main" if msg_type == MsgType.NORMAL else "warning"
         webhook_url = getattr(self, f"webhook_url_{keyword}")

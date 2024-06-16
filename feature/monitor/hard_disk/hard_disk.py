@@ -3,8 +3,13 @@ import humanfriendly
 from config.settings import (
     HARD_DISK_HIGH_PERCENTAGE_THRESHOLD,
     HARD_DISK_LOW_FREE_GB_THRESHOLD,
+    SUDO_PERMISSION,
 )
 from feature.monitor.monitor_enum import MonitorEnum
+from feature.utils.logs import get_logger
+from feature.utils.utils import do_command
+
+logger = get_logger()
 
 
 class DiskPurpose(MonitorEnum):
@@ -15,9 +20,9 @@ class DiskPurpose(MonitorEnum):
 
 
 class DiskType(MonitorEnum):
-    NVME = "nvme"
+    SSD = "ssd"
     HDD = "hdd"
-    NVME_CN = "固态硬盘"
+    SSD_CN = "固态硬盘"
     HDD_CN = "机械硬盘"
 
 
@@ -37,8 +42,8 @@ class HardDisk:
         self._used: str = ""
         self._free_str: str = ""
         self._free_bytes: int = humanfriendly.parse_size(
-            "22TB", binary=True
-        )  # init max free bytes (22TiB)
+            "1TB", binary=True
+        )  # init max free bytes (1TiB)
         self._percentage_used_int: int = 0
         self._percentage_used_str: str = ""
         self._type: DiskType = None
@@ -58,7 +63,7 @@ class HardDisk:
     @name.setter
     def name(self, value: str) -> None:
         if "nvme" in value:
-            self.type = DiskType.NVME
+            self.type = DiskType.SSD
         else:
             self.type = DiskType.HDD
         self._name = value
@@ -78,9 +83,10 @@ class HardDisk:
 
     @free_bytes.setter
     def free_bytes(self, cur_free_bytes: float) -> None:
-        self.low_free_bytes_trigger = \
-            (cur_free_bytes < self.low_free_bytes_threshold) and \
-            (cur_free_bytes < self._free_bytes)
+        self.low_free_bytes_trigger = cur_free_bytes < self.low_free_bytes_threshold
+        # self.low_free_bytes_trigger = (
+        #     cur_free_bytes < self.low_free_bytes_threshold
+        # ) and (cur_free_bytes < self._free_bytes)
         self._free_bytes = cur_free_bytes
 
     @property
@@ -98,8 +104,9 @@ class HardDisk:
 
     @percentage_used_int.setter
     def percentage_used_int(self, cur_percentage_used: int) -> None:
-        self.high_percentage_used_trigger = \
+        self.high_percentage_used_trigger = (
             cur_percentage_used > self.high_percentage_used_threshold
+        )
 
         self._percentage_used_int = cur_percentage_used
 
@@ -197,3 +204,22 @@ class HardDisk:
             f"剩余可用容量为{self.free_str}，总容量为{self.total}，"
             f"占用率为{self.percentage_used_str}\n"
         )
+
+    def get_smart_info(self) -> str:
+        if not SUDO_PERMISSION:
+            return ""
+
+        command = f"sudo smartctl -H {self.name}"
+        try:
+            result_code, output_stdout, output_stderr = do_command(command)
+
+            if result_code.returncode != 0:
+                logger.warnning(f"Error running smartctl: {output_stderr}")
+                return
+
+            smart_info = output_stdout
+            return smart_info
+
+        except Exception as e:
+            logger.warnning(f"An error occurred: {e}")
+            return ""

@@ -8,10 +8,7 @@ from config.settings import TEMPERATURE_MONITOR_SAMPLING_INTERVAL
 from feature.monitor.cpu.cpu import CPU, CPUInfo
 from feature.monitor.memory.memory import MemoryInfo
 from feature.monitor.monitor import Monitor
-from feature.notify.send_msg import (
-    send_cpu_except_warning_msg,
-    send_cpu_temperature_warning_msg,
-)
+from feature.notify.message_handler import MessageHandler
 from feature.utils.logs import get_logger
 
 logger = get_logger()
@@ -19,7 +16,8 @@ logger = get_logger()
 
 class CPUMonitor(Monitor):
     def __init__(self, num_cpu: int):
-        super().__init__("CPU")
+        monitor_name = "CPU"
+        super().__init__(monitor_name)
         self.num_cpu: int = num_cpu
         self.cpu_dict: dict[int, CPU] = self.get_cpu_obj()
 
@@ -36,7 +34,7 @@ class CPUMonitor(Monitor):
 
             temperature_info = self.get_cpu_temperature()
             if temperature_info[0] == -1.0:
-                send_cpu_except_warning_msg()
+                MessageHandler.enqueue_except_warning_msg("cpu")
                 time.sleep(10)
                 continue
 
@@ -44,7 +42,9 @@ class CPUMonitor(Monitor):
                 cpu.temperature = temperature_info[cpu.idx]
 
                 if cpu.high_temperature_trigger:
-                    send_cpu_temperature_warning_msg(cpu.idx, cpu.temperature)
+                    MessageHandler.enqueue_cpu_temperature_warning_msg(
+                        cpu.idx, cpu.temperature
+                    )
 
             time.sleep(TEMPERATURE_MONITOR_SAMPLING_INTERVAL)
 

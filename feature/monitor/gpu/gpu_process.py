@@ -15,7 +15,7 @@ from feature.group_center import group_center_message
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent, TaskState
-from feature.notify.send_msg import handle_normal_text
+from feature.notify.message_handler import handle_normal_text
 from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger

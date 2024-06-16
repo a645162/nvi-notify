@@ -17,7 +17,7 @@ from feature.group_center import group_center_message
 from feature.monitor.gpu.gpu import GPU
 from feature.monitor.monitor import Monitor
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
-from feature.notify.send_msg import handle_normal_text
+from feature.notify.message_handler import handle_normal_text
 from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger

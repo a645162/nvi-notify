@@ -9,9 +9,9 @@ from config.settings import (
     HARD_DISK_MONITOR_SAMPLING_INTERVAL,
     HARD_DISK_MOUNT_POINT,
     USERS,
-    is_webhook_sleep_time,
 )
-from config.user.user_info import UserInfo
+from config.user_info import UserInfo
+from config.utils import is_webhook_sleep_time
 from feature.monitor.hard_disk.hard_disk import DiskPurpose, HardDisk
 from feature.monitor.monitor import Monitor
 from feature.notify.message_handler import MessageHandler
@@ -114,13 +114,13 @@ class HardDiskMonitor(Monitor):
                 if result_code == 0:
                     break  # 命令执行成功，退出循环
             except Exception as e:
-                logger.warnning(f"Error executing command: {e}")
+                logger.warning(f"Error executing command: {e}")
 
             if retry_count == 5:
                 logger.error("Max retries exceeded.")
                 return
 
-            logger.warnning(f"Retry {retry_count}-th in progress...")
+            logger.warning(f"Retry {retry_count}-th in progress...")
 
         detail_dirs_info = results.split("\n")
         self.parse_dir_size_info(detail_dirs_info, hard_disk.disk_info)

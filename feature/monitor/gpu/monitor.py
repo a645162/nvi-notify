@@ -17,7 +17,7 @@ from feature.group_center import group_center_message
 from feature.monitor.gpu.gpu import GPU
 from feature.monitor.monitor import Monitor
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
-from feature.notify.message_handler import handle_normal_text
+from feature.notify.message_handler import MessageHandler
 from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger
@@ -91,7 +91,7 @@ class NvidiaMonitor(Monitor):
             )
 
         if len(launch_msg_text) > 0:
-            msg = handle_normal_text("GPU监控启动" + "".join(launch_msg_text))
+            msg = MessageHandler.handle_normal_text("GPU监控启动" + "".join(launch_msg_text))
             Webhook.enqueue_msg_to_webhook(
                 msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
             )

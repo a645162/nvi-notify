@@ -29,8 +29,9 @@ class CPUMonitor(Monitor):
         return cpu_dict
 
     def cpu_monitor_thread(self):
+        memory = MemoryInfo()
         while self.monitor_thread_work:
-            MemoryInfo.update()
+            memory.update()
 
             temperature_info = self.get_cpu_temperature()
             if temperature_info[0] == -1.0:

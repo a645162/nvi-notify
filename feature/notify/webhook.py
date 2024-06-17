@@ -11,8 +11,9 @@ from typing import Union
 
 import requests
 
-from config.settings import WEBHOOK_NAME, is_webhook_sleep_time
-from config.user.user_info import UserInfo
+from config.settings import WEBHOOK_NAME
+from config.user_info import UserInfo
+from config.utils import is_webhook_sleep_time
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, WebhookState
 from feature.utils.logs import get_logger
 
@@ -34,10 +35,10 @@ class Webhook:
             os.getenv(f"WEBHOOK_{webhook_name.upper()}_DEV")
         )
 
-        self._webhook_main_secret = os.getenv(
+        self._webhook_secret_main = os.getenv(
             f"WEBHOOK_{webhook_name.upper()}_DEPLOY_SECRET", ""
         )
-        self._webhook_warning_secret = os.getenv(
+        self._webhook_secret_warning = os.getenv(
             f"WEBHOOK_{webhook_name.upper()}_DEV_SECRET", ""
         )
 
@@ -65,22 +66,22 @@ class Webhook:
             self._webhook_url_warning = value.strip()
 
     @property
-    def webhook_main_secret(self) -> str:
-        return self._webhook_main_secret
+    def webhook_secret_main(self) -> str:
+        return self._webhook_secret_main
 
-    @webhook_main_secret.setter
-    def webhook_main_secret(self, value: str) -> None:
+    @webhook_secret_main.setter
+    def webhook_secret_main(self, value: str) -> None:
         if value:
-            self._webhook_main_secret = value.strip()
+            self._webhook_secret_main = value.strip()
 
     @property
-    def webhook_warning_secret(self) -> str:
-        return self._webhook_warning_secret
+    def webhook_secret_warning(self) -> str:
+        return self._webhook_secret_warning
 
-    @webhook_warning_secret.setter
-    def webhook_warning_secret(self, value: str) -> None:
+    @webhook_secret_warning.setter
+    def webhook_secret_warning(self, value: str) -> None:
         if value:
-            self._webhook_warning_secret = value.strip()
+            self._webhook_secret_warning = value.strip()
 
     def get_webhook_url(self, webhook_api: str):
         webhook_api = webhook_api.strip()
@@ -96,9 +97,9 @@ class Webhook:
 
     def get_message(self) -> str:
         if self.retry_msg_queue.empty():
-            msg = self.retry_msg_queue.get()
-        else:  # msg, msg_type, user
             msg = self.msg_queue.get()  # blocking
+        else:  # msg, msg_type, user
+            msg = self.retry_msg_queue.get()
         return msg
 
     def send_message(

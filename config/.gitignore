@@ -1,3 +1,6 @@
 /**/*.yaml
+/**/*.json
 !/users/example.yaml
 !/users_old/template/template.yaml
+!/users/example.json
+!/users_old/template/template.json

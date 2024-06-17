@@ -214,12 +214,12 @@ class HardDisk:
             result_code, output_stdout, output_stderr = do_command(command)
 
             if result_code.returncode != 0:
-                logger.warnning(f"Error running smartctl: {output_stderr}")
+                logger.warning(f"Error running smartctl: {output_stderr}")
                 return
 
             smart_info = output_stdout
             return smart_info
 
         except Exception as e:
-            logger.warnning(f"An error occurred: {e}")
+            logger.warning(f"An error occurred: {e}")
             return ""

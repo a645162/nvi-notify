@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from config.settings import SERVER_DOMAIN, SERVER_NAME, IPv4, IPv6, now_time_str
-from config.user.user_info import UserInfo
+from config.settings import SERVER_DOMAIN, SERVER_NAME, EnvironmentManager, IPv4, IPv6
+from config.user_info import UserInfo
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
 from feature.notify.webhook import Webhook
 from feature.utils.logs import get_logger
@@ -22,7 +22,7 @@ class MessageHandler:
         else:
             msg += f"📈http://{SERVER_DOMAIN}\n"
 
-        msg += f"⏰{now_time_str()}"
+        msg += f"⏰{EnvironmentManager.now_time_str()}"
         return msg
 
     @staticmethod
@@ -34,7 +34,7 @@ class MessageHandler:
         """
         msg += f"http://{IPv4}\n"
         msg += f"http://[{IPv6}]\n"
-        msg += f"⏰{now_time_str()}"
+        msg += f"⏰{EnvironmentManager.now_time_str()}"
         return msg
 
     @classmethod
@@ -89,7 +89,7 @@ class MessageHandler:
         向用户发送硬盘高占用警告消息函数
         """
         if user.lark_info["mention_id"] == [""]:
-            logger.warnning(f"用户{user.name_cn}没有配置Lark通知ID，无法发送消息。")
+            logger.warning(f"用户{user.name_cn}没有配置Lark通知ID，无法发送消息。")
             return
         warning_message = (
             f"⚠️【硬盘可用空间不足】⚠️\n"

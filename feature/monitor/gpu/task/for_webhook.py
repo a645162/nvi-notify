@@ -1,7 +1,7 @@
 from typing import Optional, Union
 
 from config.settings import NUM_GPU
-from config.user.user_info import UserInfo
+from config.user_info import UserInfo
 from feature.monitor.monitor_enum import TaskEvent
 
 

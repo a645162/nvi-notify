@@ -51,7 +51,7 @@ def get_user_config_json_str() -> str:
 
 
 def init_remote_env_list():
-    from config.settings import all_env_dict
+    from config.settings import EnvironmentManager
 
     json_str = get_json_str(target_api="/api/client/config/env_list")
 
@@ -63,7 +63,7 @@ def init_remote_env_list():
             print(f"{key}: {env_dict[key]}")
         print("-" * 20)
 
-        all_env_dict.update(env_dict)
+        EnvironmentManager.all_env_dict.update(env_dict)
 
 
 if __name__ == "__main__":

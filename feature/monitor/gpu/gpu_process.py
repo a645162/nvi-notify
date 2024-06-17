@@ -9,13 +9,13 @@ from typing import Optional
 import psutil
 from nvitop import GpuProcess
 
-from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS, now_time_str
-from config.user.user_info import UserInfo
+from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS, EnvironmentManager
+from config.user_info import UserInfo
 from feature.group_center import group_center_message
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent, TaskState
-from feature.notify.message_handler import handle_normal_text
+from feature.notify.message_handler import MessageHandler
 from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger
@@ -159,7 +159,7 @@ class GPUProcessInfo:
     def get_task_main_memory_mb(self):
         try:
             self.task_main_memory_mb = (
-                    self.gpu_process.memory_info().rss // 1024 // 1024
+                self.gpu_process.memory_info().rss // 1024 // 1024
             )
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -170,8 +170,8 @@ class GPUProcessInfo:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-                self.task_gpu_memory_max is None
-                or self.task_gpu_memory_max < task_gpu_memory
+            self.task_gpu_memory_max is None
+            or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = self.task_gpu_memory_human
@@ -334,8 +334,9 @@ class GPUProcessInfo:
         if dot_index != -1:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
-                self.screen_session_name = \
-                    self.screen_session_name[dot_index + 1:].strip()
+                self.screen_session_name = self.screen_session_name[
+                    dot_index + 1 :
+                ].strip()
 
     def get_project_name(self):
         if self.cwd is not None:
@@ -364,9 +365,9 @@ class GPUProcessInfo:
     def running_time_in_seconds(self, new_running_time_in_seconds):
         # 上次不满足，但是这次满足
         if (
-                new_running_time_in_seconds
-                > WEBHOOK_DELAY_SEND_SECONDS
-                > self._running_time_in_seconds
+            new_running_time_in_seconds
+            > WEBHOOK_DELAY_SEND_SECONDS
+            > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 
@@ -442,7 +443,7 @@ class GPUProcessInfo:
         # if multi_gpu_msg == "-1":  # 非第一个使用的GPU不发送消息
         #     return
 
-        msg = handle_normal_text(
+        msg = MessageHandler.handle_normal_text(
             self.gpu.name_for_msg_header
             + "\n"
             + task.task_msg_body
@@ -502,5 +503,5 @@ def log_task_info(process_info: dict, task_event: TaskEvent):
                 f" finish {task.user.name_cn}'s {'debug ' if task.is_debug else ''}"
                 f"task: {task.pid}，用时{task.running_time_human}"
             )
-        log_writer.write(f"[{now_time_str()}]+{output_log} + \n")
+        log_writer.write(f"[{EnvironmentManager.now_time_str()}]+{output_log} + \n")
         logger.info(output_log)

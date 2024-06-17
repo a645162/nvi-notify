@@ -102,14 +102,13 @@ class GPU:
             while keyword_upper in current_str_upper:
                 index = current_str_upper.index(keyword_upper)
                 # 计算关键词在原始字符串中的起始位置
-                index_original = (
-                        current_str_upper[:index].count(" ")
-                        - current_str[:index].count(" ")
-                )
+                index_original = current_str_upper[:index].count(" ") - current_str[
+                    :index
+                ].count(" ")
                 # 删除原始字符串中的关键词
                 current_str = (
-                        current_str[:index_original]
-                        + current_str[index_original + len(keyword) + 1:]
+                    current_str[:index_original]
+                    + current_str[index_original + len(keyword) + 1 :]
                 )
                 current_str_upper = current_str.upper()
         return current_str.strip()
@@ -225,22 +224,46 @@ class GPU:
         return task_msg
 
     def get_gpu_info(self):
-        global_gpu_info[self.gpu_id]["gpuName"] = self.name_short
-        global_gpu_info[self.gpu_id]["gpuTDP"] = self.TDP
+        try:
+            if self.gpu_id not in global_gpu_info:
+                global_gpu_info[self.gpu_id] = {}
+
+            global_gpu_info[self.gpu_id].update(
+                {
+                    "gpuName": self.name_short,
+                    "gpuTDP": self.TDP,
+
+                }
+            )
+        except AttributeError as e:
+            print(f"Error updating GPU info: Missing attribute {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
 
     def update_global_gpu_status(self):
-        global_gpu_usage[self.gpu_id]["coreUsage"] = self.gpu_utilization
-        global_gpu_usage[self.gpu_id]["memoryUsage"] = self.memory_percent
+        try:
+            # 确保gpu_id对应的字典项存在
+            if self.gpu_id not in global_gpu_usage:
+                global_gpu_usage[self.gpu_id] = {}
 
-        global_gpu_usage[self.gpu_id]["gpuMemoryTotalMB"] = (
-            Converter.convert_bytes_to_mb(self.memory_total)
-        )
-
-        global_gpu_usage[self.gpu_id]["gpuMemoryUsage"] = self.memory_used_human
-        global_gpu_usage[self.gpu_id]["gpuMemoryTotal"] = self.memory_total_human
-
-        global_gpu_usage[self.gpu_id]["gpuPowerUsage"] = self.power_usage
-        global_gpu_usage[self.gpu_id]["gpuTemperature"] = self.temperature
+            # 直接使用字典的update方法更新信息，同时添加异常处理
+            global_gpu_usage[self.gpu_id].update(
+                {
+                    "coreUsage": self.gpu_utilization,
+                    "memoryUsage": self.memory_percent,
+                    "gpuMemoryTotalMB": Converter.convert_bytes_to_mb(
+                        self.memory_total
+                    ),
+                    "gpuMemoryUsage": self.memory_used_human,
+                    "gpuMemoryTotal": self.memory_total_human,
+                    "gpuPowerUsage": self.power_usage,
+                    "gpuTemperature": self.temperature,
+                }
+            )
+        except AttributeError as e:
+            print(f"Error updating GPU status: Missing attribute {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
 
     def update_global_gpu_task(self):
         # 在监视线程中就进行处理，哪怕这里阻塞了，也就是相当于多加一点延时

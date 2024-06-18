@@ -40,8 +40,8 @@ class GPUProcessInfo:
         self.process_environ: Optional[dict[str, str]] = None
 
         # current process
-        self.cwd: Optional[str] = None  # pwd
-        self.command: Optional[str] = None
+        self.cwd: str = ""  # pwd
+        self.command: str = ""
         self.cmdline: Optional[list] = None
 
         self.is_debug: Optional[bool] = None

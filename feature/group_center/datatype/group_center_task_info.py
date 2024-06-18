@@ -43,6 +43,7 @@ class TaskInfoForGroupCenter:
     taskRunningTimeString: str = ""
     taskRunningTimeInSeconds = 0
 
+    projectDirectory: str = ""
     projectName: str = ""
     screenSessionName: str = ""
     pyFileName: str = ""
@@ -130,10 +131,11 @@ class TaskInfoForGroupCenter:
         self.taskRunningTimeInSeconds = gpu_process_obj.running_time_in_seconds
 
         # Name
-        self.projectName = gpu_process_obj.project_name
-        self.screenSessionName = gpu_process_obj.screen_session_name
-        self.pyFileName = gpu_process_obj.python_file
+        self.projectDirectory = gpu_process_obj.cwd.strip()
+        self.projectName = gpu_process_obj.project_name.strip()
+        self.screenSessionName = gpu_process_obj.screen_session_name.strip()
+        self.pyFileName = gpu_process_obj.python_file.strip()
 
-        self.pythonVersion = gpu_process_obj.python_version
-        self.commandLine = gpu_process_obj.command
-        self.condaEnvName = gpu_process_obj.conda_env
+        self.pythonVersion = gpu_process_obj.python_version.strip()
+        self.commandLine = gpu_process_obj.command.strip()
+        self.condaEnvName = gpu_process_obj.conda_env.strip()

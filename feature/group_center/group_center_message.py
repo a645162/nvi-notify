@@ -6,13 +6,14 @@ from typing import Tuple
 import requests
 
 from config.settings import USE_GROUP_CENTER
+from feature.group_center. \
+    datatype.group_center_task_info import TaskInfoForGroupCenter
 from feature.group_center.group_center import (
     access_key,
     group_center_get_url,
     group_center_login,
     group_center_public_part,
 )
-from feature.group_center.group_center_task_info import TaskInfoForGroupCenter
 from feature.monitor.monitor_enum import TaskEvent
 from feature.utils.logs import get_logger
 

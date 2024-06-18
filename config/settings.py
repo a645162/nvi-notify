@@ -26,7 +26,7 @@ class EnvironmentManager:
 
     @classmethod
     def load_env_file(
-        cls, env_file: str, verbose: bool = True, override: bool = False
+            cls, env_file: str, verbose: bool = True, override: bool = False
     ) -> Dict[str, str]:
         """Load environment variables from a file."""
         if os.path.exists(env_file):
@@ -54,11 +54,11 @@ class EnvironmentManager:
         logger.info("=" * 40)
 
     @classmethod
-    def get(cls, key: str, default=None):
+    def get(cls, key: str, default=None) -> str:
         if key in cls.all_env_dict:
-            return cls.all_env_dict[key].strip()
+            return str(cls.all_env_dict[key]).strip()
 
-        return os.getenv(key, default).strip()
+        return str(os.getenv(key, default)).strip()
 
     @classmethod
     def get_int(cls, key: str, default: int = 0) -> int:
@@ -176,7 +176,6 @@ class EnvironmentManager:
 
 # Load environment variables
 EnvironmentManager.load_env()
-
 
 # Init
 WAIT_TIME_BEFORE_START = EnvironmentManager.get_int("WAIT_TIME_BEFORE_START", 10)

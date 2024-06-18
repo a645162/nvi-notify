@@ -43,7 +43,7 @@ class HardDiskMonitor(Monitor):
         """
         hard_disk_dict = {}
         for mount_point in self.mount_points:
-            if mount_point not in self.get_machine_hard_disk_list():
+            if mount_point not in self.get_machine_hard_disk_dict():
                 raise Exception(f"{mount_point} is not a valid mount point")
             hard_disk_dict[mount_point] = HardDisk(mount_point)
 
@@ -125,9 +125,9 @@ class HardDiskMonitor(Monitor):
         detail_dirs_info = results.split("\n")
         self.parse_dir_size_info(detail_dirs_info, hard_disk.disk_info)
 
-    def get_machine_hard_disk_list(self) -> dict[str, str]:
+    def get_machine_hard_disk_dict(self) -> dict[str, str]:
         """
-        Retrieve the list of hard disks on the machine using `lsblk` command.
+        Retrieve the dict of hard disks on the machine using `lsblk` command.
 
         Returns:
         machine_all_hard_disk_dict (dict[str, str]): A dictionary with `mount point` as keys
@@ -183,6 +183,11 @@ class HardDiskMonitor(Monitor):
                     mount_point = results_unit[-1]
                 else:
                     mount_point = ""
+                """ TODO: Hack implementation. Only for ubuntu22.04.
+                """
+                if _mount_point == "/var/snap/firefox/common/host-hunspell":
+                    mount_point = "/"
+
         elif len(line_unit) == 7:
             mount_point = line_unit[-1]
         else:

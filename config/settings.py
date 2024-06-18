@@ -146,6 +146,9 @@ class EnvironmentManager:
 
     @staticmethod
     def check_sudo_permission() -> bool:
+        # Check is Linux
+        if platform.system() != "Linux":
+            return False
         return os.geteuid() == 0
 
     @staticmethod
@@ -187,7 +190,11 @@ IPv4 = EnvironmentManager.get_ip("v4")
 IPv6 = EnvironmentManager.get_ip("v6")
 
 # GPU
-NUM_GPU = Device.count()
+NO_NVIDIA_GPU = EnvironmentManager.get_bool("NO_NVIDIA_GPU", False)
+
+NUM_GPU = 0
+if not NO_NVIDIA_GPU:
+    Device.count()
 
 # Server Info
 SERVER_NAME = EnvironmentManager.get("SERVER_NAME", "None")

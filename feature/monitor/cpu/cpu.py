@@ -1,4 +1,5 @@
 from collections import deque
+
 import psutil
 
 from config.settings import CPU_HIGH_TEMPERATURE_THRESHOLD
@@ -13,7 +14,7 @@ class CPU:
         self._high_temperature_trigger: bool = False
         self._high_aver_temperature_trigger: bool = False
 
-        self.temperature_samples = deque(maxlen=30)
+        self.temperature_samples = deque(maxlen=15)
 
     @property
     def idx(self) -> int:
@@ -30,11 +31,7 @@ class CPU:
     @temperature.setter
     def temperature(self, new_temperature: float) -> None:
         self.temperature_samples.append(new_temperature)
-        self.average_temperature = sum(self.temperature_samples) / len(
-            self.temperature_samples
-        )
-        self.high_temperature_trigger = new_temperature > 95 > self._temperature
-
+        self.high_temperature_trigger = new_temperature > 95
         self._temperature = new_temperature
 
     @property
@@ -44,10 +41,9 @@ class CPU:
     @average_temperature.setter
     def average_temperature(self, new_aver_temperature) -> float:
         self.high_aver_temperature_trigger = (
-            new_aver_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD > self._temperature
+            new_aver_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD
         )
-
-        return self._average_temperature
+        return new_aver_temperature
 
     @property
     def high_temperature_trigger(self) -> bool:

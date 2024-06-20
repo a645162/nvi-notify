@@ -41,11 +41,13 @@ class CPUMonitor(Monitor):
 
             for cpu in self.cpu_dict.values():
                 cpu.temperature = temperature_info[cpu.idx]
-
-                # if cpu.high_temperature_trigger:
-                #     MessageHandler.enqueue_cpu_temperature_warning_msg(
-                #         cpu.idx, cpu.temperature
-                #     )
+                cpu.average_temperature = sum(cpu.temperature_samples) / len(
+                    cpu.temperature_samples
+                )
+                if cpu.high_temperature_trigger:
+                    MessageHandler.enqueue_cpu_temperature_warning_msg(
+                        cpu.idx, cpu.temperature
+                    )
                 if cpu.high_aver_temperature_trigger:
                     MessageHandler.enqueue_cpu_aver_temperature_warning_msg(
                         cpu.idx, cpu.average_temperature

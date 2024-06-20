@@ -191,10 +191,7 @@ IPv6 = EnvironmentManager.get_ip("v6")
 
 # GPU
 NO_NVIDIA_GPU = EnvironmentManager.get_bool("NO_NVIDIA_GPU", False)
-
-NUM_GPU = 0
-if not NO_NVIDIA_GPU:
-    Device.count()
+NUM_GPU = 0 if NO_NVIDIA_GPU else Device.count()
 
 # Server Info
 SERVER_NAME = EnvironmentManager.get("SERVER_NAME", "None")

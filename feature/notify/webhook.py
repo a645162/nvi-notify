@@ -123,8 +123,8 @@ class Webhook:
 
     def webhook_send_thread(self) -> None:
         while True:
-            self.check_webhook_state()
             current_msg = self.get_message()
+            self.check_webhook_state()
             try:
                 self.send_message(*current_msg)
                 logger.info(f"{self.webhook_name}消息队列发送一条消息。")

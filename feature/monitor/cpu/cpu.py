@@ -43,7 +43,7 @@ class CPU:
         self.high_aver_temperature_trigger = (
             new_aver_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD
         )
-        return new_aver_temperature
+        self._average_temperature = new_aver_temperature
 
     @property
     def high_temperature_trigger(self) -> bool:

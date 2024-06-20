@@ -12,7 +12,8 @@ def is_webhook_sleep_time(
     start_time: datetime.time = None, end_time: datetime.time = None
 ) -> bool:
     if start_time is None or end_time is None:
-        from config.settings import WEBHOOK_SLEEP_TIME_END, WEBHOOK_SLEEP_TIME_START
+        from config.settings import (WEBHOOK_SLEEP_TIME_END,
+                                     WEBHOOK_SLEEP_TIME_START)
 
         start_time = WEBHOOK_SLEEP_TIME_START
         end_time = WEBHOOK_SLEEP_TIME_END
@@ -32,6 +33,24 @@ def is_within_time_range(
         return start_time <= current_time <= end_time
     else:
         return start_time <= current_time or current_time <= end_time
+
+
+def get_seconds_to_sleep_until_end(end_time=None) -> float:
+    if end_time is None:
+        from config.settings import WEBHOOK_SLEEP_TIME_END
+
+        end_time = WEBHOOK_SLEEP_TIME_END
+
+    current_datetime = datetime.datetime.now()
+    current_time = current_datetime.time()
+    end_datetime = datetime.datetime.combine(current_datetime.date(), end_time)
+
+    if end_time <= current_time:
+        end_datetime += datetime.timedelta(days=1)
+
+    time_to_sleep = (end_datetime - current_datetime).total_seconds()
+
+    return time_to_sleep  # 返回整数秒数
 
 
 def get_users():

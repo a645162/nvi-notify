@@ -13,7 +13,7 @@ import requests
 
 from config.settings import WEBHOOK_NAME
 from config.user_info import UserInfo
-from config.utils import is_webhook_sleep_time
+from config.utils import get_seconds_to_sleep_until_end, is_webhook_sleep_time
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, WebhookState
 from feature.utils.logs import get_logger
 
@@ -113,9 +113,11 @@ class Webhook:
 
     def check_webhook_state(self) -> None:
         while is_webhook_sleep_time():
+            sleep_seconds = get_seconds_to_sleep_until_end()
+            logger.info(f"[{self.webhook_name}] Sleep seconds: {sleep_seconds}")
             if self._webhook_state != WebhookState.SLEEPING:
                 self.webhook_state = WebhookState.SLEEPING
-            time.sleep(60)
+            time.sleep(sleep_seconds)
         if self._webhook_state != WebhookState.WORKING:
             self.webhook_state = WebhookState.WORKING
 

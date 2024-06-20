@@ -5,7 +5,7 @@ import time
 import psutil
 
 from config.settings import TEMPERATURE_MONITOR_SAMPLING_INTERVAL
-from feature.monitor.cpu.cpu import CPU, CPUInfo
+from feature.monitor.cpu.cpu import CPU
 from feature.monitor.memory.memory import MemoryInfo
 from feature.monitor.monitor import Monitor
 from feature.notify.message_handler import MessageHandler
@@ -42,9 +42,13 @@ class CPUMonitor(Monitor):
             for cpu in self.cpu_dict.values():
                 cpu.temperature = temperature_info[cpu.idx]
 
-                if cpu.high_temperature_trigger:
-                    MessageHandler.enqueue_cpu_temperature_warning_msg(
-                        cpu.idx, cpu.temperature
+                # if cpu.high_temperature_trigger:
+                #     MessageHandler.enqueue_cpu_temperature_warning_msg(
+                #         cpu.idx, cpu.temperature
+                #     )
+                if cpu.high_aver_temperature_trigger:
+                    MessageHandler.enqueue_cpu_aver_temperature_warning_msg(
+                        cpu.idx, cpu.average_temperature
                     )
 
             time.sleep(TEMPERATURE_MONITOR_SAMPLING_INTERVAL)
@@ -71,7 +75,7 @@ class CPUMonitor(Monitor):
 
 
 def start_cpu_monitor_all():
-    NUM_CPU = CPUInfo.get_cpu_num()
+    NUM_CPU = CPU.get_cpu_num()
     if NUM_CPU is None:
         logger.error("Cannot get the number of CPU.")
         return

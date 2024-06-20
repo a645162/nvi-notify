@@ -67,6 +67,18 @@ class MessageHandler:
         Webhook.enqueue_msg_to_webhook(msg, MsgType.WARNING)
 
     @classmethod
+    def enqueue_cpu_aver_temperature_warning_msg(
+        cls, cpu_id: int, cpu_aver_temperature: float
+    ):
+        """
+        CPU平均温度警告消息函数
+        """
+        warning_message = f"🤒🤒{SERVER_NAME}的CPU:{cpu_id}近5分钟平均温度已达{cpu_aver_temperature}°C\n"
+        msg = cls.handle_warning_text(warning_message)
+
+        Webhook.enqueue_msg_to_webhook(msg, MsgType.WARNING)
+
+    @classmethod
     def enqueue_hard_disk_size_warning_msg(cls, disk_info: str):
         """
         发送硬盘高占用警告消息函数

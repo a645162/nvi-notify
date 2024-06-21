@@ -85,9 +85,7 @@ class HardDiskMonitor(Monitor):
                         self.get_user_dir_size_info(hard_disk)
                         disk_warning_cnt[mount_point] = 0
 
-                    MessageHandler.enqueue_hard_disk_size_warning_msg(
-                        hard_disk.disk_info
-                    )
+                    MessageHandler.enqueue_hard_disk_size_msg(hard_disk.disk_info)
 
             time.sleep(HARD_DISK_MONITOR_SAMPLING_INTERVAL)
 

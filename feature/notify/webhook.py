@@ -4,9 +4,9 @@ import hashlib
 import hmac
 import json
 import os
+from queue import Queue
 import threading
 import time
-from queue import Queue
 from typing import Union
 
 import requests
@@ -45,7 +45,9 @@ class Webhook:
         self._webhook_state = WebhookState.WORKING
 
         self.msg_queue = Queue()
+        self.warning_msg_queue = Queue()
         self.retry_msg_queue = Queue(maxsize=3)
+
 
     @property
     def webhook_url_main(self) -> str:
@@ -95,14 +97,18 @@ class Webhook:
             else self.webhook_url_header + webhook_api
         )
 
-    def get_message(self) -> str:
+    def get_message(self) -> tuple:
         if self.retry_msg_queue.empty():
-            msg = self.msg_queue.get()  # blocking
-        else:  # msg, msg_type, user
+            msg = self.msg_queue.get()  # 阻塞获取消息
+        else:
             msg = self.retry_msg_queue.get()
         return msg
 
-    def send_message(
+    def get_warning_message(self) -> tuple:
+        msg = self.warning_msg_queue.get()
+        return msg
+
+    async def send_message(
         self,
         msg: str,
         msg_type: str = MsgType.NORMAL,
@@ -121,7 +127,8 @@ class Webhook:
         if self._webhook_state != WebhookState.WORKING:
             self.webhook_state = WebhookState.WORKING
 
-    def webhook_send_thread(self) -> None:
+    def webhook_main_thread(self) -> None:
+        logger.info(f"{self.webhook_name}消息线程启动。")
         while True:
             current_msg = self.get_message()
             self.check_webhook_state()
@@ -134,6 +141,20 @@ class Webhook:
                     f"{self.webhook_name}消息队列发送异常，进行重试。exception:{e}",
                 )
                 self.retry_msg_queue.put(current_msg)
+                time.sleep(5)
+
+    def webhook_warning_thread(self) -> None:
+        logger.info(f"{self.webhook_name}报警消息线程启动。")
+        while True:
+            current_msg = self.get_warning_message()
+            try:
+                self.send_message(*current_msg)
+                logger.info(f"{self.webhook_name}报警消息队列发送一条消息。")
+                time.sleep(3.1)  # 每分钟最多20条消息
+            except Exception as e:
+                logger.warning(
+                    f"{self.webhook_name}报警消息队列发送异常。exception:{e}",
+                )
                 time.sleep(5)
 
     @property
@@ -156,8 +177,8 @@ class Webhook:
             list[AllWebhookName], AllWebhookName
         ] = AllWebhookName.ALL,
     ):
-        assert isinstance(msg_type, MsgType), logger.error(
-            "msg_type must be in MsgType"
+        assert msg_type == MsgType.NORMAL, logger.error(
+            "msg_type must be in MsgType.NORMAL"
         )
         assert isinstance(enable_webhook_name, AllWebhookName), logger.error(
             "enable_webhook_name must be in WEBHOOK_NAME env, or 'AllWebhookName.ALL'"
@@ -179,10 +200,37 @@ class Webhook:
         for webhook_name in enable_webhook_name_list:
             if webhook_name.upper() not in WEBHOOK_NAME:
                 continue
-            webhook_thread[webhook_name].msg_queue.put(
+            webhook_thread[webhook_name].msg_queue.put_nowait(
                 (msg, msg_type, user, mention_everyone)
             )
             logger.info(f"{webhook_name}消息队列添加一条消息。")
+
+    @staticmethod
+    def send_warning_msg_to_webhook_all_time(
+        msg: str,
+        msg_type: MsgType,
+        user: UserInfo = None,
+        mention_everyone: bool = False,
+    ):
+        if msg_type != MsgType.WARNING:
+            raise ValueError("msg_type must be 'MsgType.WARNING'")
+
+        if user is not None and mention_everyone:
+            raise ValueError("when mention everyone, user is None")
+
+        msg = msg.strip()
+        if len(msg) == 0:
+            logger.warning("Message is empty!")
+            return
+
+        for webhook_name in WEBHOOK_NAME:
+            webhook_name = webhook_name.lower()
+            if webhook_name not in webhook_thread.keys():
+                continue
+            webhook_thread[webhook_name].warning_msg_queue.put(
+                (msg, msg_type, user, mention_everyone)
+            )
+            logger.info(f"[{webhook_name}]警告消息队列添加一条消息。")
 
     @staticmethod
     def enqueue_warning_msg_for_user_to_webhook(
@@ -247,11 +295,12 @@ class LarkWebhook(Webhook):
         user: UserInfo = None,
         mention_everyone: bool = False,
     ):
-        # send msg to user by lark app
-        self.send_lark_message_by_app(msg, msg_type, user)
-        if msg_type == MsgType.DISK_WARNING_TO_USER:
-            # only send dir size warning msg to user
-            return
+        if msg_type != MsgType.WARNING:
+            # send msg to user by lark app
+            self.send_lark_message_by_app(msg, msg_type, user)
+            if msg_type == MsgType.DISK_WARNING_TO_USER:
+                # only send dir size warning msg to user
+                return
 
         keyword = "main" if msg_type == MsgType.NORMAL else "warning"
         webhook_url = getattr(self, f"webhook_url_{keyword}")
@@ -308,7 +357,7 @@ class LarkWebhook(Webhook):
         )
         return mention_header
 
-    def send_lark_message_by_app(
+    async def send_lark_message_by_app(
         self, msg: str, msg_type: MsgType, user: UserInfo = None
     ):
         tenant_access_token = self.get_lark_app_tenant_access_token()
@@ -381,22 +430,26 @@ class WeworkWebhook(Webhook):
             return
 
         headers = {"Content-Type": "application/json"}
+        mentioned_list = [""]
+        mentioned_mobile_list = [""]
+
+        if user is not None:
+            mentioned_list = user.wecom_info.get("mention_id", [""])
+            mentioned_mobile_list = user.wecom_info.get("mention_mobile", [""])
+
+        if mention_everyone:
+            mentioned_list = ["@all"]
+            mentioned_mobile_list = ["@all"]
+
         data = {
             "msgtype": "text",
             "text": {
                 "content": msg,
+                "mentioned_list": list(set(mentioned_list)),
+                "mentioned_mobile_list": list(set(mentioned_mobile_list)),
             },
         }
 
-        if user is not None:
-            data["text"].update(
-                {
-                    "mentioned_list": user.wecom_info.get("mention_id", [""]),
-                    "mentioned_mobile_list": user.wecom_info.get(
-                        "mention_mobile", [""]
-                    ),
-                }
-            )
         r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
         logger.info(f"WeCom[text]{r.text}")
 
@@ -409,9 +462,13 @@ def init_webhook():
 
     global webhook_thread
     webhook_thread = {}
+
     for webhook_name in AllWebhookName.ALL.value:  # 实例化所有webhook
         webhook_name = webhook_name.lower()
         webhook_thread[webhook_name] = webhook_classes[webhook_name](webhook_name)
         threading.Thread(
-            target=webhook_thread[webhook_name].webhook_send_thread
+            target=webhook_thread[webhook_name].webhook_main_thread
+        ).start()
+        threading.Thread(
+            target=webhook_thread[webhook_name].webhook_warning_thread
         ).start()

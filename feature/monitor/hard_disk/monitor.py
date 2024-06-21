@@ -76,18 +76,19 @@ class HardDiskMonitor(Monitor):
             for mount_point, hard_disk in self.hard_disk_dict.items():
                 if not hard_disk.size_warning_trigger:
                     continue
-                logger.info(f"[硬盘{mount_point}]容量不足！")
-
-                disk_warning_cnt[mount_point] = disk_warning_cnt.get(mount_point, 0) + 1
-                if disk_warning_cnt[mount_point] % 4 == 0:
-                    logger.info(f"[硬盘{mount_point}]开始扫描目录占用容量...")
-                    self.get_user_dir_size_info(hard_disk)
-                    disk_warning_cnt[mount_point] = 0
+                logger.warning(f"[硬盘{mount_point}]容量不足！")
 
                 if not is_webhook_sleep_time():
+                    disk_warning_cnt[mount_point] = disk_warning_cnt.get(mount_point, 0) + 1
+                    if disk_warning_cnt[mount_point] % 4 == 0:
+                        logger.warning(f"[硬盘{mount_point}]开始扫描目录占用容量...")
+                        self.get_user_dir_size_info(hard_disk)
+                        disk_warning_cnt[mount_point] = 0
+
                     MessageHandler.enqueue_hard_disk_size_warning_msg(
                         hard_disk.disk_info
                     )
+
             time.sleep(HARD_DISK_MONITOR_SAMPLING_INTERVAL)
 
     def get_user_dir_size_info(self, hard_disk: HardDisk) -> None:

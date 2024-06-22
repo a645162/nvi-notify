@@ -73,7 +73,7 @@ class MessageHandler:
         """
         CPU平均温度警告消息函数
         """
-        warning_message = f"🤒🤒{SERVER_NAME}的CPU:{cpu_id}近5分钟平均温度已达{cpu_aver_temperature:2f}°C\n"
+        warning_message = f"🤒🤒{SERVER_NAME}的CPU:{cpu_id}近5分钟平均温度已达{cpu_aver_temperature:.1f}°C\n"
         msg = cls.handle_warning_text(warning_message)
 
         Webhook.send_warning_msg_to_webhook_all_time(msg, MsgType.WARNING)

@@ -108,7 +108,7 @@ class Webhook:
         msg = self.warning_msg_queue.get()
         return msg
 
-    async def send_message(
+    def send_message(
         self,
         msg: str,
         msg_type: str = MsgType.NORMAL,
@@ -357,7 +357,7 @@ class LarkWebhook(Webhook):
         )
         return mention_header
 
-    async def send_lark_message_by_app(
+    def send_lark_message_by_app(
         self, msg: str, msg_type: MsgType, user: UserInfo = None
     ):
         tenant_access_token = self.get_lark_app_tenant_access_token()

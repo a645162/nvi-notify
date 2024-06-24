@@ -7,7 +7,7 @@
     <!-- ... -->
     <script>
         function getResult() {
-            fetch('/get_result')
+            fetch('/nvitop_output')
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('result').textContent = data.result;

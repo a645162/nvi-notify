@@ -33,7 +33,7 @@ app = Flask(__name__)
 # logger.info("Set CORS for Flask server.")
 
 
-@app.route("/get_result")
+@app.route("/nvitop_output")
 def get_result():
     command_result = run_command("nvitop -U")
     return Response(
@@ -43,7 +43,24 @@ def get_result():
     )
 
 
-@app.route("/get_system_info")
+@app.route("/machine_user_message")
+def machine_user_message():
+    final_data:dict = {
+        "haveError": True,
+        "isSucceed": False,
+        "result": "error"
+    }
+
+    # final_data["isSucceed"] = True
+
+    return Response(
+        response=json.dumps(final_data),
+        status=200,
+        mimetype="application/json",
+    )
+
+
+@app.route("/system_info")
 def get_system_info():
     system_info: dict = {
         "memoryPhysicTotalMb": 4096,
@@ -61,7 +78,7 @@ def get_system_info():
     )
 
 
-@app.route("/get_gpu_count")
+@app.route("/gpu_count")
 def get_gpu_count():
     # For debug use
     # current_gpu_task = global_gpu_task
@@ -72,7 +89,7 @@ def get_gpu_count():
     )
 
 
-@app.route("/get_gpu_usage")
+@app.route("/gpu_usage_info")
 def get_gpu_usage():
     gpu_index = request.args.get("gpu_index", default=None, type=int)
     if gpu_index is None or gpu_index > len(global_gpu_usage):
@@ -110,7 +127,7 @@ def get_gpu_usage():
     )
 
 
-@app.route("/get_gpu_task")
+@app.route("/gpu_task_info")
 def get_gpu_task():
     gpu_index = request.args.get("gpu_index", default=None, type=int)
 

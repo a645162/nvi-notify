@@ -32,8 +32,8 @@ class UserInfo:
                 continue
             for user in users.values():
                 if any(
-                    path_unit.lower() == keyword.lower().strip()
-                    for keyword in user.keywords
+                        path_unit.lower() == keyword.lower().strip()
+                        for keyword in user.keywords
                 ):
                     return user
         if is_project_path:
@@ -42,7 +42,7 @@ class UserInfo:
 
     @staticmethod
     def get_webhook_info(
-        webhook_dict: dict, webhook_type: str = "weCom"
+            webhook_dict: dict, webhook_type: str = "weCom"
     ) -> dict[str, list]:
         if webhook_type not in webhook_dict.keys():
             return {
@@ -69,7 +69,7 @@ class UserConfigParser:
         pass
 
     def get_json_user_config_from_group_center(self) -> dict[str, UserInfo]:
-        from feature.group_center.group_center_remote_config import (
+        from group_center.core.feature.remote_config import (
             get_user_config_json_str,
         )
 
@@ -91,7 +91,7 @@ class UserConfigParser:
         return user_info_obj_dict
 
     def get_user_info_by_yaml_from_directory(
-        self, directory: str = ""
+            self, directory: str = ""
     ) -> dict[str, UserInfo]:
         yaml_files_path_list = self.get_user_config_files_path(directory, "yaml")
         dict_list = []
@@ -127,7 +127,7 @@ class UserConfigParser:
 
     @staticmethod
     def get_user_config_files_path(
-        directory: str = "", extension: str = "yaml"
+            directory: str = "", extension: str = "yaml"
     ) -> list:
         if len(directory) == 0:
             directory = os.path.dirname(os.path.abspath(__file__))

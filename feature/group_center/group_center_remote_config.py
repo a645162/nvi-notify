@@ -1,6 +1,6 @@
 import json
 
-from group_center.core.feature.remote_config import get_user_config_json_str
+from group_center.core.feature.remote_config import get_env_json_str
 
 from feature.utils.logs import get_logger
 
@@ -10,7 +10,7 @@ logger = get_logger()
 def init_remote_env_list():
     from config.settings import EnvironmentManager
 
-    json_str = get_user_config_json_str()
+    json_str = get_env_json_str()
 
     env_dict = json.loads(json_str)
     if isinstance(env_dict, dict):
@@ -24,7 +24,7 @@ def init_remote_env_list():
 
 
 if __name__ == "__main__":
-    json_text = get_user_config_json_str()
+    json_text = get_env_json_str()
     print(json_text)
 
     print()

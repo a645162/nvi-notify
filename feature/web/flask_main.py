@@ -19,6 +19,10 @@ from feature.global_variable.gpu import (
     global_gpu_usage,
 )
 from feature.global_variable.system import global_system_info
+
+from group_center.core.feature.machine_user_message \
+    import machine_user_message_directly
+
 from feature.utils.logs import get_logger
 
 # from flask_cors import CORS
@@ -43,15 +47,23 @@ def get_result():
     )
 
 
-@app.route("/machine_user_message")
+@app.route("/machine_user_message", methods=['POST'])
 def machine_user_message():
-    final_data:dict = {
+    final_data: dict = {
         "haveError": True,
         "isSucceed": False,
         "result": "error"
     }
 
-    # final_data["isSucceed"] = True
+    if request.method == 'POST':
+        user_name = request.form['userName']
+        content = request.form['content']
+
+        logger.info(f"[Machine User Message]userName: {user_name}, content: {content}")
+        machine_user_message_directly(
+            user_name=user_name,
+            content=content
+        )
 
     return Response(
         response=json.dumps(final_data),

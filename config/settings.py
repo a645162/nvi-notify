@@ -8,6 +8,7 @@ from typing import Dict
 
 import psutil
 from dotenv import dotenv_values, load_dotenv
+from group_center.core import group_center_machine
 from nvitop import Device
 from packaging import version
 
@@ -202,6 +203,12 @@ SERVER_DOMAIN = EnvironmentManager.get("SERVER_DOMAIN", "None")
 USE_GROUP_CENTER = EnvironmentManager.get_bool("USE_GROUP_CENTER", False)
 GROUP_CENTER_URL = EnvironmentManager.get("GROUP_CENTER_URL", "http://localhost:8088")
 GROUP_CENTER_PASSWORD = EnvironmentManager.get("GROUP_CENTER_PASSWORD", "password")
+
+group_center_machine.set_group_center_host_url(GROUP_CENTER_URL)
+group_center_machine.set_machine_name_full(SERVER_NAME)
+group_center_machine.set_machine_name_short(SERVER_NAME)
+group_center_machine.set_machine_password(GROUP_CENTER_PASSWORD)
+group_center_machine.set_logger(logger)
 
 if USE_GROUP_CENTER and EnvironmentManager.get_bool("ENV_FROM_GROUP_CENTER", False):
     from feature.group_center.group_center_remote_config import \

@@ -159,7 +159,7 @@ class GPUProcessInfo:
     def get_task_main_memory_mb(self):
         try:
             self.task_main_memory_mb = (
-                self.gpu_process.memory_info().rss // 1024 // 1024
+                    self.gpu_process.memory_info().rss // 1024 // 1024
             )
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -170,8 +170,8 @@ class GPUProcessInfo:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-            self.task_gpu_memory_max is None
-            or self.task_gpu_memory_max < task_gpu_memory
+                self.task_gpu_memory_max is None
+                or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = self.task_gpu_memory_human
@@ -313,14 +313,14 @@ class GPUProcessInfo:
             if "release" not in result:
                 return
             result_list = result.split("\n")
-            version = ""
+            version: str = ""
 
             for line in result_list:
                 if "release" in line:
                     version = line.split(",")[-1].strip()
                     break
 
-            self.cuda_version = version
+            self.cuda_version = version.strip().lower().replace("v", "")
         except Exception:
             return
 
@@ -335,8 +335,8 @@ class GPUProcessInfo:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
                 self.screen_session_name = self.screen_session_name[
-                    dot_index + 1 :
-                ].strip()
+                                           dot_index + 1:
+                                           ].strip()
 
     def get_project_name(self):
         if self.cwd is not None:
@@ -365,9 +365,9 @@ class GPUProcessInfo:
     def running_time_in_seconds(self, new_running_time_in_seconds):
         # 上次不满足，但是这次满足
         if (
-            new_running_time_in_seconds
-            > WEBHOOK_DELAY_SEND_SECONDS
-            > self._running_time_in_seconds
+                new_running_time_in_seconds
+                > WEBHOOK_DELAY_SEND_SECONDS
+                > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 

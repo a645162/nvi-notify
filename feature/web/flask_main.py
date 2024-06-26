@@ -177,6 +177,7 @@ def get_gpu_task():
                 "taskMainMemoryMB": int(process_obj.task_main_memory_mb),
                 "cudaRoot": str(process_obj.cuda_root),
                 "cudaVersion": str(process_obj.cuda_version),
+                "cudaVisibleDevices": str(process_obj.cuda_visible_devices),
             }
         )
 

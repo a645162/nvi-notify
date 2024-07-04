@@ -9,6 +9,7 @@ from typing import Dict
 import psutil
 from dotenv import dotenv_values, load_dotenv
 from group_center.core import group_center_machine
+from group_center.utils.log import logger as group_center_logger_utils
 from nvitop import Device
 from packaging import version
 
@@ -208,7 +209,8 @@ group_center_machine.set_group_center_host_url(GROUP_CENTER_URL)
 group_center_machine.set_machine_name_full(SERVER_NAME)
 group_center_machine.set_machine_name_short(SERVER_NAME_SHORT)
 group_center_machine.set_machine_password(GROUP_CENTER_PASSWORD)
-group_center_machine.set_logger(logger)
+group_center_logger_utils.set_is_print_mode(is_print=False)
+group_center_logger_utils.set_logger(logger)
 
 ENV_FROM_GROUP_CENTER = \
     EnvironmentManager.get_bool("ENV_FROM_GROUP_CENTER", False)

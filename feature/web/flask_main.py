@@ -178,6 +178,7 @@ def get_gpu_task():
                 "cudaRoot": str(process_obj.cuda_root),
                 "cudaVersion": str(process_obj.cuda_version),
                 "cudaVisibleDevices": str(process_obj.cuda_visible_devices),
+                "driverVersion": str(process_obj.nvidia_driver_version),
             }
         )
 

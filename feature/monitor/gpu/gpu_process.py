@@ -73,6 +73,8 @@ class GPUProcessInfo:
         self.cuda_nvcc_bin: str = ""
         self.cuda_version: str = ""
 
+        self.nvidia_driver_version: str = ""
+
         self._gpu = None
         self._state: Optional[TaskState] = TaskState.DEFAULT  # init
         self._running_time_in_seconds: int = 0  # init
@@ -96,6 +98,8 @@ class GPUProcessInfo:
             self.get_project_name()
             self.get_python_filename()
             self.get_start_time()
+
+            self.get_nvidia_gpu_version()
 
             self.update_gpu_process_info()
 
@@ -356,6 +360,24 @@ class GPUProcessInfo:
             self.python_file = file_name.split("/")[-1].strip()
         else:
             self.python_file = file_name.strip()
+
+    def get_nvidia_gpu_version(self) -> str:
+        try:
+            with open("/proc/driver/nvidia/version", "r") as f:
+                nvidia_driver_version = f.read()
+        except Exception:
+            return ""
+
+        version_pattern = re.compile(r"Kernel Module {2}(\d+\.\d+\.\d+)")
+        match = version_pattern.search(nvidia_driver_version)
+
+        if match:
+            version = match.group(1).strip()
+            self.nvidia_driver_version = version
+
+            return version
+        else:
+            return ""
 
     @property
     def running_time_in_seconds(self):

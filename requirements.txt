@@ -11,5 +11,9 @@ requests
 chardet
 pyyaml
 python-dotenv
+packaging
+humanfriendly
 
 loguru
+
+li-group-center>=1.5.0

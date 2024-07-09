@@ -1,104 +1,96 @@
-# -*- coding: utf-8 -*-
-
-import glob
+import datetime
 import os
-import socket
-from typing import Dict, List
 
-import chardet
-import psutil
-import yaml
-
-from utils.logs import get_logger
+from config.user_info import UserConfigParser, UserInfo
+from feature.utils.logs import get_logger
+from feature.utils.utils import do_command
 
 logger = get_logger()
 
 
-def get_files_with_extension(
-        directory: str, extension: str, recursive: bool = False
-) -> List[str]:
-    files = []
-    if recursive:
-        search_path = os.path.join(directory, f"**/*.{extension}")
+def is_webhook_sleep_time(
+    start_time: datetime.time = None, end_time: datetime.time = None
+) -> bool:
+    if start_time is None or end_time is None:
+        from config.settings import (WEBHOOK_SLEEP_TIME_END,
+                                     WEBHOOK_SLEEP_TIME_START)
+
+        start_time = WEBHOOK_SLEEP_TIME_START
+        end_time = WEBHOOK_SLEEP_TIME_END
+
+    if is_within_time_range(start_time, end_time):
+        return True
     else:
-        search_path = os.path.join(directory, f"*.{extension}")
-    for file_path in glob.glob(search_path, recursive=recursive):
-        files.append(os.path.abspath(file_path))
-    return files
+        return False
 
 
-def parse_yaml(yaml_file_path: str) -> dict:
-    # Check Encoding
-    with open(yaml_file_path, "rb") as f:
-        raw_data = f.read()
-        result_encoding = chardet.detect(raw_data)
-        encoding = result_encoding["encoding"]
+def is_within_time_range(
+    start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
+) -> bool:
+    current_time = datetime.datetime.now().time()
 
-        if encoding is None:
-            encoding = "utf-8"
-
-    file_content = raw_data.decode(encoding).strip()
-
-    if len(file_content) == 0:
-        return {}
-
-    yaml_data = yaml.safe_load(file_content)
-
-    return yaml_data
+    if start_time <= end_time:
+        return start_time <= current_time <= end_time
+    else:
+        return start_time <= current_time or current_time <= end_time
 
 
-def get_interface_ip_dict(ip_type: str = "v4") -> Dict:
-    interface_ip_dict = {}
-    family = socket.AF_INET if ip_type == "v4" else socket.AF_INET6
+def get_seconds_to_sleep_until_end(end_time=None) -> float:
+    if end_time is None:
+        from config.settings import WEBHOOK_SLEEP_TIME_END
 
-    # get local ip from dns
-    try:
-        if ip_type == "v4":
-            s = socket.socket(family, socket.SOCK_DGRAM)
-            s.connect(("114.114.114.114", 80))
-        elif ip_type == "v6":
-            s = socket.socket(family, socket.SOCK_DGRAM)
-            s.connect(("6.ipw.cn", 80))
-        local_ip = s.getsockname()[0]
-    except Exception as e:
-        logger.error(f"Error getting local IP: {e}")
-        local_ip = None
-    finally:
-        s.close()
+        end_time = WEBHOOK_SLEEP_TIME_END
 
-    interface_name_list = [
-        interface_name.strip()
-        for interface_name in psutil.net_if_addrs().keys()
-        if interface_name.strip()
+    current_datetime = datetime.datetime.now()
+    current_time = current_datetime.time()
+    end_datetime = datetime.datetime.combine(current_datetime.date(), end_time)
+
+    if end_time <= current_time:
+        end_datetime += datetime.timedelta(days=1)
+
+    time_to_sleep = (end_datetime - current_datetime).total_seconds()
+
+    return time_to_sleep  # 返回整数秒数
+
+
+def get_users():
+    users_obj_dict: dict[str, UserInfo] = {}
+    user_config_parser = UserConfigParser()
+    from config.settings import USE_GROUP_CENTER, EnvironmentManager
+
+    user_from_group_center = USE_GROUP_CENTER and EnvironmentManager.get_bool(
+        "USER_FROM_GROUP_CENTER", False
+    )
+    user_from_local_files = EnvironmentManager.get_bool("USER_FROM_LOCAL_FILES", True)
+
+    if user_from_local_files:
+        user_list_from_files = user_config_parser.get_user_info_by_yaml_from_directory(
+            os.path.join(os.getcwd(), "config/users")
+        )
+        logger.info(f"User count from file: {len(user_list_from_files)}")
+        users_obj_dict.update(user_list_from_files)
+    if user_from_group_center:
+        user_list_from_group_center = (
+            user_config_parser.get_json_user_config_from_group_center()
+        )
+        logger.info(f"User count from Group Center: {len(user_list_from_group_center)}")
+        users_obj_dict.update(user_list_from_group_center)
+
+    logger.info(f"Final user count: {len(users_obj_dict)}")
+
+    return users_obj_dict
+
+
+def set_iptables(port: str) -> None:
+    cmd_list = [
+        f"sudo iptables -I INPUT -p tcp --dport {port} -j ACCEPT",
+        f"sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port {port}",
+        f"sudo ip6tables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port {port}",
     ]
+    for cmd in cmd_list:
+        try:
+            do_command(cmd)
+        except Exception as e:
+            logger.warning(f"Set iptables error: {e} when executing {cmd}")
 
-    # get local ip by psutil
-    for interface_name in interface_name_list:
-        for addr in psutil.net_if_addrs().get(interface_name, []):
-            try:
-                if addr.family == family:
-                    if ip_type == "v4":
-                        socket.inet_aton(addr.address)
-                    elif ip_type == "v6":
-                        socket.inet_pton(family, addr.address)
-                    if addr.address == local_ip:
-                        interface_ip_dict[interface_name] = addr.address
-                    break
-            except socket.error:
-                pass
-    return interface_ip_dict
-
-
-if __name__ == "__main__":
-    # result = parse_yaml(os.path.join(os.getcwd(), "config/users/master/2023.yaml"))
-    # print(result)
-
-    files_list = get_files_with_extension("../../users", "yaml", True)
-
-    # 打印文件列表
-    for file_path in files_list:
-        print(file_path)
-
-    # ip_tpye = "v4"
-    # interface_ip_dict = get_interface_ip_dict(ip_tpye)
-    # print(interface_ip_dict)
+    logger.info("Set iptables success!")

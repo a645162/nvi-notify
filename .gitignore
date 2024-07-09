@@ -1,3 +1,11 @@
+# Nvidia Smi Webhook Notify
+/start-deploy.sh
+/config/users/.gitignore
+/.env.dev
+/.env.secure
+/start.sh
+/systemd.sh
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -120,7 +128,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+# .env
 .venv
 env/
 venv/
@@ -261,3 +269,4 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+sqlite_data/

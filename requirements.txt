@@ -1,10 +1,19 @@
-nvidia-ml-py
 nvitop
+psutil
 
 flask
 flask-socketio
+flask-cors
 
+urllib3<2
 requests
-psutil
+
 chardet
-yaml
+pyyaml
+python-dotenv
+packaging
+humanfriendly
+
+loguru
+
+li-group-center>=1.5.0

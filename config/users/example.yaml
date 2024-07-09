@@ -1,0 +1,16 @@
+version: 200
+enable: False
+
+userList:
+  - name: "李华"
+    nameEng: "lihua"
+    keywords: [ "lihua" ]
+    year: 2024
+
+    webhook:
+      lark:
+        userId: ""
+        userMobilePhone: ""
+      weCom:
+        userId: ""
+        userMobilePhone: ""

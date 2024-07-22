@@ -28,7 +28,7 @@ app = Flask(__name__)
 
 
 @app.route("/nvitop_output")
-def get_result():
+def nvitop_output():
     command_result = get_nvitop_result()
     return Response(
         response=json.dumps({"result": escape(command_result)}),
@@ -62,7 +62,7 @@ def machine_user_message():
 
 
 @app.route("/system_info")
-def get_system_info():
+def system_info():
     system_info: dict = get_system_info_dict()
 
     return Response(
@@ -73,7 +73,7 @@ def get_system_info():
 
 
 @app.route("/gpu_count")
-def get_gpu_count():
+def gpu_count():
     # For debug use
     # current_gpu_task = global_gpu_task
     return Response(
@@ -84,7 +84,7 @@ def get_gpu_count():
 
 
 @app.route("/gpu_usage_info")
-def get_gpu_usage():
+def gpu_usage_info():
     gpu_index = request.args.get("gpu_index", default=None, type=int)
     if gpu_index is None or gpu_index > get_gpu_count():
         return Response(
@@ -103,7 +103,7 @@ def get_gpu_usage():
 
 
 @app.route("/gpu_task_info")
-def get_gpu_task():
+def gpu_task_info():
     gpu_index = request.args.get("gpu_index", default=None, type=int)
 
     if gpu_index is None or gpu_index > get_gpu_count():

@@ -8,7 +8,7 @@ from feature.monitor.gpu.monitor import start_gpu_monitor_all
 from feature.monitor.hard_disk.monitor import start_resource_monitor_all
 from feature.notify.webhook import init_webhook
 from feature.utils.logs import get_logger
-from feature.web.flask_starter import start_web_server_both
+from feature.web.flask_starter import start_flask_server_both
 
 logger = get_logger()
 
@@ -34,4 +34,4 @@ if __name__ == "__main__":
     start_resource_monitor_all()
 
     logger.info("Web server sub program is starting...")
-    start_web_server_both()
+    start_flask_server_both()

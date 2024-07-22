@@ -255,10 +255,16 @@ HARD_DISK_LOW_FREE_GB_THRESHOLD = EnvironmentManager.get_int(
     "HARD_DISK_LOW_FREE_GB_THRESHOLD", 100
 )
 
+# Web Server
+WEB_SERVER_HOST = EnvironmentManager.get("WEB_SERVER_HOST", "0.0.0.0")
+
 # Flask
 FLASK_SERVER_HOST = EnvironmentManager.get("FLASK_SERVER_HOST", "0.0.0.0")
-FLASK_SERVER_PORT = EnvironmentManager.get("FLASK_SERVER_PORT", "3000")
+FLASK_SERVER_PORT = EnvironmentManager.get("FLASK_SERVER_PORT", "5000")
 GPU_BOARD_WEB_URL = EnvironmentManager.get("GPU_BOARD_WEB_URL", "")
+
+# FastAPI
+FASTAPI_SERVER_PORT = EnvironmentManager.get("FASTAPI_SERVER_PORT", "8000")
 
 # WebHook
 WEBHOOK_DELAY_SEND_SECONDS = EnvironmentManager.get_int(

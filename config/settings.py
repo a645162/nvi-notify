@@ -264,7 +264,7 @@ FLASK_SERVER_PORT = EnvironmentManager.get("FLASK_SERVER_PORT", "5000")
 GPU_BOARD_WEB_URL = EnvironmentManager.get("GPU_BOARD_WEB_URL", "")
 
 # FastAPI
-FASTAPI_SERVER_PORT = EnvironmentManager.get("FASTAPI_SERVER_PORT", "8000")
+FASTAPI_SERVER_PORT = EnvironmentManager.get_int("FASTAPI_SERVER_PORT", 8000)
 
 # WebHook
 WEBHOOK_DELAY_SEND_SECONDS = EnvironmentManager.get_int(

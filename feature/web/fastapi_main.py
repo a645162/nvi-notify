@@ -56,7 +56,7 @@ def machine_user_message(request: Request):
 
 
 @app.get("/system_info")
-def get_system_info(request: Request):
+def get_system_info():
     system_info: dict = get_system_info_dict()
     return JSONResponse(
         content=system_info,
@@ -66,11 +66,9 @@ def get_system_info(request: Request):
 
 
 @app.get("/gpu_count")
-def get_gpu_count(request: Request):
-    # For debug use
-    # current_gpu_task = global_gpu_task
+def get_gpu_count():
     return JSONResponse(
-        content={"result": get_gpu_count()},
+        content={"result": get_gpu_count_backend()},
         status_code=200,
         media_type="application/json",
     )
@@ -79,7 +77,7 @@ def get_gpu_count(request: Request):
 @app.get("/gpu_usage_info")
 def get_gpu_usage(request: Request):
     gpu_index = request.query_params.get("gpu_index", None)
-    if gpu_index is None or not gpu_index.isdigit() or int(gpu_index) > get_gpu_count():
+    if gpu_index is None or not gpu_index.isdigit() or int(gpu_index) > get_gpu_count_backend():
         return JSONResponse(
             content={"result": "Invalid GPU Index(gpu_index)."},
             status_code=400,
@@ -99,7 +97,7 @@ def get_gpu_usage(request: Request):
 def get_gpu_task(request: Request):
     gpu_index = request.query_params.get("gpu_index", None)
 
-    if gpu_index is None or not gpu_index.isdigit() or int(gpu_index) > get_gpu_count():
+    if gpu_index is None or not gpu_index.isdigit() or int(gpu_index) > get_gpu_count_backend():
         return JSONResponse(
             content={"result": "Invalid GPU Index(gpu_index)."},
             status_code=400,

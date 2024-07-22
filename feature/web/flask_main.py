@@ -28,7 +28,7 @@ app = Flask(__name__)
 
 
 @app.route("/nvitop_output")
-def nvitop_output():
+def get_nvitop_output():
     command_result = get_nvitop_result()
     return Response(
         response=json.dumps({"result": escape(command_result)}),
@@ -38,7 +38,7 @@ def nvitop_output():
 
 
 @app.route("/machine_user_message", methods=['POST'])
-def machine_user_message():
+def post_machine_user_message():
     final_data: dict = {
         "haveError": True,
         "isSucceed": False,
@@ -62,7 +62,7 @@ def machine_user_message():
 
 
 @app.route("/system_info")
-def system_info():
+def get_system_info():
     system_info: dict = get_system_info_dict()
 
     return Response(
@@ -73,20 +73,18 @@ def system_info():
 
 
 @app.route("/gpu_count")
-def gpu_count():
-    # For debug use
-    # current_gpu_task = global_gpu_task
+def get_gpu_count():
     return Response(
-        response=json.dumps({"result": get_gpu_count()}),
+        response=json.dumps({"result": get_gpu_count_backend()}),
         status=200,
         mimetype="application/json",
     )
 
 
 @app.route("/gpu_usage_info")
-def gpu_usage_info():
+def get_gpu_usage_info():
     gpu_index = request.args.get("gpu_index", default=None, type=int)
-    if gpu_index is None or gpu_index > get_gpu_count():
+    if gpu_index is None or gpu_index > get_gpu_count_backend():
         return Response(
             response=json.dumps({"result": "Invalid GPU Index(gpu_index)."}),
             status=400,
@@ -103,10 +101,10 @@ def gpu_usage_info():
 
 
 @app.route("/gpu_task_info")
-def gpu_task_info():
+def get_gpu_task_info():
     gpu_index = request.args.get("gpu_index", default=None, type=int)
 
-    if gpu_index is None or gpu_index > get_gpu_count():
+    if gpu_index is None or gpu_index > get_gpu_count_backend():
         return Response(
             response=json.dumps({"result": "Invalid GPU Index(gpu_index)."}),
             status=400,
@@ -125,7 +123,7 @@ def gpu_task_info():
 
 
 @app.route("/")
-def index():
+def get_index():
     if len(GPU_BOARD_WEB_URL) != 0:
         try:
             response = requests.get(GPU_BOARD_WEB_URL)

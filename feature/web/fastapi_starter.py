@@ -1,3 +1,5 @@
+import threading
+
 from uvicorn import run
 
 from config.settings import (
@@ -29,6 +31,14 @@ def start_fastapi_server_ipv4(log_level="critical"):
         reload=True,
         log_level=log_level,
     )
+
+
+def start_fastapi_server_ipv4_background(log_level="critical"):
+    class FastapiThread(threading.Thread):
+        def run(self):
+            start_fastapi_server_ipv4(log_level=log_level)
+
+    FastapiThread().start()
 
 
 if __name__ == "__main__":

@@ -41,8 +41,11 @@ def get_system_info_dict() -> dict:
     return system_info
 
 
-def get_gpu_count() -> int:
-    return len(global_gpu_task)
+def get_gpu_count_backend() -> int:
+    # For debug use
+    current_gpu_task = global_gpu_task
+
+    return len(current_gpu_task)
 
 
 def get_gpu_usage_dict(gpu_index: int) -> dict:

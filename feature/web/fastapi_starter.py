@@ -30,15 +30,8 @@ def start_fastapi_server_ipv4(log_level="critical"):
         port=FASTAPI_SERVER_PORT,
         reload=True,
         log_level=log_level,
+        workers=1
     )
-
-
-def start_fastapi_server_ipv4_background(log_level="critical"):
-    class FastapiThread(threading.Thread):
-        def run(self):
-            start_fastapi_server_ipv4(log_level=log_level)
-
-    FastapiThread().start()
 
 
 if __name__ == "__main__":

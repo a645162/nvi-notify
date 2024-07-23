@@ -12,6 +12,7 @@ from feature.global_variable.gpu import (
     global_gpu_info,
     global_gpu_task,
     global_gpu_usage,
+    global_variable_gpu_updated
 )
 from feature.group_center import group_center_message
 from feature.monitor.gpu.gpu import GPU
@@ -114,6 +115,8 @@ def init_global_gpu_var():
     global_gpu_info.extend(default_gpu_info_dict.copy() for _ in range(NUM_GPU))
     global_gpu_usage.extend(default_gpu_usage_dict.copy() for _ in range(NUM_GPU))
     global_gpu_task.extend([].copy() for _ in range(NUM_GPU))
+
+    global_variable_gpu_updated()
 
 
 def start_gpu_monitor_all():

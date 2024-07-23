@@ -5,7 +5,13 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 
-app = FastAPI()
+app = FastAPI(
+    title='FastAPI',
+    description='FastAPI',
+    version='1.0.0',
+    docs_url='/docs',
+    redoc_url='/redocs',
+)
 templates = Jinja2Templates(directory="templates")
 
 from config.settings import GPU_BOARD_WEB_URL, SERVER_NAME
@@ -111,3 +117,4 @@ def get_gpu_task(request: Request):
         status_code=200,
         media_type="application/json",
     )
+

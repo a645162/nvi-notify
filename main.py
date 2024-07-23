@@ -11,7 +11,6 @@ from feature.monitor.hard_disk.monitor import start_resource_monitor_all
 from feature.notify.webhook import init_webhook
 
 from feature.web.flask_starter import start_flask_server_both_background
-from feature.web.fastapi_starter import start_fastapi_server_ipv4
 
 from feature.utils.logs import get_logger
 
@@ -42,6 +41,3 @@ if __name__ == "__main__":
 
     logger.info("Flask Server is starting...")
     start_flask_server_both_background()
-
-    logger.info("FastAPI Server is starting...")
-    start_fastapi_server_ipv4(log_level="info")

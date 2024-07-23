@@ -74,8 +74,12 @@ def get_system_info():
 
 @app.route("/gpu_count")
 def get_gpu_count():
+    gpu_count = get_gpu_count_backend()
+
+    print("gpu_count =", gpu_count)
+
     return Response(
-        response=json.dumps({"result": get_gpu_count_backend()}),
+        response=json.dumps({"result": gpu_count}),
         status=200,
         mimetype="application/json",
     )

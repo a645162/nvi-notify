@@ -117,4 +117,3 @@ def get_gpu_task(request: Request):
         status_code=200,
         media_type="application/json",
     )
-

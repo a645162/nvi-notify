@@ -3,6 +3,11 @@
 import json
 from html import escape
 
+import logging
+
+log = logging.getLogger()
+log.setLevel(logging.ERROR)
+
 import requests
 from flask import Flask, Response, redirect, render_template, request
 

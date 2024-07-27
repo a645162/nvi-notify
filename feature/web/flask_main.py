@@ -3,18 +3,24 @@
 import json
 from html import escape
 
-import logging
-
-log = logging.getLogger()
-log.setLevel(logging.ERROR)
-
-import requests
-from flask import Flask, Response, redirect, render_template, request
-
 from config.settings import (
+    FLASK_LOG_DISABLE,
     GPU_BOARD_WEB_URL,
     SERVER_NAME,
 )
+
+##################################################
+# Close Flask Log
+if FLASK_LOG_DISABLE:
+    import logging
+
+    log = logging.getLogger("werkzeug")
+    log.disabled = True
+    log.setLevel(logging.ERROR)
+##################################################
+
+import requests
+from flask import Flask, Response, redirect, render_template, request
 
 from feature.web.web_common import *
 

@@ -257,6 +257,7 @@ HARD_DISK_LOW_FREE_GB_THRESHOLD = EnvironmentManager.get_int(
 
 # Web Server
 WEB_SERVER_HOST = EnvironmentManager.get("WEB_SERVER_HOST", "0.0.0.0")
+WEB_SERVER_CORS_ENABLE = EnvironmentManager.get_bool("WEB_SERVER_CORS_ENABLE", False)
 
 # Flask
 FLASK_SERVER_HOST = EnvironmentManager.get("FLASK_SERVER_HOST", "0.0.0.0")

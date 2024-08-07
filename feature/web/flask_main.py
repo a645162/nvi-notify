@@ -4,6 +4,7 @@ import json
 from html import escape
 
 from config.settings import (
+    WEB_SERVER_CORS_ENABLE,
     FLASK_LOG_DISABLE,
     GPU_BOARD_WEB_URL,
     SERVER_NAME,
@@ -26,16 +27,16 @@ from feature.web.web_common import *
 
 from feature.utils.logs import get_logger
 
-# from flask_cors import CORS
+from flask_cors import CORS
 
 logger = get_logger()
 logger.info("Flask server is starting...")
 app = Flask(__name__)
 
-
-# 允许所有域进行跨源请求
-# CORS(app)
-# logger.info("Set CORS for Flask server.")
+if not WEB_SERVER_CORS_ENABLE:
+    # 允许所有域进行跨源请求
+    CORS(app)
+    logger.info("Set CORS for Flask server.")
 
 
 @app.route("/nvitop_output")

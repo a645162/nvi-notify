@@ -100,6 +100,9 @@ def get_gpu_count():
 @app.route("/gpu_usage_info")
 def get_gpu_usage_info():
     gpu_index = request.args.get("gpu_index", default=None, type=int)
+    if gpu_index is None:
+        gpu_index = request.args.get("gpuIndex", default=None, type=int)
+
     if gpu_index is None or gpu_index > get_gpu_count_backend():
         return Response(
             response=json.dumps({"result": "Invalid GPU Index(gpu_index)."}),
@@ -119,6 +122,8 @@ def get_gpu_usage_info():
 @app.route("/gpu_task_info")
 def get_gpu_task_info():
     gpu_index = request.args.get("gpu_index", default=None, type=int)
+    if gpu_index is None:
+        gpu_index = request.args.get("gpuIndex", default=None, type=int)
 
     if gpu_index is None or gpu_index > get_gpu_count_backend():
         return Response(

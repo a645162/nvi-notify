@@ -5,8 +5,8 @@ flask
 flask-socketio
 flask-cors
 
-fastapi
-uvicorn
+# fastapi
+# uvicorn
 
 urllib3<2
 requests

@@ -157,7 +157,7 @@ def get_disk_usage():
 
 @app.route("/disk_usage_user")
 def get_disk_usage_user():
-    result = get_disk_usage_dict_list()
+    result = get_disk_usage_user_dict_list()
     response_disk_usage = {"result": len(result), "diskUsageUsage": result}
 
     return Response(

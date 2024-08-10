@@ -18,6 +18,7 @@ from feature.notify.message_handler import MessageHandler
 from feature.utils.logs import get_logger
 from feature.utils.common_utils import do_command
 from feature.utils.system.linux_system import check_is_root, check_is_linux
+from feature.global_variable.disk_status import disk_info_response_dict
 
 logger = get_logger()
 
@@ -70,7 +71,26 @@ class HardDiskMonitor(Monitor):
         self.__generate_api_response_data()
 
     def __generate_api_response_data(self):
-        pass
+        new_dict = {}
+        for mount_point in self.hard_disk_dict.keys():
+            current_disk_obj: HardDisk = self.hard_disk_dict[mount_point]
+
+            current_dict = {
+                "mountPoint": mount_point,
+                "usedPercentage": current_disk_obj.percentage_used_int,
+                "usedStr": current_disk_obj.used,
+                "freeStr": current_disk_obj.free_str,
+                "totalStr": current_disk_obj.total,
+                "triggerHighPercentageUsed": current_disk_obj.high_percentage_used_trigger,
+                "triggerLowFreeBytes": current_disk_obj.low_free_bytes_trigger,
+                "triggerSizeWarning": current_disk_obj.size_warning_trigger,
+                "type": current_disk_obj.type.name,
+                "purpose": current_disk_obj.purpose_cn.value
+            }
+
+            new_dict[mount_point] = current_dict
+        disk_info_response_dict.clear()
+        disk_info_response_dict.update(new_dict)
 
     def harddisk_monitor_thread(self):
         """

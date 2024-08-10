@@ -7,6 +7,7 @@ from feature.global_variable.gpu import (
     global_gpu_usage,
 )
 from feature.global_variable.system import global_system_info
+from feature.global_variable.disk_status import disk_info_response_dict
 
 from group_center.core.feature.machine_user_message \
     import machine_user_message_directly
@@ -111,11 +112,16 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
 
 
 def get_disk_usage_dict_list() -> List[dict]:
-    pass
+    dict_list: List[dict] = []
+
+    for mount_point in disk_info_response_dict.keys():
+        dict_list.append(disk_info_response_dict[mount_point])
+
+    return dict_list
 
 
 def get_disk_usage_user_dict_list() -> List[dict]:
-    pass
+    return []
 
 
 def machine_user_message_backend(user_name: str, content: str):

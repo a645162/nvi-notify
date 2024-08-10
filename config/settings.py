@@ -83,7 +83,7 @@ class EnvironmentManager:
         )
 
         value = cls.get(key, str(default))
-        return value.strip().lower() == "true"
+        return value.strip().lower() == "true" or value.strip() == "1"
 
     @classmethod
     def get_time(cls, key: str, default: datetime.time) -> datetime.time:
@@ -248,6 +248,8 @@ GPU_MONITOR_SAMPLING_INTERVAL = EnvironmentManager.get_int(
 GPU_MONITOR_AUTO_RESTART = EnvironmentManager.get_bool("GPU_MONITOR_AUTO_RESTART", True)
 
 # Hard Disk Monitor
+HARD_DISK_MONITOR_PASS_ROOT_CHECK = \
+    EnvironmentManager.get_bool("HARD_DISK_MONITOR_PASS_ROOT_CHECK", False)
 HARD_DISK_MOUNT_POINT = set(
     m.strip() for m in EnvironmentManager.get("HARD_DISK_MOUNT_POINT", "/").split(",")
 )

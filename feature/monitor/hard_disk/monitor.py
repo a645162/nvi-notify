@@ -6,6 +6,7 @@ from typing import Tuple, Union
 import humanfriendly
 
 from config.settings import (
+    HARD_DISK_MONITOR_PASS_ROOT_CHECK,
     HARD_DISK_MONITOR_SAMPLING_INTERVAL,
     HARD_DISK_MOUNT_POINT,
     USERS,
@@ -92,7 +93,7 @@ class HardDiskMonitor(Monitor):
         disk_info_response_dict.clear()
         disk_info_response_dict.update(new_dict)
 
-    def harddisk_monitor_thread(self):
+    def hard_disk_monitor_thread(self):
         """
         Monitor the hard disk in a separate thread, checking for warnings and sending notifications.
         """
@@ -260,12 +261,12 @@ def start_resource_monitor_all():
         logger.warning("Resource monitor only support Linux system.")
         return
 
-    if not check_is_root():
+    if not HARD_DISK_MONITOR_PASS_ROOT_CHECK and not check_is_root():
         logger.warning("Resource monitor only support root user.")
         return
 
     hard_disk_monitor = HardDiskMonitor(HARD_DISK_MOUNT_POINT)
-    hard_disk_monitor.start_monitor(hard_disk_monitor.harddisk_monitor_thread)
+    hard_disk_monitor.start_monitor(hard_disk_monitor.hard_disk_monitor_thread)
 
 
 if __name__ == "__main__":

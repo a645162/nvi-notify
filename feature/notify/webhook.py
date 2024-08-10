@@ -48,7 +48,6 @@ class Webhook:
         self.warning_msg_queue = Queue()
         self.retry_msg_queue = Queue(maxsize=3)
 
-
     @property
     def webhook_url_main(self) -> str:
         return self._webhook_url_main
@@ -88,7 +87,7 @@ class Webhook:
     def get_webhook_url(self, webhook_api: str):
         webhook_api = webhook_api.strip()
         if len(webhook_api) == 0:
-            logger.error(f"Illegal {self.webhook_name} Webhook!")
+            logger.warning(f"Illegal {self.webhook_name} Webhook!")
             return ""
 
         return (

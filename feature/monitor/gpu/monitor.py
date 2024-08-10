@@ -121,6 +121,11 @@ def init_global_gpu_var():
 
 def start_gpu_monitor_all():
     init_global_gpu_var()
+    
+    if NUM_GPU == 0:
+        logger.warning("No GPU detected, GPU monitor will not start.")
+        return
+    
     nvidia_monitor = NvidiaMonitor(NUM_GPU)
     nvidia_monitor.start_monitor(nvidia_monitor.gpu_monitor_thread)
 

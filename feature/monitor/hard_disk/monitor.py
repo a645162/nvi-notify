@@ -17,6 +17,7 @@ from feature.monitor.monitor import Monitor
 from feature.notify.message_handler import MessageHandler
 from feature.utils.logs import get_logger
 from feature.utils.common_utils import do_command
+from feature.utils.system.linux_system import check_is_root, check_is_linux
 
 logger = get_logger()
 
@@ -232,7 +233,15 @@ def start_resource_monitor_all():
     Start monitoring all resources, specifically the hard disk.
     """
     if HARD_DISK_MOUNT_POINT is None:
-        logger.error("Cannot get the mountpoint of hard disk.")
+        logger.warning("Cannot get the mountpoint of hard disk.")
+        return
+
+    if not check_is_linux():
+        logger.warning("Resource monitor only support Linux system.")
+        return
+
+    if not check_is_root():
+        logger.warning("Resource monitor only support root user.")
         return
 
     hard_disk_monitor = HardDiskMonitor(HARD_DISK_MOUNT_POINT)

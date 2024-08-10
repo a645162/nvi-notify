@@ -38,9 +38,11 @@ class HardDisk:
         self._purpose_cn: DiskPurpose = None
 
         self.mount_point = mount_point
-        self._total: str = ""
-        self._used: str = ""
-        self._free_str: str = ""
+
+        self.total_str: str = ""
+        self.used_str: str = ""
+        self.free_str: str = ""
+
         self._free_bytes: int = humanfriendly.parse_size(
             "1TB", binary=True
         )  # init max free bytes (1TiB)
@@ -50,8 +52,8 @@ class HardDisk:
 
     def update_info(self, info: list):
         self.name = info[0]
-        self.total = info[1]
-        self.used = info[2]
+        self.total_str = info[1]
+        self.used_str = info[2]
         self.free_str = info[3]
         self.percentage_used_str = info[4]
         # self.mount_point = info[5]
@@ -201,7 +203,7 @@ class HardDisk:
     def disk_info(self) -> str:
         return (
             f"{self.purpose_cn}(挂载点为{self.mount_point})"
-            f"剩余可用容量为{self.free_str}，总容量为{self.total}，"
+            f"剩余可用容量为{self.free_str}，总容量为{self.total_str}，"
             f"占用率为{self.percentage_used_str}\n"
         )
 

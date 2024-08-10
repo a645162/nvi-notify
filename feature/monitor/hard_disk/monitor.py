@@ -56,7 +56,7 @@ class HardDiskMonitor(Monitor):
         """
         Update the detailed information of each hard disk by running the `df -h` command.
         """
-        command = "df -h"
+        command = "df -lh"
         _, results, _ = do_command(command)
         detail_infos = results.split("\n")
 
@@ -79,14 +79,14 @@ class HardDiskMonitor(Monitor):
             current_dict = {
                 "mountPoint": mount_point,
                 "usedPercentage": current_disk_obj.percentage_used_int,
-                "usedStr": current_disk_obj.used,
+                "usedStr": current_disk_obj.used_str,
                 "freeStr": current_disk_obj.free_str,
-                "totalStr": current_disk_obj.total,
+                "totalStr": current_disk_obj.total_str,
                 "triggerHighPercentageUsed": current_disk_obj.high_percentage_used_trigger,
                 "triggerLowFreeBytes": current_disk_obj.low_free_bytes_trigger,
                 "triggerSizeWarning": current_disk_obj.size_warning_trigger,
                 "type": current_disk_obj.type.name,
-                "purpose": current_disk_obj.purpose_cn.value
+                "purpose": current_disk_obj.purpose_cn.value,
             }
 
             new_dict[mount_point] = current_dict
@@ -106,7 +106,9 @@ class HardDiskMonitor(Monitor):
                 logger.warning(f"[硬盘{mount_point}]容量不足！")
 
                 if not is_webhook_sleep_time():
-                    disk_warning_cnt[mount_point] = disk_warning_cnt.get(mount_point, 0) + 1
+                    disk_warning_cnt[mount_point] = (
+                        disk_warning_cnt.get(mount_point, 0) + 1
+                    )
                     if disk_warning_cnt[mount_point] % 4 == 0:
                         logger.warning(f"[硬盘{mount_point}]开始扫描目录占用容量...")
                         self.get_user_dir_size_info(hard_disk)
@@ -236,7 +238,7 @@ class HardDiskMonitor(Monitor):
 
             dir_size, dir_path = lines.split()
             if humanfriendly.parse_size(
-                    dir_size, binary=True
+                dir_size, binary=True
             ) < humanfriendly.parse_size("10GB", binary=True):
                 continue
 

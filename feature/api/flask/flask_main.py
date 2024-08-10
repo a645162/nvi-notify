@@ -23,7 +23,7 @@ if FLASK_LOG_DISABLE:
 import requests
 from flask import Flask, Response, redirect, render_template, request
 
-from feature.web.web_common import *
+from feature.api.api_data_common import *
 
 from feature.utils.logs import get_logger
 
@@ -138,6 +138,30 @@ def get_gpu_task_info():
 
     return Response(
         response=json.dumps(response_gpu_tasks),
+        status=200,
+        mimetype="application/json",
+    )
+
+
+@app.route("/disk_usage")
+def get_disk_usage():
+    result = get_disk_usage_dict_list()
+    response_disk_usage = {"result": len(result), "diskUsage": result}
+
+    return Response(
+        response=json.dumps(response_disk_usage),
+        status=200,
+        mimetype="application/json",
+    )
+
+
+@app.route("/disk_usage_user")
+def get_disk_usage_user():
+    result = get_disk_usage_dict_list()
+    response_disk_usage = {"result": len(result), "diskUsageUsage": result}
+
+    return Response(
+        response=json.dumps(response_disk_usage),
         status=200,
         mimetype="application/json",
     )

@@ -5,7 +5,7 @@ from config.settings import (
     FLASK_SERVER_PORT,
 )
 
-from feature.web.flask_main import app
+from feature.api.flask.flask_main import app
 
 from feature.utils.logs import get_logger
 

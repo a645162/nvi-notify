@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Flask (feature/web/flask_main.py)" type="Python.FlaskServer" nameIsGenerated="true">
+  <configuration default="false" name="Flask (feature/api/flask/flask_main.py)" type="Python.FlaskServer" nameIsGenerated="true">
     <module name="nvidia-smi-webhook-notify" />
-    <option name="target" value="$PROJECT_DIR$/feature/web/flask_main.py" />
+    <option name="target" value="$PROJECT_DIR$/feature/api/flask/flask_main.py" />
     <option name="targetType" value="PATH" />
     <option name="ENV_FILES" value="$PROJECT_DIR$/.env" />
     <option name="INTERPRETER_OPTIONS" value="" />

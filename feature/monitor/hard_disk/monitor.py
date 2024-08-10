@@ -66,6 +66,11 @@ class HardDiskMonitor(Monitor):
                 self.hard_disk_dict[mount_point].update_info(fields)
                 logger.info(f'[硬盘"{mount_point}"]获取容量信息成功')
 
+        self.__generate_api_response_data()
+
+    def __generate_api_response_data(self):
+        pass
+
     def harddisk_monitor_thread(self):
         """
         Monitor the hard disk in a separate thread, checking for warnings and sending notifications.
@@ -100,7 +105,7 @@ class HardDiskMonitor(Monitor):
             return
 
         command_args: list[str] = ["du", "-sh"]
-        
+
         if hard_disk.mount_point == "/home":
             command_args.append("~/data/*")
         else:
@@ -209,7 +214,7 @@ class HardDiskMonitor(Monitor):
 
             dir_size, dir_path = lines.split()
             if humanfriendly.parse_size(
-                dir_size, binary=True
+                    dir_size, binary=True
             ) < humanfriendly.parse_size("10GB", binary=True):
                 continue
 

@@ -14,7 +14,7 @@ logger = get_logger()
 
 def run_server(log_level="critical"):
     run(
-        app="feature.web.fastapi_main:app",
+        app="feature.api.fastapi_main:app",
         host="0.0.0.0",
         port=8081,
         reload=True,
@@ -25,7 +25,7 @@ def run_server(log_level="critical"):
 def start_fastapi_server_ipv4(log_level="critical"):
     logger.info("Starting Fastapi server(IPV4)...")
     run(
-        app="feature.web.fastapi_main:app",
+        app="feature.api.fastapi_main:app",
         host=WEB_SERVER_HOST,
         port=FASTAPI_SERVER_PORT,
         reload=True,

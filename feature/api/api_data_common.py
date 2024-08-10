@@ -110,6 +110,14 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
     return task_list
 
 
+def get_disk_usage_dict_list() -> List[dict]:
+    pass
+
+
+def get_disk_usage_user_dict_list() -> List[dict]:
+    pass
+
+
 def machine_user_message_backend(user_name: str, content: str):
     logger.info(f"[Machine User Message]userName: {user_name}, content: {content}")
     machine_user_message_directly(

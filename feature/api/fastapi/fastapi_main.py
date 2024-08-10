@@ -16,7 +16,7 @@ templates = Jinja2Templates(directory="templates")
 
 from config.settings import GPU_BOARD_WEB_URL, SERVER_NAME
 
-from feature.web.web_common import *
+from feature.api.api_data_common import *
 
 from feature.utils.logs import get_logger
 

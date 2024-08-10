@@ -10,7 +10,7 @@ from feature.monitor.hard_disk.monitor import start_resource_monitor_all
 
 from feature.notify.webhook import init_webhook
 
-from feature.web.flask_starter import start_flask_server_both_background
+from feature.api.feature_api import start_api_server
 
 from feature.utils.logs import get_logger
 
@@ -37,7 +37,5 @@ if __name__ == "__main__":
     logger.info("Hard Disk Monitor sub program is starting...")
     start_resource_monitor_all()
 
-    logger.info("Web Server sub program is starting...")
-
-    logger.info("Flask Server is starting...")
-    start_flask_server_both_background()
+    logger.info("API(Web Server) sub program is starting...")
+    start_api_server()

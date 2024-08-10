@@ -112,9 +112,17 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
 
 
 def get_disk_usage_dict_list() -> List[dict]:
+    mount_point_list: List[str] = [
+        key
+        for key in disk_info_response_dict.keys()
+    ]
+
+    # Sort
+    mount_point_list.sort()
+
     dict_list: List[dict] = []
 
-    for mount_point in disk_info_response_dict.keys():
+    for mount_point in mount_point_list:
         dict_list.append(disk_info_response_dict[mount_point])
 
     return dict_list

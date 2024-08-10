@@ -14,11 +14,12 @@ def init_remote_env_list():
 
     env_dict = json.loads(json_str)
     if isinstance(env_dict, dict):
-        print("-" * 20)
-        print("Remote Env")
+        logger.info("-" * 20)
+        logger.info("Remote Env")
+        logger.info("-" * 20)
         for key in env_dict.keys():
-            print(f"{key}: {env_dict[key]}")
-        print("-" * 20)
+            logger.info(f"{key}: {env_dict[key]}")
+        logger.info("-" * 20)
 
         EnvironmentManager.all_env_dict.update(env_dict)
 

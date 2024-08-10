@@ -7,7 +7,7 @@ from config.settings import (
 )
 from feature.monitor.monitor_enum import MonitorEnum
 from feature.utils.logs import get_logger
-from feature.utils.utils import do_command
+from feature.utils.common_utils import do_command
 
 logger = get_logger()
 

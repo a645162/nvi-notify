@@ -19,7 +19,7 @@ from feature.notify.message_handler import MessageHandler
 from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger
-from feature.utils.utils import do_command
+from feature.utils.common_utils import do_command
 
 logger = get_logger()
 sql = get_sql()

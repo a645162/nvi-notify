@@ -11,12 +11,12 @@ from config.settings import (
     USERS,
 )
 from config.user_info import UserInfo
-from config.utils import is_webhook_sleep_time
+from config.config_utils import is_webhook_sleep_time
 from feature.monitor.hard_disk.hard_disk import DiskPurpose, HardDisk
 from feature.monitor.monitor import Monitor
 from feature.notify.message_handler import MessageHandler
 from feature.utils.logs import get_logger
-from feature.utils.utils import do_command
+from feature.utils.common_utils import do_command
 
 logger = get_logger()
 

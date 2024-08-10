@@ -13,7 +13,7 @@ import requests
 
 from config.settings import WEBHOOK_NAME
 from config.user_info import UserInfo
-from config.utils import get_seconds_to_sleep_until_end, is_webhook_sleep_time
+from config.config_utils import get_seconds_to_sleep_until_end, is_webhook_sleep_time
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, WebhookState
 from feature.utils.logs import get_logger
 

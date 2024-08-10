@@ -13,8 +13,9 @@ from group_center.utils.log import logger as group_center_logger_utils
 from nvitop import Device
 from packaging import version
 
+from feature.utils.python_status import is_debug_mode
 from config.user_info import UserInfo
-from config.utils import get_users, set_iptables
+from config.config_utils import get_users, set_iptables
 from feature.monitor.monitor_enum import AllWebhookName
 from feature.utils.logs import get_logger
 
@@ -43,8 +44,13 @@ class EnvironmentManager:
         default_env_file = os.path.join(path_base, ".env")
         env_vars = cls.load_env_file(default_env_file)
 
+        debug_mode = is_debug_mode()
+        if debug_mode:
+            logger.info("!!!Debug mode is enabled!!!")
+        else:
+            logger.info("Debug mode is disabled")
         extend_env_file = os.path.join(
-            os.getcwd(), ".env.dev" if sys.gettrace() else ".env.secure"
+            os.getcwd(), ".env.dev" if debug_mode else ".env.secure"
         )
         env_vars.update(cls.load_env_file(extend_env_file, override=True))
 

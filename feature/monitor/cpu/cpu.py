@@ -3,7 +3,7 @@ from collections import deque
 import psutil
 
 from config.settings import CPU_HIGH_TEMPERATURE_THRESHOLD
-from feature.utils.utils import do_command
+from feature.utils.common_utils import do_command
 
 
 class CPU:

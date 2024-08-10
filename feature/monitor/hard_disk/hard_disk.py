@@ -27,6 +27,10 @@ class DiskType(MonitorEnum):
 
 
 class HardDisk:
+    total_str: str
+    used_str: str
+    free_str: str
+
     def __init__(self, mount_point: str) -> None:
         self._name: str = ""
         self._mount_point: str = ""
@@ -39,9 +43,9 @@ class HardDisk:
 
         self.mount_point = mount_point
 
-        self.total_str: str = ""
-        self.used_str: str = ""
-        self.free_str: str = ""
+        self._total_str: str = ""
+        self._used_str: str = ""
+        self._free_str: str = ""
 
         self._free_bytes: int = humanfriendly.parse_size(
             "1TB", binary=True
@@ -69,6 +73,22 @@ class HardDisk:
         else:
             self.type = DiskType.HDD
         self._name = value
+
+    @property
+    def used_str(self) -> str:
+        return self._used_str
+
+    @used_str.setter
+    def used_str(self, value: str) -> None:
+        self._used_str = value
+
+    @property
+    def total_str(self) -> str:
+        return self._total_str
+
+    @total_str.setter
+    def total_str(self, value: str) -> None:
+        self._total_str = value
 
     @property
     def free_str(self) -> str:
@@ -107,7 +127,7 @@ class HardDisk:
     @percentage_used_int.setter
     def percentage_used_int(self, cur_percentage_used: int) -> None:
         self.high_percentage_used_trigger = (
-            cur_percentage_used > self.high_percentage_used_threshold
+                cur_percentage_used > self.high_percentage_used_threshold
         )
 
         self._percentage_used_int = cur_percentage_used

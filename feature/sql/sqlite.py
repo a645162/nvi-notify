@@ -178,7 +178,7 @@ class SQLite:
         self.conn.close()
 
 
-task_sql_dir = os.path.join("./sqlite_data")
+task_sql_dir = os.path.abspath("./sqlite_data")
 
 # Check SQLite Directory
 if not os.path.exists(path=task_sql_dir):

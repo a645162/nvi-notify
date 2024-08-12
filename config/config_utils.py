@@ -3,7 +3,7 @@ import os
 
 from config.user_info import UserConfigParser, UserInfo
 from feature.utils.logs import get_logger
-from feature.utils.utils import do_command
+from feature.utils.common_utils import do_command
 
 logger = get_logger()
 

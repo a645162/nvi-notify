@@ -6,17 +6,20 @@ from typing import Tuple, Union
 import humanfriendly
 
 from config.settings import (
+    HARD_DISK_MONITOR_PASS_ROOT_CHECK,
     HARD_DISK_MONITOR_SAMPLING_INTERVAL,
     HARD_DISK_MOUNT_POINT,
     USERS,
 )
 from config.user_info import UserInfo
-from config.utils import is_webhook_sleep_time
+from config.config_utils import is_webhook_sleep_time
 from feature.monitor.hard_disk.hard_disk import DiskPurpose, HardDisk
 from feature.monitor.monitor import Monitor
 from feature.notify.message_handler import MessageHandler
 from feature.utils.logs import get_logger
-from feature.utils.utils import do_command
+from feature.utils.common_utils import do_command
+from feature.utils.system.linux_system import check_is_root, check_is_linux
+from feature.global_variable.disk_status import disk_info_response_dict
 
 logger = get_logger()
 
@@ -53,7 +56,7 @@ class HardDiskMonitor(Monitor):
         """
         Update the detailed information of each hard disk by running the `df -h` command.
         """
-        command = "df -h"
+        command = "df -lh"
         _, results, _ = do_command(command)
         detail_infos = results.split("\n")
 
@@ -66,7 +69,31 @@ class HardDiskMonitor(Monitor):
                 self.hard_disk_dict[mount_point].update_info(fields)
                 logger.info(f'[硬盘"{mount_point}"]获取容量信息成功')
 
-    def harddisk_monitor_thread(self):
+        self.__generate_api_response_data()
+
+    def __generate_api_response_data(self):
+        new_dict = {}
+        for mount_point in self.hard_disk_dict.keys():
+            current_disk_obj: HardDisk = self.hard_disk_dict[mount_point]
+
+            current_dict = {
+                "mountPoint": mount_point,
+                "usedPercentage": current_disk_obj.percentage_used_int,
+                "usedStr": current_disk_obj.used_str,
+                "freeStr": current_disk_obj.free_str,
+                "totalStr": current_disk_obj.total_str,
+                "triggerHighPercentageUsed": current_disk_obj.high_percentage_used_trigger,
+                "triggerLowFreeBytes": current_disk_obj.low_free_bytes_trigger,
+                "triggerSizeWarning": current_disk_obj.size_warning_trigger,
+                "type": current_disk_obj.type.name,
+                "purpose": current_disk_obj.purpose_cn.value,
+            }
+
+            new_dict[mount_point] = current_dict
+        disk_info_response_dict.clear()
+        disk_info_response_dict.update(new_dict)
+
+    def hard_disk_monitor_thread(self):
         """
         Monitor the hard disk in a separate thread, checking for warnings and sending notifications.
         """
@@ -79,7 +106,9 @@ class HardDiskMonitor(Monitor):
                 logger.warning(f"[硬盘{mount_point}]容量不足！")
 
                 if not is_webhook_sleep_time():
-                    disk_warning_cnt[mount_point] = disk_warning_cnt.get(mount_point, 0) + 1
+                    disk_warning_cnt[mount_point] = (
+                        disk_warning_cnt.get(mount_point, 0) + 1
+                    )
                     if disk_warning_cnt[mount_point] % 4 == 0:
                         logger.warning(f"[硬盘{mount_point}]开始扫描目录占用容量...")
                         self.get_user_dir_size_info(hard_disk)
@@ -100,7 +129,7 @@ class HardDiskMonitor(Monitor):
             return
 
         command_args: list[str] = ["du", "-sh"]
-        
+
         if hard_disk.mount_point == "/home":
             command_args.append("~/data/*")
         else:
@@ -227,11 +256,19 @@ def start_resource_monitor_all():
     Start monitoring all resources, specifically the hard disk.
     """
     if HARD_DISK_MOUNT_POINT is None:
-        logger.error("Cannot get the mountpoint of hard disk.")
+        logger.warning("Cannot get the mountpoint of hard disk.")
+        return
+
+    if not check_is_linux():
+        logger.warning("Resource monitor only support Linux system.")
+        return
+
+    if not HARD_DISK_MONITOR_PASS_ROOT_CHECK and not check_is_root():
+        logger.warning("Resource monitor only support root user.")
         return
 
     hard_disk_monitor = HardDiskMonitor(HARD_DISK_MOUNT_POINT)
-    hard_disk_monitor.start_monitor(hard_disk_monitor.harddisk_monitor_thread)
+    hard_disk_monitor.start_monitor(hard_disk_monitor.hard_disk_monitor_thread)
 
 
 if __name__ == "__main__":

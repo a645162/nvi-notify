@@ -13,8 +13,9 @@ from group_center.utils.log import logger as group_center_logger_utils
 from nvitop import Device
 from packaging import version
 
+from feature.utils.python_status import is_debug_mode
 from config.user_info import UserInfo
-from config.utils import get_users, set_iptables
+from config.config_utils import get_users, set_iptables
 from feature.monitor.monitor_enum import AllWebhookName
 from feature.utils.logs import get_logger
 
@@ -43,8 +44,13 @@ class EnvironmentManager:
         default_env_file = os.path.join(path_base, ".env")
         env_vars = cls.load_env_file(default_env_file)
 
+        debug_mode = is_debug_mode()
+        if debug_mode:
+            logger.info("!!!Debug mode is enabled!!!")
+        else:
+            logger.info("Debug mode is disabled")
         extend_env_file = os.path.join(
-            os.getcwd(), ".env.dev" if sys.gettrace() else ".env.secure"
+            os.getcwd(), ".env.dev" if debug_mode else ".env.secure"
         )
         env_vars.update(cls.load_env_file(extend_env_file, override=True))
 
@@ -77,7 +83,7 @@ class EnvironmentManager:
         )
 
         value = cls.get(key, str(default))
-        return value.strip().lower() == "true"
+        return value.strip().lower() == "true" or value.strip() == "1"
 
     @classmethod
     def get_time(cls, key: str, default: datetime.time) -> datetime.time:
@@ -193,7 +199,14 @@ IPv6 = EnvironmentManager.get_ip("v6")
 
 # GPU
 NO_NVIDIA_GPU = EnvironmentManager.get_bool("NO_NVIDIA_GPU", False)
-NUM_GPU = 0 if NO_NVIDIA_GPU else Device.count()
+
+NUM_GPU = 0
+
+try:
+    if not NO_NVIDIA_GPU:
+        NUM_GPU = Device.count()
+except Exception:
+    pass
 
 # Server Info
 SERVER_NAME = EnvironmentManager.get("SERVER_NAME", "None")
@@ -235,6 +248,8 @@ GPU_MONITOR_SAMPLING_INTERVAL = EnvironmentManager.get_int(
 GPU_MONITOR_AUTO_RESTART = EnvironmentManager.get_bool("GPU_MONITOR_AUTO_RESTART", True)
 
 # Hard Disk Monitor
+HARD_DISK_MONITOR_PASS_ROOT_CHECK = \
+    EnvironmentManager.get_bool("HARD_DISK_MONITOR_PASS_ROOT_CHECK", False)
 HARD_DISK_MOUNT_POINT = set(
     m.strip() for m in EnvironmentManager.get("HARD_DISK_MOUNT_POINT", "/").split(",")
 )
@@ -248,10 +263,19 @@ HARD_DISK_LOW_FREE_GB_THRESHOLD = EnvironmentManager.get_int(
     "HARD_DISK_LOW_FREE_GB_THRESHOLD", 100
 )
 
+# Web Server
+WEB_SERVER_HOST = EnvironmentManager.get("WEB_SERVER_HOST", "0.0.0.0")
+WEB_SERVER_CORS_ENABLE = EnvironmentManager.get_bool("WEB_SERVER_CORS_ENABLE", False)
+
 # Flask
 FLASK_SERVER_HOST = EnvironmentManager.get("FLASK_SERVER_HOST", "0.0.0.0")
-FLASK_SERVER_PORT = EnvironmentManager.get("FLASK_SERVER_PORT", "3000")
+FLASK_SERVER_PORT = EnvironmentManager.get("FLASK_SERVER_PORT", "5000")
 GPU_BOARD_WEB_URL = EnvironmentManager.get("GPU_BOARD_WEB_URL", "")
+
+FLASK_LOG_DISABLE = EnvironmentManager.get_bool("FLASK_LOG_DISABLE", True)
+
+# FastAPI
+FASTAPI_SERVER_PORT = EnvironmentManager.get_int("FASTAPI_SERVER_PORT", 8000)
 
 # WebHook
 WEBHOOK_DELAY_SEND_SECONDS = EnvironmentManager.get_int(

@@ -48,14 +48,14 @@ def check_parent_process_name_keywords(keywords: List[str]) -> bool:
 
     for process_name in p_name_list:
         for keyword in keywords:
-            if keyword in process_name:
+            if keyword and (keyword in process_name):
                 return True
 
     return False
 
 
 def is_run_by_gateway() -> bool:
-    keywords = ["remote-dev-serv", "launcher.sh", ""]
+    keywords = ["remote-dev-serv", "launcher.sh"]
     return check_parent_process_name_keywords(keywords)
 
 
@@ -69,6 +69,11 @@ def is_run_by_screen() -> bool:
     return check_parent_process_name_keywords(keywords)
 
 
+def is_run_by_tmux() -> bool:
+    keywords = ["tmux"]
+    return check_parent_process_name_keywords(keywords)
+
+
 if __name__ == "__main__":
     print(get_parent_process_pid(-1))
     print(get_process_name(get_parent_process_pid(-1)))
@@ -77,3 +82,8 @@ if __name__ == "__main__":
     print(pid_list)
     p_name_list = get_process_name_list(pid_list)
     print(p_name_list)
+
+    print("is_run_by_gateway", is_run_by_gateway())
+    print("is_run_by_vscode_remote", is_run_by_vscode_remote())
+    print("is_run_by_screen", is_run_by_screen())
+    print("is_run_by_tmux", is_run_by_tmux())

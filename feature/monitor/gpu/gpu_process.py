@@ -20,6 +20,7 @@ from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger
 from feature.utils.common_utils import do_command
+from feature.utils.process.linux_process import get_top_python_process_pid
 
 logger = get_logger()
 sql = get_sql()
@@ -32,14 +33,14 @@ class GPUProcessInfo:
         self.pid: int = pid
         self.process_name: str = gpu_process.name()
 
-        # current GPU
+        # Current GPU
         self.gpu_id: int = gpu_id
         self.gpu_process: GpuProcess = gpu_process
 
         self.num_task: int = 0
         self.process_environ: Optional[dict[str, str]] = None
 
-        # current process
+        # Current Process
         self.cwd: str = ""  # pwd
         self.command: str = ""
         self.cmdline: Optional[list] = None
@@ -59,8 +60,8 @@ class GPUProcessInfo:
 
         self.python_version: str = ""
 
-        self.start_time: float = 0.0  # timestamp
-        self.finish_time: float = 0.0  # timestamp
+        self.start_time: float = 0.0  # Timestamp
+        self.finish_time: float = 0.0  # Timestamp
         self.running_time_human: str = ""
 
         # Props get from env var
@@ -72,6 +73,8 @@ class GPUProcessInfo:
         self.cuda_root: str = ""
         self.cuda_nvcc_bin: str = ""
         self.cuda_version: str = ""
+
+        self.top_python_pid: int = -1
 
         self.nvidia_driver_version: str = ""
 
@@ -109,9 +112,12 @@ class GPUProcessInfo:
         self.get_screen_session_name()
         self.get_conda_env_name()
 
+        # Multi-GPU
         self.get_world_size()
         self.get_local_rank()
         self.get_is_multi_gpu()
+        self.init_top_python_pid()
+
         self.get_cuda_visible_devices()
 
         self.get_cuda_root()
@@ -341,6 +347,15 @@ class GPUProcessInfo:
                 self.screen_session_name = self.screen_session_name[
                                            dot_index + 1:
                                            ].strip()
+
+    def init_top_python_pid(self):
+        if not self.is_multi_gpu:
+            return
+
+        try:
+            self.top_python_pid = get_top_python_process_pid(self.pid)
+        except Exception:
+            self.top_python_pid = -1
 
     def get_project_name(self):
         if self.cwd is not None:

@@ -106,6 +106,7 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
                 "cudaVersion": str(process_obj.cuda_version),
                 "cudaVisibleDevices": str(process_obj.cuda_visible_devices),
                 "driverVersion": str(process_obj.nvidia_driver_version),
+                "userEnvEpoch": str(process_obj.group_center_user_env_epoch),
             }
         )
 

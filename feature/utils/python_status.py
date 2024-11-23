@@ -25,4 +25,8 @@ def is_debug_mode() -> bool:
     if is_run_by_gateway() or is_run_by_vscode_remote():
         return True
 
-    return os.getenv("DEBUG").lower() == "true" or os.getenv("DEBUG") == "1"
+    debug_str = os.getenv("DEBUG")
+    if debug_str is None:
+        debug_str = ""
+
+    return debug_str.lower() == "true" or debug_str == "1"

@@ -19,4 +19,4 @@ humanfriendly
 
 loguru
 
-li-group-center>=1.7.1
+li-group-center>=1.7.5

@@ -107,7 +107,7 @@ class HardDiskMonitor(Monitor):
 
                 if not is_webhook_sleep_time():
                     disk_warning_cnt[mount_point] = (
-                        disk_warning_cnt.get(mount_point, 0) + 1
+                            disk_warning_cnt.get(mount_point, 0) + 1
                     )
                     if disk_warning_cnt[mount_point] % 4 == 0:
                         logger.warning(f"[硬盘{mount_point}]开始扫描目录占用容量...")
@@ -186,6 +186,8 @@ class HardDiskMonitor(Monitor):
         Returns:
         Tuple[str, str]: A tuple containing the `disk name` and `mount point`.
         """
+        mount_point = ""
+
         line_unit = line.split()
         if len(line_unit) == 0:
             return "", ""
@@ -211,7 +213,7 @@ class HardDiskMonitor(Monitor):
                     mount_point = results_unit[-1]
                 else:
                     mount_point = ""
-                """ TODO: Hack implementation. Only for ubuntu22.04.
+                """ TODO: Hack implementation. Only for Ubuntu 22.04 and Ubuntu 24.04.
                 """
                 if _mount_point == "/var/snap/firefox/common/host-hunspell":
                     mount_point = "/"
@@ -219,7 +221,7 @@ class HardDiskMonitor(Monitor):
         elif len(line_unit) == 7:
             mount_point = line_unit[-1]
         else:
-            mount_point = ""
+            pass
 
         return name, mount_point
 
@@ -238,7 +240,7 @@ class HardDiskMonitor(Monitor):
 
             dir_size, dir_path = lines.split()
             if humanfriendly.parse_size(
-                dir_size, binary=True
+                    dir_size, binary=True
             ) < humanfriendly.parse_size("10GB", binary=True):
                 continue
 

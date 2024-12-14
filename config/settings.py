@@ -49,10 +49,26 @@ class EnvironmentManager:
             logger.info("!!!Debug mode is enabled!!!")
         else:
             logger.info("Debug mode is disabled")
-        extend_env_file = os.path.join(
-            os.getcwd(), ".env.dev" if debug_mode else ".env.secure"
+
+        # extend_env_file = os.path.join(
+        #     os.getcwd(), ".env.dev" if debug_mode else ".env.secure"
+        # )
+        # env_vars.update(cls.load_env_file(extend_env_file, override=True))
+
+        secure_env_file = os.path.join(
+            os.getcwd(), ".env.secure"
         )
-        env_vars.update(cls.load_env_file(extend_env_file, override=True))
+        dev_env_file = os.path.join(
+            os.getcwd(), ".env.dev"
+        )
+
+        if os.path.exists(secure_env_file):
+            logger.info("Load Secure .env File")
+            env_vars.update(cls.load_env_file(secure_env_file, override=True))
+
+        if debug_mode and os.path.exists(dev_env_file):
+            logger.info("Load Dev .env File")
+            env_vars.update(cls.load_env_file(dev_env_file, override=True))
 
         cls.all_env_dict = env_vars
 

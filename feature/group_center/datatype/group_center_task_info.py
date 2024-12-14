@@ -32,6 +32,7 @@ class TaskInfoForGroupCenter:
     isMultiGpu: bool = False
     multiDeviceLocalRank: int = 0
     multiDeviceWorldSize: int = 0
+    topPythonPid: int = -1
 
     cudaRoot: str = ""
     cudaVersion: str = ""
@@ -117,6 +118,7 @@ class TaskInfoForGroupCenter:
         self.isMultiGpu = gpu_process_obj.is_multi_gpu
         self.multiDeviceLocalRank = gpu_process_obj.local_rank
         self.multiDeviceWorldSize = gpu_process_obj.world_size
+        self.topPythonPid = gpu_process_obj.top_python_pid
 
         # CUDA 信息
         self.cudaRoot = gpu_process_obj.cuda_root

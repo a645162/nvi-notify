@@ -210,7 +210,7 @@ class GPUProcessInfo:
     def get_task_main_memory_mb(self):
         try:
             self.task_main_memory_mb = (
-                self.gpu_process.memory_info().rss // 1024 // 1024
+                    self.gpu_process.memory_info().rss // 1024 // 1024
             )
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -221,8 +221,8 @@ class GPUProcessInfo:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-            self.task_gpu_memory_max is None
-            or self.task_gpu_memory_max < task_gpu_memory
+                self.task_gpu_memory_max is None
+                or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = self.task_gpu_memory_human
@@ -386,8 +386,8 @@ class GPUProcessInfo:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
                 self.screen_session_name = self.screen_session_name[
-                    dot_index + 1 :
-                ].strip()
+                                           dot_index + 1:
+                                           ].strip()
 
     def get_user_env(self):
         self.group_center_user_env_epoch = self.get_env_value(
@@ -448,9 +448,9 @@ class GPUProcessInfo:
     def running_time_in_seconds(self, new_running_time_in_seconds):
         # 上次不满足，但是这次满足
         if (
-            new_running_time_in_seconds
-            > WEBHOOK_DELAY_SEND_SECONDS
-            > self._running_time_in_seconds
+                new_running_time_in_seconds
+                > WEBHOOK_DELAY_SEND_SECONDS
+                > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 
@@ -494,6 +494,9 @@ class GPUProcessInfo:
             self._transition_newborn_to_death()
 
     def _transition_to_newborn(self):
+        logger.info(f"Task {self.pid} is created.")
+        if self.ignore_task:
+            logger.info(f"[Create] Task {self.pid} is ignored.")
         log_task_info(self.__dict__, TaskEvent.CREATE)
 
     def _transition_newborn_to_working(self):

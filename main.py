@@ -3,12 +3,16 @@
 import time
 
 from config.settings import WAIT_TIME_BEFORE_START
+
 from feature.monitor.cpu.monitor import start_cpu_monitor_all
 from feature.monitor.gpu.monitor import start_gpu_monitor_all
 from feature.monitor.hard_disk.monitor import start_resource_monitor_all
+
 from feature.notify.webhook import init_webhook
+
+from feature.api.feature_api import start_api_server
+
 from feature.utils.logs import get_logger
-from feature.web.flask_main import start_web_server_both
 
 logger = get_logger()
 
@@ -33,5 +37,5 @@ if __name__ == "__main__":
     logger.info("Hard Disk Monitor sub program is starting...")
     start_resource_monitor_all()
 
-    logger.info("Web server sub program is starting...")
-    start_web_server_both()
+    logger.info("API(Web Server) sub program is starting...")
+    start_api_server()

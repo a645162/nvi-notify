@@ -5,7 +5,7 @@ import os
 import time
 
 from config.settings import check_sudo_permission
-from feature.utils.utils import do_command
+from feature.utils.common_utils import do_command
 
 path_current_py = os.path.realpath(__file__)
 path_base = os.path.dirname(path_current_py)

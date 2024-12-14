@@ -36,3 +36,7 @@ def get_gpu_count():
             "global_gpu_usage and global_gpu_task should have the same length."
         )
     return len(global_gpu_task)
+
+
+def global_variable_gpu_updated():
+    pass

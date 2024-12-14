@@ -13,7 +13,7 @@ import requests
 
 from config.settings import WEBHOOK_NAME
 from config.user_info import UserInfo
-from config.utils import get_seconds_to_sleep_until_end, is_webhook_sleep_time
+from config.config_utils import get_seconds_to_sleep_until_end, is_webhook_sleep_time
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, WebhookState
 from feature.utils.logs import get_logger
 
@@ -47,7 +47,6 @@ class Webhook:
         self.msg_queue = Queue()
         self.warning_msg_queue = Queue()
         self.retry_msg_queue = Queue(maxsize=3)
-
 
     @property
     def webhook_url_main(self) -> str:
@@ -88,7 +87,7 @@ class Webhook:
     def get_webhook_url(self, webhook_api: str):
         webhook_api = webhook_api.strip()
         if len(webhook_api) == 0:
-            logger.error(f"Illegal {self.webhook_name} Webhook!")
+            logger.warning(f"Illegal {self.webhook_name} Webhook!")
             return ""
 
         return (

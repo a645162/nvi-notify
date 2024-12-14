@@ -5,6 +5,9 @@ flask
 flask-socketio
 flask-cors
 
+# fastapi
+# uvicorn
+
 urllib3<2
 requests
 
@@ -16,4 +19,4 @@ humanfriendly
 
 loguru
 
-li-group-center>=1.5.0
+li-group-center>=1.7.1

@@ -1,6 +1,10 @@
 from group_center.core.feature.machine_message import new_message_enqueue
 
-from config.settings import USE_GROUP_CENTER
+from config.settings import (
+    USE_GROUP_CENTER,
+    SERVER_NAME,
+    SERVER_NAME_SHORT
+)
 from feature.group_center. \
     datatype.group_center_task_info import TaskInfoForGroupCenter
 from feature.monitor.monitor_enum import TaskEvent
@@ -33,6 +37,8 @@ def gpu_task_message(process_obj, task_event: TaskEvent):
 
     data_dict = {
         "messageType": task_event.value,
+        "serverName": SERVER_NAME,
+        "serverNameEng": SERVER_NAME_SHORT,
     }
 
     task_info_obj = TaskInfoForGroupCenter(process_obj)

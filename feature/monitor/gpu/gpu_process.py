@@ -474,6 +474,7 @@ class GPUProcessInfo:
         sql.update_task_data(TaskInfoForSQL(self.__dict__, TaskState.WORKING))
 
         if self.ignore_task:
+            logger.info(f"[Start] Task {self.pid} is ignored.")
             return
 
         group_center_message.gpu_task_message(self, TaskEvent.CREATE)
@@ -484,6 +485,7 @@ class GPUProcessInfo:
         sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, TaskState.DEATH))
 
         if self.ignore_task:
+            logger.info(f"[Finish] Task {self.pid} is ignored.")
             return
 
         group_center_message.gpu_task_message(self, TaskEvent.FINISH)

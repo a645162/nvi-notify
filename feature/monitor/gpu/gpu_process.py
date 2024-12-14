@@ -136,11 +136,7 @@ class GPUProcessInfo:
 
             self.update_gpu_process_info()
 
-            self.ignore_task = check_process_env(
-                pid=self.pid,
-                env_name="NVI_NOTIFY_IGNORE_TASK",
-                check_parent=True
-            )
+            self.update_ignore_mode()
 
             sql.insert_task_data(TaskInfoForSQL(self.__dict__))
         else:
@@ -163,6 +159,16 @@ class GPUProcessInfo:
 
         # User Env
         self.get_user_env()
+
+    def update_ignore_mode(self):
+        try:
+            self.ignore_task = check_process_env(
+                pid=self.pid,
+                env_name="NVI_NOTIFY_IGNORE_TASK",
+                check_parent=True
+            )
+        except Exception as e:
+            logger.error(e)
 
     def update_gpu_process_info(self):
         self.get_task_main_memory_mb()

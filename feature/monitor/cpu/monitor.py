@@ -65,10 +65,10 @@ class CPUMonitor(Monitor):
         cpu_temperature_info: dict[int, float] = {}
         idx = 0
         for name, entries in temps.items():
-            if name != "coretemp":
+            if name not in ("coretemp", "k10temp"):
                 continue
             for entry in entries:
-                if not ("Package" in entry.label or "Package" in name):
+                if not (("Package" in entry.label or "Package" in name) or ("Tctl" in entry.label)):
                     continue
                 cpu_temperature_info.update({idx: entry.current})
                 idx += 1

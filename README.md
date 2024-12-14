@@ -68,6 +68,14 @@ If you want to view the log, you can use the following command:
 sudo journalctl -u nvinotify
 ```
 
+## Group-Center
+
+### Update Plugin
+
+```bash
+pip install --upgrade li-group-center -i https://pypi.python.org/simple
+```
+
 ## TODO
 
 - [ ] Log System

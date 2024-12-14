@@ -96,6 +96,7 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
                 "gpuMemoryUsageMax": int(process_obj.task_gpu_memory_max >> 10 >> 10),
                 "worldSize": process_obj.world_size,
                 "localRank": process_obj.local_rank,
+                "topPythonPid": process_obj.top_python_pid,
                 "condaEnv": process_obj.conda_env,
                 "screenSessionName": process_obj.screen_session_name,
                 "pythonVersion": process_obj.python_version,
@@ -105,6 +106,7 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
                 "cudaVersion": str(process_obj.cuda_version),
                 "cudaVisibleDevices": str(process_obj.cuda_visible_devices),
                 "driverVersion": str(process_obj.nvidia_driver_version),
+                "userEnvEpoch": str(process_obj.group_center_user_env_epoch),
             }
         )
 

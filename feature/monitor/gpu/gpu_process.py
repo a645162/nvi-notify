@@ -25,6 +25,31 @@ logger = get_logger()
 sql = get_sql()
 
 
+def check_process_env(pid: int, env_name: str, check_parent: bool = False) -> bool:
+    try:
+        process = psutil.Process(pid)
+
+        if env_name in process.environ():
+            return True
+
+        if check_parent:
+            parent = process.parent()
+
+            pid = parent.pid
+
+            # Stop when the parent process is the init process
+            if pid == 1:
+                return False
+
+            if check_process_env(pid, env_name):
+                return True
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        return False
+    except Exception as e:
+        logger.error(e)
+        return False
+
+
 class GPUProcessInfo:
     def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
         self.task_id: str = datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
@@ -75,6 +100,8 @@ class GPUProcessInfo:
 
         self.nvidia_driver_version: str = ""
 
+        self.ignore_task: bool = False
+
         self._gpu = None
         self._state: Optional[TaskState] = TaskState.DEFAULT  # init
         self._running_time_in_seconds: int = 0  # init
@@ -103,7 +130,15 @@ class GPUProcessInfo:
 
             self.update_gpu_process_info()
 
+            self.ignore_task = check_process_env(
+                pid=self.pid,
+                env_name="NVI_NOTIFY_IGNORE_TASK",
+                check_parent=True
+            )
+
             sql.insert_task_data(TaskInfoForSQL(self.__dict__))
+        else:
+            self.ignore_task = True
 
     def get_all_env(self):
         self.get_screen_session_name()
@@ -438,12 +473,18 @@ class GPUProcessInfo:
     def _transition_newborn_to_working(self):
         sql.update_task_data(TaskInfoForSQL(self.__dict__, TaskState.WORKING))
 
+        if self.ignore_task:
+            return
+
         group_center_message.gpu_task_message(self, TaskEvent.CREATE)
         self._send_gpu_task_message(TaskEvent.CREATE)
 
     def _transition_working_to_death(self):
         log_task_info(self.__dict__, TaskEvent.FINISH)
         sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, TaskState.DEATH))
+
+        if self.ignore_task:
+            return
 
         group_center_message.gpu_task_message(self, TaskEvent.FINISH)
         self._send_gpu_task_message(TaskEvent.FINISH)

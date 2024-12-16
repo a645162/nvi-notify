@@ -5,8 +5,7 @@ from config.settings import (
     SERVER_NAME,
     SERVER_NAME_SHORT
 )
-from feature.group_center. \
-    datatype.group_center_task_info import TaskInfoForGroupCenter
+from feature.group_center.datatype.task_info import TaskInfoForGroupCenter
 from feature.monitor.monitor_enum import TaskEvent
 from feature.utils.logs import get_logger
 

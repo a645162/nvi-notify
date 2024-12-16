@@ -7,7 +7,7 @@ from config.settings import (
 )
 from feature.monitor.monitor_enum import MonitorEnum
 from feature.utils.logs import get_logger
-from feature.utils.common_utils import do_command
+from feature.utils.common_utils import cat_info, do_command
 
 logger = get_logger()
 
@@ -31,17 +31,17 @@ class HardDisk:
     used_str: str
     free_str: str
 
-    def __init__(self, mount_point: str) -> None:
+    def __init__(self, mount_point: str, name: str) -> None:
         self._name: str = ""
         self._mount_point: str = ""
+        self._type: DiskType = None
+        self._purpose: DiskPurpose = None
+        self._purpose_cn: DiskPurpose = None
+
         self._high_percentage_used_threshold: int = 0
         self._low_free_bytes_threshold: int = 0
         self._high_percentage_used_trigger: bool = False
         self._low_free_bytes_trigger: bool = False
-        self._purpose: DiskPurpose = None
-        self._purpose_cn: DiskPurpose = None
-
-        self.mount_point = mount_point
 
         self._total_str: str = ""
         self._used_str: str = ""
@@ -52,15 +52,15 @@ class HardDisk:
         )  # init max free bytes (1TiB)
         self._percentage_used_int: int = 0
         self._percentage_used_str: str = ""
-        self._type: DiskType = None
+
+        self.name: str = name
+        self.mount_point: str = mount_point
 
     def update_info(self, info: list):
-        self.name = info[0]
         self.total_str = info[1]
         self.used_str = info[2]
         self.free_str = info[3]
         self.percentage_used_str = info[4]
-        # self.mount_point = info[5]
 
     @property
     def name(self) -> str:
@@ -68,10 +68,13 @@ class HardDisk:
 
     @name.setter
     def name(self, value: str) -> None:
-        if "nvme" in value:
-            self.type = DiskType.SSD
-        else:
+        if (
+            "nvme" not in value
+            and cat_info(f"/sys/block/{value}/queue/rotational").strip() == 1
+        ):
             self.type = DiskType.HDD
+        else:
+            self.type = DiskType.SSD
         self._name = value
 
     @property
@@ -222,10 +225,23 @@ class HardDisk:
     @property
     def disk_info(self) -> str:
         return (
-            f"{self.purpose_cn}(挂载点为{self.mount_point})"
+            f"{self.purpose_cn}(挂载点为{self.handle_disk_info_mountpoint(self.mount_point)})"
             f"剩余可用容量为{self.free_str}，总容量为{self.total_str}，"
             f"占用率为{self.percentage_used_str}\n"
         )
+    
+    def handle_disk_info_mountpoint(self, mount_point: str):
+        linked_dict = {
+            "/": "/",
+            "/home": "/home",
+            "/mnt/hdd1": "~/data",
+            "/mnt/hdd2": "~/data1",
+            "/mnt/code": "~/code",
+            "/mnt/data": "~/data",
+            "/mnt/datasets": "~/datasets"
+        }
+        return linked_dict[mount_point]
+        
 
     def get_smart_info(self) -> str:
         if not SUDO_PERMISSION:

@@ -4,16 +4,16 @@ import hashlib
 import hmac
 import json
 import os
-from queue import Queue
 import threading
 import time
+from queue import Queue
 from typing import Union
 
 import requests
 
+from config.config_utils import get_seconds_to_sleep_until_end, is_webhook_sleep_time
 from config.settings import WEBHOOK_NAME
 from config.user_info import UserInfo
-from config.config_utils import get_seconds_to_sleep_until_end, is_webhook_sleep_time
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, WebhookState
 from feature.utils.logs import get_logger
 

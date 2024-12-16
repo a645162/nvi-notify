@@ -2,6 +2,14 @@ import subprocess
 from typing import Tuple
 
 
+def cat_info(path):
+    try:
+        with open(path, 'r') as f:
+            return f.read()
+    except (IOError, FileNotFoundError) as e:
+        return f"Error reading file: {e}"
+
+
 def do_command(cmd: str, text: bool = True) -> Tuple[int, str, str]:
     """
     执行命令行，返回执行状态和输出信息。
@@ -31,6 +39,7 @@ def do_command(cmd: str, text: bool = True) -> Tuple[int, str, str]:
         output_stderr = str(e)
 
     return return_code, output_stdout, output_stderr
+
 
 def is_safe_in_shell(value):
     # 简单示例：确保value不包含任何特殊字符或shell元字符

@@ -3,7 +3,6 @@ import datetime
 import os
 import platform
 import socket
-import sys
 from typing import Dict
 
 import psutil
@@ -13,11 +12,11 @@ from group_center.utils.log import logger as group_center_logger_utils
 from nvitop import Device
 from packaging import version
 
-from feature.utils.python_status import is_debug_mode
-from config.user_info import UserInfo
 from config.config_utils import get_users, set_iptables
+from config.user_info import UserInfo
 from feature.monitor.monitor_enum import AllWebhookName
 from feature.utils.logs import get_logger
+from feature.utils.process import is_debug_mode
 
 logger = get_logger()
 
@@ -244,8 +243,7 @@ group_center_logger_utils.set_logger(logger)
 ENV_FROM_GROUP_CENTER = \
     EnvironmentManager.get_bool("ENV_FROM_GROUP_CENTER", False)
 if USE_GROUP_CENTER and ENV_FROM_GROUP_CENTER:
-    from feature.group_center.group_center_remote_config import \
-        init_remote_env_list
+    from feature.group_center.remote_config import init_remote_env_list
 
     init_remote_env_list()
 

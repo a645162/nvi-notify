@@ -3,15 +3,11 @@
 import time
 
 from config.settings import WAIT_TIME_BEFORE_START
-
+from feature.api.feature_api import start_api_server
 from feature.monitor.cpu.monitor import start_cpu_monitor_all
 from feature.monitor.gpu.monitor import start_gpu_monitor_all
 from feature.monitor.hard_disk.monitor import start_resource_monitor_all
-
 from feature.notify.webhook import init_webhook
-
-from feature.api.feature_api import start_api_server
-
 from feature.utils.logs import get_logger
 
 logger = get_logger()

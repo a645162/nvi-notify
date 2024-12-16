@@ -1,6 +1,7 @@
-import subprocess
 from typing import List
 
+from group_center.core.feature.machine_user_message \
+    import machine_user_message_directly
 from feature.global_variable.gpu import (
     global_gpu_info,
     global_gpu_task,
@@ -8,25 +9,15 @@ from feature.global_variable.gpu import (
 )
 from feature.global_variable.system import global_system_info
 from feature.global_variable.disk_status import disk_info_response_dict
-
-from group_center.core.feature.machine_user_message \
-    import machine_user_message_directly
-
+from feature.utils.common_utils import do_command
 from feature.utils.logs import get_logger
 
 logger = get_logger()
 
 
-def run_command(command):
-    try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        return result.stdout
-    except Exception as e:
-        return str(e), 500
-
-
 def get_nvitop_result() -> str:
-    return run_command("nvitop -U")
+    _, result, _ = do_command("nvitop -U")
+    return result
 
 
 def get_system_info_dict() -> dict:

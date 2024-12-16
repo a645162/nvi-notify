@@ -14,7 +14,7 @@ from feature.global_variable.gpu import (
     global_gpu_usage,
     global_variable_gpu_updated
 )
-from feature.group_center import group_center_message
+from feature.group_center import message
 from feature.monitor.gpu.gpu import GPU
 from feature.monitor.monitor import Monitor
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
@@ -61,7 +61,7 @@ class NvidiaMonitor(Monitor):
                     continue
 
                 # Send to Group Center
-                group_center_message.gpu_monitor_start(idx)
+                message.gpu_monitor_start(idx)
                 sql.check_finish_task(gpu.processes, idx)
 
             self.all_processes.clear()

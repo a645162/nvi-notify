@@ -11,7 +11,7 @@ from nvitop import GpuProcess
 
 from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS, EnvironmentManager
 from config.user_info import UserInfo
-from feature.group_center import group_center_message
+from feature.group_center import message
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent, TaskState
@@ -20,7 +20,7 @@ from feature.notify.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger
 from feature.utils.common_utils import do_command
-from feature.utils.process.linux_process import get_top_python_process_pid
+from feature.utils.process import get_top_python_process_pid
 
 logger = get_logger()
 sql = get_sql()
@@ -512,7 +512,7 @@ class GPUProcessInfo:
             logger.info(f"[Start] Task {self.pid} is ignored.")
             return
 
-        group_center_message.gpu_task_message(self, TaskEvent.CREATE)
+        message.gpu_task_message(self, TaskEvent.CREATE)
         self._send_gpu_task_message(TaskEvent.CREATE)
 
     def _transition_working_to_death(self):
@@ -523,7 +523,7 @@ class GPUProcessInfo:
             logger.info(f"[Finish] Task {self.pid} is ignored.")
             return
 
-        group_center_message.gpu_task_message(self, TaskEvent.FINISH)
+        message.gpu_task_message(self, TaskEvent.FINISH)
         self._send_gpu_task_message(TaskEvent.FINISH)
 
     def _transition_newborn_to_death(self):

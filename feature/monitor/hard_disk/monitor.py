@@ -129,6 +129,10 @@ class HardDiskMonitor(Monitor):
 
         scan_path = ""
 
+        if hard_disk.mount_point == "/":
+            # root path is not allowed to scan
+            return
+
         if get_os_release_id() == "centos":
             if hard_disk.mount_point == "/home":
                 scan_path = "~/data"

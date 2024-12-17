@@ -108,7 +108,7 @@ class HardDiskMonitor(Monitor):
                     disk_warning_cnt[mount_point] = (
                             disk_warning_cnt.get(mount_point, 0) + 1
                     )
-                    if disk_warning_cnt[mount_point] % 4 == 0:
+                    if disk_warning_cnt[mount_point] % 4 == 2:
                         logger.warning(f"[硬盘{mount_point}]开始扫描目录占用容量...")
                         self.get_user_dir_size_info(hard_disk)
                         disk_warning_cnt[mount_point] = 0

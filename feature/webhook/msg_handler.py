@@ -108,7 +108,7 @@ class MessageHandler:
         machine_message_directly(
             server_name=SERVER_NAME,
             server_name_eng=SERVER_NAME_SHORT,
-            content=warning_message + "\n\nby group-center",
+            content=warning_message,
             at="",
         )
 
@@ -137,7 +137,6 @@ class MessageHandler:
         machine_user_message_directly(
             user_name=user_name,
             content=(
-                    warning_message +
-                    "\n\nby group-center"
+                warning_message
             )
         )

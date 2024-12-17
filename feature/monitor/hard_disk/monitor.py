@@ -224,13 +224,14 @@ class HardDiskMonitor(Monitor):
             user = UserInfo.find_user_by_path(USERS, dir_path)
             if user is None:
                 continue
+            user_dir = hard_disk.handle_disk_info_mountpoint(hard_disk.mount_point)
 
             logger.warning(
-                f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}个人目录占用{dir_size}"
+                f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}的个人目录'{user_dir}'占用{dir_size}"
             )
 
             MessageHandler.enqueue_hard_disk_size_warning_msg_to_user(
-                hard_disk.disk_info, hard_disk.mount_point, dir_size, user
+                hard_disk.disk_info, user_dir, dir_size, user
             )
 
 

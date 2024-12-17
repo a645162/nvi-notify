@@ -1,9 +1,20 @@
 # -*- coding: utf-8 -*-
-from config.settings import SERVER_DOMAIN, SERVER_NAME, EnvironmentManager, IPv4, IPv6
+from config.settings import (
+    SERVER_DOMAIN,
+    SERVER_NAME,
+    SERVER_NAME_SHORT,
+    EnvironmentManager,
+    IPv4,
+    IPv6,
+)
 from config.user_info import UserInfo
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
 from feature.webhook.webhook import Webhook
 from feature.utils.logs import get_logger
+from group_center.core.feature.custom_client_message import (
+    machine_message_directly,
+    machine_user_message_directly,
+)
 
 logger = get_logger()
 
@@ -93,6 +104,14 @@ class MessageHandler:
             enable_webhook_name=AllWebhookName.ALL,
         )
 
+        # Send to lark by Group Center
+        machine_message_directly(
+            server_name=SERVER_NAME,
+            server_name_eng=SERVER_NAME_SHORT,
+            content=warning_message,
+            at="",
+        )
+
     @classmethod
     def enqueue_hard_disk_size_warning_msg_to_user(
         cls, disk_info: str, dir_path: str, dir_size: str, user: UserInfo
@@ -112,3 +131,7 @@ class MessageHandler:
         msg = cls.handle_normal_text(warning_message)
 
         Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
+
+        # Send to lark by Group Center
+        user_name = user.name_cn
+        machine_user_message_directly(user_name=user_name, content=warning_message)

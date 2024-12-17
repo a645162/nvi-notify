@@ -1,6 +1,6 @@
 from typing import List
 
-from group_center.core.feature.machine_user_message \
+from group_center.core.feature.custom_client_message \
     import machine_user_message_directly
 from feature.global_variable.gpu import (
     global_gpu_info,

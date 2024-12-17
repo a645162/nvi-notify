@@ -31,7 +31,12 @@ class HardDisk:
     used_str: str
     free_str: str
 
-    def __init__(self, mount_point: str, name: str) -> None:
+    def __init__(self, name: str, mount_point: str) -> None:
+        """
+        Args:
+            name (str): disk name. such as 'sda1', 'nvme0n1'.
+            mount_point (str): mount point. such as '/', '/home'.
+        """
         self._name: str = ""
         self._mount_point: str = ""
         self._type: DiskType = None

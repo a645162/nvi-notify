@@ -95,7 +95,7 @@ class MessageHandler:
 
     @classmethod
     def enqueue_hard_disk_size_warning_msg_to_user(
-        cls, disk_info: str, dir_path, dir_size: str, user: UserInfo
+        cls, disk_info: str, dir_path: str, dir_size: str, user: UserInfo
     ):
         """
         向用户发送硬盘高占用警告消息函数
@@ -106,7 +106,8 @@ class MessageHandler:
         warning_message = (
             f"⚠️【硬盘可用空间不足】⚠️\n"
             f"{disk_info}\n"
-            f"⚠️用户{user.name_cn}的个人目录[{dir_path}]占用容量为{dir_size}。\n"
+            f"⚠️用户{user.name_cn}的个人目录[{dir_path}]占用容量为{dir_size}，"
+            f"请及时清理不需要的文件。\n"
         )
         msg = cls.handle_normal_text(warning_message)
 

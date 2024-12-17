@@ -127,23 +127,23 @@ class HardDiskMonitor(Monitor):
         if hard_disk.purpose != DiskPurpose.DATA:
             return
 
-        command_args: list[str] = ["du", "-sh"]
-
         if get_os_release_id() == "centos":
             if hard_disk.mount_point == "/home":
-                command_args.append("~/data/*")
+                scan_path = "~/data"
             else:
                 raise ValueError("Error hard disk mount point!")
         elif get_os_release_id() == "ubuntu":
             if "hdd" in hard_disk.mount_point:
                 if hard_disk.mount_point[-1] == "1":
-                    command_args.append(f"{hard_disk.mount_point}/data/*")
+                    scan_path = f"{hard_disk.mount_point}/data"
                 elif hard_disk.mount_point[-1] == "2":
-                    command_args.append(f"{hard_disk.mount_point}/data1/*")
+                    scan_path = f"{hard_disk.mount_point}/data1"
             else:
-                command_args.append(f"{hard_disk.mount_point}/*")
+                scan_path = hard_disk.mount_point
         else:
             raise ValueError("Error hard disk mount point!")
+        
+        command_args: str = f"cd {scan_path} && du -sh*"
 
         retry_count = 0
         while retry_count < 5:
@@ -161,7 +161,7 @@ class HardDiskMonitor(Monitor):
 
             logger.warning(f"Retry {retry_count}-th in progress...")
 
-        detail_dirs_info = results.split("\n")
+        detail_dirs_info = results.strip().split("\n")
         self.parse_dir_size_info(detail_dirs_info, hard_disk)
 
     def get_machine_hard_disk_dict(self) -> dict[str, str]:
@@ -216,12 +216,11 @@ class HardDiskMonitor(Monitor):
                 continue
 
             logger.warning(
-                f"[硬盘\"{hard_disk.mount_point}\"]容量不足，\
-                {user}个人目录'{dir_path}'占用{dir_size}"
+                f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}个人目录占用{dir_size}"
             )
 
             MessageHandler.enqueue_hard_disk_size_warning_msg_to_user(
-                hard_disk.disk_info, dir_path, dir_size, user
+                hard_disk.disk_info, hard_disk.mount_point, dir_size, user
             )
 
 

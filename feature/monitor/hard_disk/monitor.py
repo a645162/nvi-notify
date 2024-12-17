@@ -14,7 +14,7 @@ from config.user_info import UserInfo
 from config.config_utils import is_webhook_sleep_time
 from feature.monitor.hard_disk.hard_disk import DiskPurpose, HardDisk
 from feature.monitor.monitor import Monitor
-from feature.notify.message_handler import MessageHandler
+from feature.webhook.msg_handler import MessageHandler
 from feature.utils.logs import get_logger
 from feature.utils.common_utils import cat_info, do_command
 from feature.utils.system import check_is_root, check_is_linux, get_os_release_id

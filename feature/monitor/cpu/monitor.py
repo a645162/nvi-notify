@@ -8,7 +8,7 @@ from config.settings import TEMPERATURE_MONITOR_SAMPLING_INTERVAL
 from feature.monitor.cpu.cpu import CPU
 from feature.monitor.memory.memory import MemoryInfo
 from feature.monitor.monitor import Monitor
-from feature.notify.message_handler import MessageHandler
+from feature.webhook.msg_handler import MessageHandler
 from feature.utils.logs import get_logger
 
 logger = get_logger()

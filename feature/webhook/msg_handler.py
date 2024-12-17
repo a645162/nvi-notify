@@ -2,7 +2,7 @@
 from config.settings import SERVER_DOMAIN, SERVER_NAME, EnvironmentManager, IPv4, IPv6
 from config.user_info import UserInfo
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
-from feature.notify.webhook import Webhook
+from feature.webhook.webhook import Webhook
 from feature.utils.logs import get_logger
 
 logger = get_logger()

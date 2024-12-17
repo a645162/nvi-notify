@@ -79,7 +79,7 @@ class MessageHandler:
 
     @classmethod
     def enqueue_cpu_aver_temperature_warning_msg(
-        cls, cpu_id: int, cpu_aver_temperature: float
+            cls, cpu_id: int, cpu_aver_temperature: float
     ):
         """
         CPU平均温度警告消息函数
@@ -97,24 +97,24 @@ class MessageHandler:
         warning_message = f"⚠️【硬盘可用空间不足】⚠️\n{disk_info}"
         msg = cls.handle_normal_text(warning_message)
 
-        Webhook.enqueue_msg_to_webhook(
-            msg,
-            MsgType.NORMAL,
-            mention_everyone=True,
-            enable_webhook_name=AllWebhookName.ALL,
-        )
+        # Webhook.enqueue_msg_to_webhook(
+        #     msg,
+        #     MsgType.NORMAL,
+        #     mention_everyone=True,
+        #     enable_webhook_name=AllWebhookName.ALL,
+        # )
 
         # Send to lark by Group Center
         machine_message_directly(
             server_name=SERVER_NAME,
             server_name_eng=SERVER_NAME_SHORT,
-            content=warning_message,
+            content=warning_message + "\n\nby group-center",
             at="",
         )
 
     @classmethod
     def enqueue_hard_disk_size_warning_msg_to_user(
-        cls, disk_info: str, dir_path: str, dir_size: str, user: UserInfo
+            cls, disk_info: str, dir_path: str, dir_size: str, user: UserInfo
     ):
         """
         向用户发送硬盘高占用警告消息函数
@@ -130,8 +130,14 @@ class MessageHandler:
         )
         msg = cls.handle_normal_text(warning_message)
 
-        Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
+        # Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
 
         # Send to lark by Group Center
         user_name = user.name_cn
-        machine_user_message_directly(user_name=user_name, content=warning_message)
+        machine_user_message_directly(
+            user_name=user_name,
+            content=(
+                    warning_message +
+                    "\n\nby group-center"
+            )
+        )

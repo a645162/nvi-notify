@@ -127,6 +127,8 @@ class HardDiskMonitor(Monitor):
         if hard_disk.purpose != DiskPurpose.DATA:
             return
 
+        scan_path = ""
+
         if get_os_release_id() == "centos":
             if hard_disk.mount_point == "/home":
                 scan_path = "~/data"
@@ -142,8 +144,16 @@ class HardDiskMonitor(Monitor):
                 scan_path = hard_disk.mount_point
         else:
             raise ValueError("Error hard disk mount point!")
-        
-        command_args: str = f"cd {scan_path} && du -sh*"
+
+        scan_path = scan_path.strip()
+        if len(scan_path) == 0:
+            return
+
+        du_command = "du -sh *"
+        # du_command = "du -lh --max-depth=1"
+
+        command_args: str = f"cd {scan_path} && {du_command}"
+        # print(command_args)
 
         retry_count = 0
         while retry_count < 5:
@@ -179,7 +189,7 @@ class HardDiskMonitor(Monitor):
 
             if mount_device[1].startswith("/var/snap") or mount_device[2] != "ext4":
                 continue
-            
+
             mount_point = mount_device[1]
 
             disk_name = mount_device[0].split("/")[-1]

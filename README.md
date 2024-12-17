@@ -82,6 +82,14 @@ pip install --upgrade li-group-center -i https://pypi.python.org/simple
 - [ ] Message Center
 - [ ] Support for Feishu
 
+## 测试
+
+### 生成文件
+
+```
+truncate -s 40G test_file
+```
+
 ## 系列项目
 
 ### GPU看板(前端)

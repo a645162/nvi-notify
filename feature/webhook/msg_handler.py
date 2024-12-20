@@ -110,7 +110,7 @@ class MessageHandler:
             server_name=SERVER_NAME,
             server_name_eng=SERVER_NAME_SHORT,
             content=msg,
-            at="",
+            at="all",
         )
 
     @classmethod

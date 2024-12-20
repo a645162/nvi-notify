@@ -90,19 +90,20 @@ class MessageHandler:
         Webhook.send_warning_msg_to_webhook_all_time(msg, MsgType.WARNING)
 
     @classmethod
-    def enqueue_hard_disk_size_msg(cls, disk_info: str):
+    def enqueue_hard_disk_warning_msg(cls, disk_info: str):
         """
         发送硬盘高占用警告消息函数
         """
         warning_message = f"⚠️【硬盘可用空间不足】⚠️\n{disk_info}"
         msg = cls.handle_normal_text(warning_message)
 
-        # Webhook.enqueue_msg_to_webhook(
-        #     msg,
-        #     MsgType.NORMAL,
-        #     mention_everyone=True,
-        #     enable_webhook_name=AllWebhookName.ALL,
-        # )
+        # Send to wework directly
+        Webhook.enqueue_msg_to_webhook(
+            msg,
+            MsgType.NORMAL,
+            mention_everyone=True,
+            enable_webhook_name=AllWebhookName.WEWORK,
+        )
 
         # Send to lark by Group Center
         machine_message_directly(
@@ -130,13 +131,8 @@ class MessageHandler:
         )
         msg = cls.handle_normal_text(warning_message)
 
+        # Send to lark directly
         # Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
 
         # Send to lark by Group Center
-        user_name = user.name_cn
-        machine_user_message_directly(
-            user_name=user_name,
-            content=(
-                msg
-            )
-        )
+        machine_user_message_directly(user_name=user.name_cn, content=msg)

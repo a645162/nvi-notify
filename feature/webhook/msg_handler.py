@@ -92,7 +92,7 @@ class MessageHandler:
     @classmethod
     def enqueue_hard_disk_warning_msg(cls, disk_info: str):
         """
-        发送硬盘高占用警告消息函数
+        向群聊中发送硬盘高占用警告消息
         """
         warning_message = f"⚠️【硬盘可用空间不足】⚠️\n{disk_info}"
         msg = cls.handle_normal_text(warning_message)
@@ -118,7 +118,7 @@ class MessageHandler:
             cls, disk_info: str, dir_path: str, dir_size: str, user: UserInfo
     ):
         """
-        向用户发送硬盘高占用警告消息函数
+        通过飞书app向各用户发送硬盘高占用警告消息
         """
         if user.lark_info["mention_id"] == [""]:
             logger.warning(f"用户{user.name_cn}没有配置Lark通知ID，无法发送消息。")
@@ -131,8 +131,8 @@ class MessageHandler:
         )
         msg = cls.handle_normal_text(warning_message)
 
-        # Send to lark directly
+        # Send to lark app directly
         # Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
 
-        # Send to lark by Group Center
+        # Send to lark app by Group Center
         machine_user_message_directly(user_name=user.name_cn, content=msg)

@@ -234,7 +234,7 @@ class HardDiskMonitor(Monitor):
                 f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}的个人目录'{user_dir}'占用{dir_size}"
             )
 
-            MessageHandler.enqueue_hard_disk_size_warning_msg_to_user(
+            MessageHandler.enqueue_hard_disk_warning_msg_to_user(
                 hard_disk.disk_info, user_dir, dir_size, user
             )
 

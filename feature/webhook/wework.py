@@ -37,7 +37,8 @@ class WeworkWebhook(Webhook):
 
         if mention_everyone:
             mentioned_list = ["@all"]
-            mentioned_mobile_list = ["@all"]
+            # mentioned_mobile_list = ["@all"]
+            mentioned_mobile_list = [""]
 
         data = {
             "msgtype": "text",

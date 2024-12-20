@@ -114,7 +114,7 @@ class MessageHandler:
         )
 
     @classmethod
-    def enqueue_hard_disk_size_warning_msg_to_user(
+    def enqueue_hard_disk_warning_msg_to_user(
             cls, disk_info: str, dir_path: str, dir_size: str, user: UserInfo
     ):
         """

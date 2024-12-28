@@ -72,6 +72,24 @@ def get_chain_of_process(pid: int) -> List[str]:
     return chain
 
 
+def check_is_python_process(pid: int) -> bool:
+    try:
+        if isinstance(pid, str):
+            pid = int(pid)
+        process = psutil.Process(pid)
+        exe_path = process.exe()
+        exe_name = os.path.basename(exe_path)
+
+        index = exe_name.find(".")
+        if index > -1:
+            exe_name = exe_name[:index]
+        exe_name = exe_name.strip().lower()
+
+        return exe_name == "python" or exe_name == "python3"
+    except Exception:
+        return False
+
+
 def get_top_python_process_pid(pid: int) -> int:
     """
     Get the top python process ID of the current process.
@@ -81,11 +99,13 @@ def get_top_python_process_pid(pid: int) -> int:
     if len(pid_list) < 2:
         return -1
 
+    # Remove Self
     pid_list = pid_list[1:]
+
     pid_list.reverse()
 
     for pid in pid_list:
-        if get_process_name(pid) == "python":
+        if check_is_python_process(pid):
             return pid
 
     return -1
@@ -129,8 +149,15 @@ if __name__ == "__main__":
 
     pid_list = get_chain_of_process(-1)
     print(pid_list)
+
     p_name_list = get_process_name_list(pid_list)
     print(p_name_list)
+
+    p_is_python_list = [
+        check_is_python_process(pid)
+        for pid in pid_list
+    ]
+    print(p_is_python_list)
 
     print("is_run_by_gateway", is_run_by_gateway())
     print("is_run_by_vscode_remote", is_run_by_vscode_remote())

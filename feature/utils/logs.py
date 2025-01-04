@@ -1,32 +1,53 @@
 # -*- coding: utf-8 -*-
 
 import os
+import threading
+from typing import Dict
 
 import loguru
 
-log_dir = "./log"
 
-# Check Log Directory
-if not os.path.exists(log_dir):
-    os.mkdir(log_dir)
+class LoggerManager:
+    _instance = None
+    _lock = threading.Lock()
+    _loggers: Dict[str, loguru.Logger] = {}
 
-# Permission Check
-try:
-    test_file = os.path.join(log_dir, "test.log")
-    with open(test_file, "w") as f:
-        f.write(str(test_file))
-    os.remove(test_file)
-except Exception as e:
-    print("Cannot write to log directory.")
-    print(e)
-    exit(1)
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._init_log_dir()
+        return cls._instance
 
-log_path = os.path.join(log_dir, "nvinotify.log")
+    def _init_log_dir(self):
+        self.log_dir = "./log"
 
-logger = loguru.logger
+        if not os.path.exists(self.log_dir):
+            os.mkdir(self.log_dir)
 
-logger.add(log_path, retention="30 days")
+        permission_check_file = os.path.join(self.log_dir, "check.log")
+        try:
+            with open(permission_check_file, "w") as f:
+                f.write(str(permission_check_file))
+            os.remove(permission_check_file)
+        except Exception as e:
+            raise RuntimeError(f"无法写入日志目录 {self.log_dir}: {e}")
+
+    def get_logger(self, log_name: str) -> loguru.Logger:
+        postfix = ".log"
+        with self._lock:
+            if log_name not in self._loggers:
+                logger = loguru.logger
+                log_path = os.path.join(self.log_dir, log_name + postfix)
+                logger.add(log_path, retention="30 days", format="{time} | {level} | {message}")
+                self._loggers[log_name] = logger
+            return self._loggers[log_name]
 
 
-def get_logger() -> loguru.logger:
-    return logger
+# Singleton instance
+logger_manager = LoggerManager()
+
+
+def get_logger(log_name: str = "nvinotify") -> loguru.Logger:
+    return logger_manager.get_logger(log_name)

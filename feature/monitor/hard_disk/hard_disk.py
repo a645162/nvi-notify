@@ -6,8 +6,7 @@ from config.settings import (
     SUDO_PERMISSION,
 )
 from feature.monitor.monitor_enum import MonitorEnum
-from feature.utils.logs import get_logger
-from feature.utils.common_utils import cat_info, do_command
+from feature.utils import cat_info, do_command, get_logger
 
 logger = get_logger()
 
@@ -61,42 +60,33 @@ class HardDisk:
         self.name: str = name
         self.mount_point: str = mount_point
 
-    def update_info(self, info: list):
-        self.total_str = info[1]
-        self.used_str = info[2]
-        self.free_str = info[3]
-        self.percentage_used_str = info[4]
+    def update_info(self, info: list[str]) -> None:
+        """更新硬盘使用信息
+
+        Args:
+            info (list[str]): 从 df 命令解析出的硬盘信息列表
+                [文件系统, 总大小, 已用大小, 可用大小, 使用百分比, 挂载点]
+        """
+        if len(info) < 5:
+            logger.warning(f"Invalid disk info: {info}")
+            return
+
+        self.total_str, self.used_str, self.free_str, self.percentage_used_str = info[1:]
 
     @property
     def name(self) -> str:
         return self._name
 
-    @name.setter
+    @name.setter 
     def name(self, value: str) -> None:
         if (
             "nvme" not in value
-            and cat_info(f"/sys/block/{value}/queue/rotational").strip() == 1
+            and cat_info(f"/sys/block/{value}/queue/rotational").strip() == "1"
         ):
-            self.type = DiskType.HDD
+            self._type = DiskType.HDD
         else:
-            self.type = DiskType.SSD
+            self._type = DiskType.SSD
         self._name = value
-
-    @property
-    def used_str(self) -> str:
-        return self._used_str
-
-    @used_str.setter
-    def used_str(self, value: str) -> None:
-        self._used_str = value
-
-    @property
-    def total_str(self) -> str:
-        return self._total_str
-
-    @total_str.setter
-    def total_str(self, value: str) -> None:
-        self._total_str = value
 
     @property
     def free_str(self) -> str:
@@ -113,10 +103,7 @@ class HardDisk:
 
     @free_bytes.setter
     def free_bytes(self, cur_free_bytes: float) -> None:
-        self.low_free_bytes_trigger = cur_free_bytes < self.low_free_bytes_threshold
-        # self.low_free_bytes_trigger = (
-        #     cur_free_bytes < self.low_free_bytes_threshold
-        # ) and (cur_free_bytes < self._free_bytes)
+        self._low_free_bytes_trigger = cur_free_bytes < self._low_free_bytes_threshold
         self._free_bytes = cur_free_bytes
 
     @property
@@ -134,10 +121,9 @@ class HardDisk:
 
     @percentage_used_int.setter
     def percentage_used_int(self, cur_percentage_used: int) -> None:
-        self.high_percentage_used_trigger = (
-                cur_percentage_used > self.high_percentage_used_threshold
+        self._high_percentage_used_trigger = (
+                cur_percentage_used > self._high_percentage_used_threshold
         )
-
         self._percentage_used_int = cur_percentage_used
 
     @property
@@ -147,85 +133,27 @@ class HardDisk:
     @mount_point.setter
     def mount_point(self, value: str) -> None:
         if value == "/":
-            self.purpose = DiskPurpose.SYSTEM
-            self.purpose_cn = DiskPurpose.SYSTEM_CN
-            self.high_percentage_used_threshold = 85
-            self.low_free_bytes_threshold = humanfriendly.parse_size(
+            self._purpose = DiskPurpose.SYSTEM
+            self._purpose_cn = DiskPurpose.SYSTEM_CN
+            self._high_percentage_used_threshold = 85
+            self._low_free_bytes_threshold = humanfriendly.parse_size(
                 "50GB", binary=True
             )
         else:
-            self.purpose = DiskPurpose.DATA
-            self.purpose_cn = DiskPurpose.DATA_CN
-            self.high_percentage_used_threshold = HARD_DISK_HIGH_PERCENTAGE_THRESHOLD
-            self.low_free_bytes_threshold = humanfriendly.parse_size(
+            self._purpose = DiskPurpose.DATA
+            self._purpose_cn = DiskPurpose.DATA_CN
+            self._high_percentage_used_threshold = HARD_DISK_HIGH_PERCENTAGE_THRESHOLD
+            self._low_free_bytes_threshold = humanfriendly.parse_size(
                 f"{HARD_DISK_LOW_FREE_GB_THRESHOLD}GB", binary=True
             )
         self._mount_point = value
 
     @property
-    def purpose(self) -> DiskPurpose:
-        """hard disk's purpose"""
-        return self._purpose
-
-    @purpose.setter
-    def purpose(self, value: DiskPurpose) -> None:
-        self._purpose = value
-
-    @property
-    def purpose_cn(self) -> DiskPurpose:
-        """hard disk's purpose in Chinese"""
-        return self._purpose_cn
-
-    @purpose_cn.setter
-    def purpose_cn(self, value: DiskPurpose) -> None:
-        self._purpose_cn = value
-
-    @property
-    def type(self) -> DiskType:
-        return self._type
-
-    @type.setter
-    def type(self, value: DiskType) -> None:
-        self._type = value
-
-    @property
-    def high_percentage_used_threshold(self) -> int:
-        return self._high_percentage_used_threshold
-
-    @high_percentage_used_threshold.setter
-    def high_percentage_used_threshold(self, value: int) -> None:
-        self._high_percentage_used_threshold = value
-
-    @property
-    def low_free_bytes_threshold(self) -> int:
-        return self._low_free_bytes_threshold
-
-    @low_free_bytes_threshold.setter
-    def low_free_bytes_threshold(self, value: int) -> None:
-        self._low_free_bytes_threshold = value
-
-    @property
-    def high_percentage_used_trigger(self) -> bool:
-        return self._high_percentage_used_trigger
-
-    @high_percentage_used_trigger.setter
-    def high_percentage_used_trigger(self, value: bool) -> None:
-        self._high_percentage_used_trigger = value
-
-    @property
-    def low_free_bytes_trigger(self) -> bool:
-        return self._low_free_bytes_trigger
-
-    @low_free_bytes_trigger.setter
-    def low_free_bytes_trigger(self, value: bool) -> None:
-        self._low_free_bytes_trigger = value
-
-    @property
     def size_warning_trigger(self) -> bool:
-        if self.purpose == DiskPurpose.SYSTEM:
-            return self.low_free_bytes_trigger
-        elif self.purpose == DiskPurpose.DATA:
-            return self.low_free_bytes_trigger and self.high_percentage_used_trigger
+        if self._purpose == DiskPurpose.SYSTEM:
+            return self._low_free_bytes_trigger
+        elif self._purpose == DiskPurpose.DATA:
+            return self._low_free_bytes_trigger and self._high_percentage_used_trigger
 
     @property
     def disk_info(self) -> str:
@@ -234,7 +162,7 @@ class HardDisk:
             f"剩余可用容量为{self.free_str}，总容量为{self.total_str}，"
             f"占用率为{self.percentage_used_str}\n"
         )
-    
+
     def handle_disk_info_mountpoint(self, mount_point: str):
         linked_dict = {
             "/": "/",
@@ -246,7 +174,6 @@ class HardDisk:
             "/mnt/datasets": "~/datasets"
         }
         return linked_dict[mount_point]
-        
 
     def get_smart_info(self) -> str:
         if not SUDO_PERMISSION:

@@ -22,6 +22,8 @@ from feature.utils.logs import get_logger
 from feature.utils.common_utils import do_command
 from feature.utils.process import get_top_python_process_pid
 
+from group_center.tools.user_env.realtime import show_realtime_str
+
 logger = get_logger()
 sql = get_sql()
 
@@ -100,7 +102,7 @@ class GPUProcessInfo:
         self.cuda_version: str = ""
 
         # User Env
-        self.group_center_user_env_epoch: str = ""
+        self.group_center_user_realtime_str: str = ""
 
         self.top_python_pid: int = -1
 
@@ -157,15 +159,10 @@ class GPUProcessInfo:
         self.get_cuda_root()
         self.get_cuda_version()
 
-        # User Env
-        self.get_user_env()
-
     def update_ignore_mode(self):
         try:
             self.ignore_task = check_process_env(
-                pid=self.pid,
-                env_name="NVI_NOTIFY_IGNORE_TASK",
-                check_parent=True
+                pid=self.pid, env_name="NVI_NOTIFY_IGNORE_TASK", check_parent=True
             )
         except Exception as e:
             logger.error(e)
@@ -176,6 +173,9 @@ class GPUProcessInfo:
         self.get_task_gpu_memory()
         self.get_running_time_human()
         self.get_running_time_in_seconds()
+
+        # User Env
+        self.update_user_env()
 
     @property
     def gpu(self):
@@ -216,7 +216,7 @@ class GPUProcessInfo:
     def get_task_main_memory_mb(self):
         try:
             self.task_main_memory_mb = (
-                    self.gpu_process.memory_info().rss // 1024 // 1024
+                self.gpu_process.memory_info().rss // 1024 // 1024
             )
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -227,8 +227,8 @@ class GPUProcessInfo:
         self.task_gpu_memory = task_gpu_memory
 
         if (
-                self.task_gpu_memory_max is None
-                or self.task_gpu_memory_max < task_gpu_memory
+            self.task_gpu_memory_max is None
+            or self.task_gpu_memory_max < task_gpu_memory
         ):
             self.task_gpu_memory_max = task_gpu_memory
             self.task_gpu_memory_max_human = self.task_gpu_memory_human
@@ -392,13 +392,8 @@ class GPUProcessInfo:
             name_spilt_list = self.screen_session_name.split(".")
             if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
                 self.screen_session_name = self.screen_session_name[
-                                           dot_index + 1:
-                                           ].strip()
-
-    def get_user_env(self):
-        self.group_center_user_env_epoch = self.get_env_value(
-            "GROUP_CENTER_USER_ENV_EPOCH", ""
-        ).strip()
+                    dot_index + 1 :
+                ].strip()
 
     def init_top_python_pid(self):
         if not self.is_multi_gpu:
@@ -454,9 +449,9 @@ class GPUProcessInfo:
     def running_time_in_seconds(self, new_running_time_in_seconds):
         # 上次不满足，但是这次满足
         if (
-                new_running_time_in_seconds
-                > WEBHOOK_DELAY_SEND_SECONDS
-                > self._running_time_in_seconds
+            new_running_time_in_seconds
+            > WEBHOOK_DELAY_SEND_SECONDS
+            > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
 
@@ -572,6 +567,9 @@ class GPUProcessInfo:
             return ""
         except Exception:
             return ""
+
+    def update_user_env(self) -> None:
+        self.group_center_user_realtime_str = show_realtime_str(self.pid)
 
 
 def log_task_info(process_info: dict, task_event: TaskEvent):

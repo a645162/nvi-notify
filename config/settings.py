@@ -16,7 +16,7 @@ from config.config_utils import get_users, set_iptables
 from config.user_info import UserInfo
 from feature.monitor.monitor_enum import AllWebhookName
 from feature.utils.logs import get_logger
-from feature.utils.process import is_debug_mode
+from group_center.utils.process.process_env import is_debug_mode
 
 logger = get_logger()
 
@@ -237,8 +237,8 @@ group_center_machine.set_group_center_host_url(GROUP_CENTER_URL)
 group_center_machine.set_machine_name_full(SERVER_NAME)
 group_center_machine.set_machine_name_short(SERVER_NAME_SHORT)
 group_center_machine.set_machine_password(GROUP_CENTER_PASSWORD)
-group_center_logger_utils.set_is_print_mode(is_print=False)
-group_center_logger_utils.set_logger(logger)
+group_center_logger_utils.set_print_mode(enabled=False)
+group_center_logger_utils.set_default_logger(logger)
 
 ENV_FROM_GROUP_CENTER = \
     EnvironmentManager.get_bool("ENV_FROM_GROUP_CENTER", False)

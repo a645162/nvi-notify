@@ -12,7 +12,7 @@ from feature.global_variable.gpu import (
     global_gpu_info,
     global_gpu_task,
     global_gpu_usage,
-    global_variable_gpu_updated
+    global_variable_gpu_updated,
 )
 from feature.group_center import message
 from feature.monitor.gpu.gpu import GPU
@@ -64,6 +64,7 @@ class NvidiaMonitor(Monitor):
                 message.gpu_monitor_start(idx)
                 sql.check_finish_task(gpu.processes, idx)
 
+            # 每次都是要清空，下一轮会重新创建对象
             self.all_processes.clear()
 
             if self.should_send_monitor_launch_msg:
@@ -92,7 +93,9 @@ class NvidiaMonitor(Monitor):
             )
 
         if len(launch_msg_text) > 0:
-            msg = MessageHandler.handle_normal_text("GPU监控启动" + "".join(launch_msg_text))
+            msg = MessageHandler.handle_normal_text(
+                "GPU监控启动" + "".join(launch_msg_text)
+            )
             Webhook.enqueue_msg_to_webhook(
                 msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
             )
@@ -121,11 +124,11 @@ def init_global_gpu_var():
 
 def start_gpu_monitor_all():
     init_global_gpu_var()
-    
+
     if NUM_GPU == 0:
         logger.warning("No GPU detected, GPU monitor will not start.")
         return
-    
+
     nvidia_monitor = NvidiaMonitor(NUM_GPU)
     nvidia_monitor.start_monitor(nvidia_monitor.gpu_monitor_thread)
 

@@ -1,7 +1,8 @@
 from typing import List
 
-from group_center.core.feature.custom_client_message \
-    import machine_user_message_directly
+from group_center.core.feature.custom_client_message import (
+    machine_user_message_directly,
+)
 from feature.global_variable.gpu import (
     global_gpu_info,
     global_gpu_task,
@@ -97,7 +98,7 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
                 "cudaVersion": str(process_obj.cuda_version),
                 "cudaVisibleDevices": str(process_obj.cuda_visible_devices),
                 "driverVersion": str(process_obj.nvidia_driver_version),
-                "userEnvEpoch": str(process_obj.group_center_user_env_epoch),
+                "userEnvEpoch": str(process_obj.group_center_user_realtime_str),
             }
         )
 
@@ -105,10 +106,7 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
 
 
 def get_disk_usage_dict_list() -> List[dict]:
-    mount_point_list: List[str] = [
-        key
-        for key in disk_info_response_dict.keys()
-    ]
+    mount_point_list: List[str] = [key for key in disk_info_response_dict.keys()]
 
     # Sort
     mount_point_list.sort()
@@ -127,7 +125,4 @@ def get_disk_usage_user_dict_list() -> List[dict]:
 
 def machine_user_message_backend(user_name: str, content: str):
     logger.info(f"[Machine User Message]userName: {user_name}, content: {content}")
-    machine_user_message_directly(
-        user_name=user_name,
-        content=content
-    )
+    machine_user_message_directly(user_name=user_name, content=content)

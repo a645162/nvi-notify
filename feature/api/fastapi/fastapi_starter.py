@@ -30,7 +30,7 @@ def start_fastapi_server_ipv4(log_level="critical"):
         port=FASTAPI_SERVER_PORT,
         reload=True,
         log_level=log_level,
-        workers=1
+        workers=1,
     )
 
 

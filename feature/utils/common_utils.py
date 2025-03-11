@@ -4,7 +4,7 @@ from typing import Tuple
 
 def cat_info(path):
     try:
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             return f.read()
     except (IOError, FileNotFoundError) as e:
         return f"Error reading file: {e}"
@@ -43,5 +43,7 @@ def do_command(cmd: str, text: bool = True) -> Tuple[int, str, str]:
 
 def is_safe_in_shell(value):
     # 简单示例：确保value不包含任何特殊字符或shell元字符
-    safe_characters = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+    safe_characters = set(
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
+    )
     return all(char in safe_characters for char in value)

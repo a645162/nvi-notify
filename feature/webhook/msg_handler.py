@@ -79,7 +79,7 @@ class MessageHandler:
 
     @classmethod
     def enqueue_cpu_aver_temperature_warning_msg(
-            cls, cpu_id: int, cpu_aver_temperature: float
+        cls, cpu_id: int, cpu_aver_temperature: float
     ):
         """
         CPU平均温度警告消息函数
@@ -115,7 +115,7 @@ class MessageHandler:
 
     @classmethod
     def enqueue_hard_disk_warning_msg_to_user(
-            cls, disk_info: str, dir_path: str, dir_size: str, user: UserInfo
+        cls, disk_info: str, dir_path: str, dir_size: str, user: UserInfo
     ):
         """
         通过飞书app向各用户发送硬盘高占用警告消息

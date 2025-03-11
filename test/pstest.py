@@ -9,7 +9,7 @@ exe_name = os.path.basename(exe_path)
 
 index = exe_name.find(".")
 if index > -1:
-    exe_name=exe_name[:index]
-exe_name=exe_name.strip()
+    exe_name = exe_name[:index]
+exe_name = exe_name.strip()
 
 print(exe_name)

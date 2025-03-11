@@ -153,10 +153,7 @@ if __name__ == "__main__":
     p_name_list = get_process_name_list(pid_list)
     print(p_name_list)
 
-    p_is_python_list = [
-        check_is_python_process(pid)
-        for pid in pid_list
-    ]
+    p_is_python_list = [check_is_python_process(pid) for pid in pid_list]
     print(p_is_python_list)
 
     print("is_run_by_gateway", is_run_by_gateway())

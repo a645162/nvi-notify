@@ -68,7 +68,10 @@ class CPUMonitor(Monitor):
             if name not in ("coretemp", "k10temp"):
                 continue
             for entry in entries:
-                if not (("Package" in entry.label or "Package" in name) or ("Tctl" in entry.label)):
+                if not (
+                    ("Package" in entry.label or "Package" in name)
+                    or ("Tctl" in entry.label)
+                ):
                     continue
                 cpu_temperature_info.update({idx: entry.current})
                 idx += 1

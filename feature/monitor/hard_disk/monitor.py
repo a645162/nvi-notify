@@ -106,7 +106,7 @@ class HardDiskMonitor(Monitor):
 
                 if not is_webhook_sleep_time():
                     disk_warning_cnt[mount_point] = (
-                            disk_warning_cnt.get(mount_point, 0) + 1
+                        disk_warning_cnt.get(mount_point, 0) + 1
                     )
                     if disk_warning_cnt[mount_point] % 4 == 2:
                         logger.warning(f"[硬盘{mount_point}]开始扫描目录占用容量...")
@@ -221,7 +221,7 @@ class HardDiskMonitor(Monitor):
 
             dir_size, dir_path = lines.split()
             if humanfriendly.parse_size(
-                    dir_size, binary=True
+                dir_size, binary=True
             ) < humanfriendly.parse_size("10GB", binary=True):
                 continue
 

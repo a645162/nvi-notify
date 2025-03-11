@@ -9,7 +9,7 @@ from feature.global_variable.gpu import (
     global_gpu_info,
     global_gpu_task,
     global_gpu_usage,
-    global_variable_gpu_updated
+    global_variable_gpu_updated,
 )
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
@@ -104,12 +104,12 @@ class GPU:
                 index = current_str_upper.index(keyword_upper)
                 # 计算关键词在原始字符串中的起始位置
                 index_original = current_str_upper[:index].count(" ") - current_str[
-                                                                        :index
-                                                                        ].count(" ")
+                    :index
+                ].count(" ")
                 # 删除原始字符串中的关键词
                 current_str = (
-                        current_str[:index_original]
-                        + current_str[index_original + len(keyword) + 1:]
+                    current_str[:index_original]
+                    + current_str[index_original + len(keyword) + 1 :]
                 )
                 current_str_upper = current_str.upper()
         return current_str.strip()
@@ -233,7 +233,6 @@ class GPU:
                 {
                     "gpuName": self.name_short,
                     "gpuTDP": self.TDP,
-
                 }
             )
 

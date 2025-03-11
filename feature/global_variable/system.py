@@ -15,7 +15,6 @@ global_system_info为一个Hashmap
 global_system_info: dict = {
     "memoryPhysicTotalMb": 0,
     "memoryPhysicUsedMb": 0,
-
     "memorySwapTotalMb": 0,
     "memorySwapUsedMb": 0,
 }

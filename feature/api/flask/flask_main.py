@@ -58,17 +58,13 @@ def get_nvitop_output():
     )
 
 
-@app.route("/machine_user_message", methods=['POST'])
+@app.route("/machine_user_message", methods=["POST"])
 def post_machine_user_message():
-    final_data: dict = {
-        "haveError": True,
-        "isSucceed": False,
-        "result": "error"
-    }
+    final_data: dict = {"haveError": True, "isSucceed": False, "result": "error"}
 
-    if request.method == 'POST':
-        user_name = request.form['userName']
-        content = request.form['content']
+    if request.method == "POST":
+        user_name = request.form["userName"]
+        content = request.form["content"]
 
         machine_user_message_backend(
             user_name=user_name,

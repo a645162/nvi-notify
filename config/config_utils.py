@@ -12,8 +12,7 @@ def is_webhook_sleep_time(
     start_time: datetime.time = None, end_time: datetime.time = None
 ) -> bool:
     if start_time is None or end_time is None:
-        from config.settings import (WEBHOOK_SLEEP_TIME_END,
-                                     WEBHOOK_SLEEP_TIME_START)
+        from config.settings import WEBHOOK_SLEEP_TIME_END, WEBHOOK_SLEEP_TIME_START
 
         start_time = WEBHOOK_SLEEP_TIME_START
         end_time = WEBHOOK_SLEEP_TIME_END

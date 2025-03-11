@@ -135,7 +135,7 @@ class HardDisk:
     @percentage_used_int.setter
     def percentage_used_int(self, cur_percentage_used: int) -> None:
         self.high_percentage_used_trigger = (
-                cur_percentage_used > self.high_percentage_used_threshold
+            cur_percentage_used > self.high_percentage_used_threshold
         )
 
         self._percentage_used_int = cur_percentage_used
@@ -234,7 +234,7 @@ class HardDisk:
             f"剩余可用容量为{self.free_str}，总容量为{self.total_str}，"
             f"占用率为{self.percentage_used_str}\n"
         )
-    
+
     def handle_disk_info_mountpoint(self, mount_point: str):
         linked_dict = {
             "/": "/",
@@ -243,10 +243,9 @@ class HardDisk:
             "/mnt/hdd2": "~/data1",
             "/mnt/code": "~/code",
             "/mnt/data": "~/data",
-            "/mnt/datasets": "~/datasets"
+            "/mnt/datasets": "~/datasets",
         }
         return linked_dict[mount_point]
-        
 
     def get_smart_info(self) -> str:
         if not SUDO_PERMISSION:

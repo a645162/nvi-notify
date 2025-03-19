@@ -23,6 +23,8 @@ from feature.webhook.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger
 
+from group_center.core.path import cleanup_unused_rt_files
+
 logger = get_logger()
 sql = get_sql()
 
@@ -69,6 +71,9 @@ class NvidiaMonitor(Monitor):
 
             if self.should_send_monitor_launch_msg:
                 self.send_gpu_monitor_launch_msg()
+
+            # Cleanup
+            cleanup_unused_rt_files()
 
             time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
 

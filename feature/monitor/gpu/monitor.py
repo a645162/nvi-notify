@@ -14,7 +14,7 @@ from feature.group_center.data_manager import DataManager
 from feature.monitor.gpu.gpu import GPU
 from feature.monitor.monitor import Monitor
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
-from feature.sql.sqlite import get_sql
+from feature.database.sqlite import get_sql
 from feature.utils.logs import get_logger
 from feature.webhook.msg_handler import MessageHandler
 from feature.webhook.webhook import Webhook

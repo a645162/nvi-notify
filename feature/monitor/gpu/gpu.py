@@ -10,7 +10,7 @@ from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import TaskState
 from feature.monitor.utils import Converter
-from feature.sql.sqlite import get_sql
+from feature.database.sqlite import get_sql
 from feature.utils.logs import get_logger
 from feature.webhook.msg_handler import MessageHandler
 

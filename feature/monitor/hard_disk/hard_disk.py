@@ -6,8 +6,8 @@ from config.settings import (
     SUDO_PERMISSION,
 )
 from feature.monitor.monitor_enum import MonitorEnum
-from feature.utils.logs import get_logger
 from feature.utils.common_utils import cat_info, do_command
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 

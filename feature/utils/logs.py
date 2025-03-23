@@ -1,32 +1,30 @@
 # -*- coding: utf-8 -*-
-
 import os
 
 import loguru
 
-log_dir = "./log"
+from feature.utils.common_utils import check_permission
 
-# Check Log Directory
-if not os.path.exists(log_dir):
-    os.mkdir(log_dir)
 
-# Permission Check
-try:
-    test_file = os.path.join(log_dir, "test.log")
-    with open(test_file, "w") as f:
-        f.write(str(test_file))
-    os.remove(test_file)
-except Exception as e:
-    print("Cannot write to log directory.")
-    print(e)
-    exit(1)
+class Logger:
+    _instance = None
 
-log_path = os.path.join(log_dir, "nvinotify.log")
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Logger, cls).__new__(cls)
+            cls._instance._initialize_logger()
+        return cls._instance
 
-logger = loguru.logger
+    def _initialize_logger(self):
+        log_dir = "./log"
 
-logger.add(log_path, retention="30 days")
+        check_permission(log_dir)
+        log_path = os.path.join(log_dir, "nvinotify.log")
+        self.logger = loguru.logger
+        self.logger.add(log_path, retention="30 days")
 
+    def get_logger(self):
+        return self.logger
 
 def get_logger() -> loguru.logger:
-    return logger
+    return Logger().get_logger()

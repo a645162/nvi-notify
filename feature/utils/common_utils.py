@@ -1,3 +1,4 @@
+import os
 import subprocess
 from typing import Tuple
 
@@ -47,3 +48,19 @@ def is_safe_in_shell(value):
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
     )
     return all(char in safe_characters for char in value)
+
+
+def check_permission(path):
+    # Check Directory
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    # Permission Check
+    try:
+        test_file = os.path.join(path, "test")
+        with open(test_file, "w") as f:
+            f.write(str(test_file))
+        os.remove(test_file)
+    except Exception as e:
+        print(f"Cannot write to {path}. E: {e}")
+        exit(1)

@@ -9,6 +9,7 @@ import psutil
 from dotenv import dotenv_values, load_dotenv
 from group_center.core import group_center_machine
 from group_center.utils.log import logger as group_center_logger_utils
+from group_center.utils.process.process_env import is_debug_mode
 from nvitop import Device
 from packaging import version
 
@@ -16,10 +17,8 @@ from config.config_utils import get_users, set_iptables
 from config.user_info import UserInfo
 from feature.monitor.monitor_enum import AllWebhookName
 from feature.utils.logs import get_logger
-from group_center.utils.process.process_env import is_debug_mode
 
 logger = get_logger()
-
 path_base = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 

@@ -4,8 +4,8 @@ import requests
 
 from config.user_info import UserInfo
 from feature.monitor.monitor_enum import MsgType
-from feature.webhook.webhook import Webhook
 from feature.utils.logs import get_logger
+from feature.webhook.webhook import Webhook
 
 logger = get_logger()
 

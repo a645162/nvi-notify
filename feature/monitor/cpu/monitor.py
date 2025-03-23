@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import time
 
 import psutil
@@ -8,8 +7,8 @@ from config.settings import TEMPERATURE_MONITOR_SAMPLING_INTERVAL
 from feature.monitor.cpu.cpu import CPU
 from feature.monitor.memory.memory import MemoryInfo
 from feature.monitor.monitor import Monitor
-from feature.webhook.msg_handler import MessageHandler
 from feature.utils.logs import get_logger
+from feature.webhook.msg_handler import MessageHandler
 
 logger = get_logger()
 

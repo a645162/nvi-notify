@@ -1,29 +1,23 @@
 # -*- coding: utf-8 -*-
-
 import sys
 import time
+
+from group_center.core.path import cleanup_unused_rt_files
 
 from config.settings import (
     GPU_MONITOR_SAMPLING_INTERVAL,
     NUM_GPU,
     WEBHOOK_SEND_LAUNCH_MESSAGE,
 )
-from feature.global_variable.gpu import (
-    global_gpu_info,
-    global_gpu_task,
-    global_gpu_usage,
-    global_variable_gpu_updated,
-)
 from feature.group_center import message
+from feature.group_center.data_manager import DataManager
 from feature.monitor.gpu.gpu import GPU
 from feature.monitor.monitor import Monitor
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
-from feature.webhook.msg_handler import MessageHandler
-from feature.webhook.webhook import Webhook
 from feature.sql.sqlite import get_sql
 from feature.utils.logs import get_logger
-
-from group_center.core.path import cleanup_unused_rt_files
+from feature.webhook.msg_handler import MessageHandler
+from feature.webhook.webhook import Webhook
 
 logger = get_logger()
 sql = get_sql()
@@ -120,11 +114,11 @@ def init_global_gpu_var():
         "gpuTemperature": "0",
     }
 
-    global_gpu_info.extend(default_gpu_info_dict.copy() for _ in range(NUM_GPU))
-    global_gpu_usage.extend(default_gpu_usage_dict.copy() for _ in range(NUM_GPU))
-    global_gpu_task.extend([].copy() for _ in range(NUM_GPU))
+    DataManager().gpu_info.extend(default_gpu_info_dict.copy() for _ in range(NUM_GPU))
+    DataManager().gpu_usage.extend(default_gpu_usage_dict.copy() for _ in range(NUM_GPU))
+    DataManager().gpu_task.extend([].copy() for _ in range(NUM_GPU))
 
-    global_variable_gpu_updated()
+    DataManager().gpu_updated()
 
 
 def start_gpu_monitor_all():

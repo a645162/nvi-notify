@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+from group_center.core.feature.custom_client_message import (
+    machine_message_directly,
+    machine_user_message_directly,
+)
+
 from config.settings import (
     SERVER_DOMAIN,
     SERVER_NAME,
@@ -9,12 +14,8 @@ from config.settings import (
 )
 from config.user_info import UserInfo
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
-from feature.webhook.webhook import Webhook
 from feature.utils.logs import get_logger
-from group_center.core.feature.custom_client_message import (
-    machine_message_directly,
-    machine_user_message_directly,
-)
+from feature.webhook.webhook import Webhook
 
 logger = get_logger()
 

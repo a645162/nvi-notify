@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-
 import time
 
 import humanfriendly
 
+from config.config_utils import is_webhook_sleep_time
 from config.settings import (
     HARD_DISK_MONITOR_PASS_ROOT_CHECK,
     HARD_DISK_MONITOR_SAMPLING_INTERVAL,
@@ -11,14 +11,13 @@ from config.settings import (
     USERS,
 )
 from config.user_info import UserInfo
-from config.config_utils import is_webhook_sleep_time
+from feature.group_center.data_manager import DataManager
 from feature.monitor.hard_disk.hard_disk import DiskPurpose, HardDisk
 from feature.monitor.monitor import Monitor
-from feature.webhook.msg_handler import MessageHandler
-from feature.utils.logs import get_logger
 from feature.utils.common_utils import cat_info, do_command
-from feature.utils.system import check_is_root, check_is_linux, get_os_release_id
-from feature.global_variable.disk_status import disk_info_response_dict
+from feature.utils.logs import get_logger
+from feature.utils.system import check_is_linux, check_is_root, get_os_release_id
+from feature.webhook.msg_handler import MessageHandler
 
 logger = get_logger()
 
@@ -74,6 +73,7 @@ class HardDiskMonitor(Monitor):
         self.__generate_api_response_data()
 
     def __generate_api_response_data(self):
+
         disk_info_dict = {}
 
         for mount_point, disk_obj in self.hard_disk_dict.items():
@@ -89,8 +89,8 @@ class HardDiskMonitor(Monitor):
                 "type": disk_obj.type.name,
                 "purpose": disk_obj.purpose_cn.value,
             }
-        disk_info_response_dict.clear()
-        disk_info_response_dict.update(disk_info_dict)
+        DataManager().disk_info_response_dict.clear()
+        DataManager().disk_info_response_dict.update(disk_info_dict)
 
     def hard_disk_monitor_thread(self):
         """

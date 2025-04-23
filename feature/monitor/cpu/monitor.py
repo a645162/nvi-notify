@@ -33,12 +33,17 @@ class CPUMonitor(Monitor):
             memory.update()
 
             temperature_info = self.get_cpu_temperature()
-            if temperature_info[0] == -1.0:
+            # 检查是否有有效的温度数据
+            if not temperature_info or -1.0 in temperature_info.values():
                 MessageHandler.enqueue_except_warning_msg("cpu")
                 time.sleep(10)
                 continue
 
             for cpu in self.cpu_dict.values():
+                if cpu.idx not in temperature_info:
+                    logger.warning(f"No temperature data available for CPU {cpu.idx}")
+                    continue
+
                 cpu.temperature = temperature_info[cpu.idx]
                 cpu.average_temperature = sum(cpu.temperature_samples) / len(
                     cpu.temperature_samples

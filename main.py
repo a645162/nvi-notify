@@ -21,16 +21,34 @@ if __name__ == "__main__":
     time.sleep(WAIT_TIME_BEFORE_START)
 
     logger.info("Webhook sub program is starting...")
-    init_webhook()
+    try:
+        init_webhook()
+    except Exception as e:
+        logger.error(f"Webhook Init Error: {e}")
+        logger.error("Webhook sub program error, please check the configuration.")
 
     logger.info("CPU Monitor sub program is starting...")
-    start_cpu_monitor_all()
+    try:
+        start_cpu_monitor_all()
+    except Exception as e:
+        logger.error(f"CPU Monitor Error: {e}")
+        logger.error("CPU Monitor sub program error, please check the configuration.")
 
     logger.info("GPU Monitor sub program is starting...")
-    start_gpu_monitor_all()
+    try:
+        start_gpu_monitor_all()
+    except Exception as e:
+        logger.error(f"GPU Monitor Error: {e}")
+        logger.error("GPU Monitor sub program error, please check the configuration.")
 
     logger.info("Hard Disk Monitor sub program is starting...")
-    start_resource_monitor_all()
+    try:
+        start_resource_monitor_all()
+    except Exception as e:
+        logger.error(f"Resource Monitor Error: {e}")
+        logger.error(
+            "Hard Disk Monitor sub program error, please check the configuration."
+        )
 
     logger.info("API(Web Server) sub program is starting...")
     start_api_server()

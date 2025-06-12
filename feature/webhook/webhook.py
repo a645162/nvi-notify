@@ -22,6 +22,7 @@ class Webhook:
         if not AllWebhookName.check_value_valid(self.webhook_name):
             logger.error(f"{webhook_name}'s webhook is not supported!")
             raise ValueError(f"{webhook_name}'s webhook is not supported!")
+
         self.webhook_url_header = webhook_url_header.lower().strip()
 
         self._webhook_url_main = self.get_webhook_url(

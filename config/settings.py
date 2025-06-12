@@ -3,7 +3,6 @@ import datetime
 import os
 import platform
 import socket
-from typing import Dict
 
 import psutil
 from dotenv import dotenv_values, load_dotenv
@@ -23,12 +22,12 @@ path_base = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 
 class EnvironmentManager:
-    all_env_dict: Dict[str, str] = {}
+    all_env_dict: dict[str, str] = {}
 
     @classmethod
     def load_env_file(
         cls, env_file: str, verbose: bool = True, override: bool = False
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Load environment variables from a file."""
         if os.path.exists(env_file):
             load_dotenv(env_file, verbose=verbose, override=override)
@@ -120,9 +119,11 @@ class EnvironmentManager:
         for ip in ip_dict.values():
             return ip
 
+        return ""
+
     @classmethod
-    def get_interface_ip_dict(cls, ip_type: str = "v4") -> dict:
-        interface_ip_dict = {}
+    def get_interface_ip_dict(cls, ip_type: str = "v4") -> dict[str, str]:
+        interface_ip_dict: dict[str, str] = {}
         family = socket.AF_INET if ip_type == "v4" else socket.AF_INET6
 
         # get local ip from dns
@@ -312,7 +313,7 @@ WEBHOOK_LARK_DEPLOY = EnvironmentManager.get("WEBHOOK_LARK_DEPLOY", "")
 WEBHOOK_LARK_DEV = EnvironmentManager.get("WEBHOOK_LARK_DEV", "")
 
 # User
-USERS: Dict[str, UserInfo] = get_users()
+USERS: dict[str, UserInfo] = get_users()
 if SUDO_PERMISSION:
     set_iptables(FLASK_SERVER_PORT)
 

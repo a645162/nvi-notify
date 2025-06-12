@@ -8,9 +8,7 @@ from feature.utils.common_utils import do_command
 logger = get_logger()
 
 
-def is_webhook_sleep_time(
-    start_time: datetime.time = None, end_time: datetime.time = None
-) -> bool:
+def is_webhook_sleep_time(start_time: datetime.time, end_time: datetime.time) -> bool:
     if start_time is None or end_time is None:
         from config.settings import WEBHOOK_SLEEP_TIME_END, WEBHOOK_SLEEP_TIME_START
 

@@ -39,7 +39,7 @@ class CPU:
         return self._average_temperature
 
     @average_temperature.setter
-    def average_temperature(self, new_aver_temperature) -> float:
+    def average_temperature(self, new_aver_temperature) -> None:
         self.high_aver_temperature_trigger = (
             new_aver_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD
         )

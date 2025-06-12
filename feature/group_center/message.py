@@ -22,10 +22,11 @@ def gpu_task_message(process_obj, task_event: TaskEvent):
     from feature.monitor.gpu.gpu_process import GPUProcessInfo
 
     process_obj: GPUProcessInfo = process_obj
+    user_name_cn = getattr(process_obj.user, "name_cn", "Unknown")
 
     logger.info(
         f"[Group Center] Task "
-        f"User:{process_obj.user.name_cn} "
+        f"User:{user_name_cn} "
         f"PID:{process_obj.pid} "
         f"Event:{task_event.value}"
     )

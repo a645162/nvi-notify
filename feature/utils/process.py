@@ -57,7 +57,7 @@ def get_process_name_list(pid: List[int]) -> List[str]:
     return [get_process_name(pid) for pid in pid]
 
 
-def get_chain_of_process(pid: int) -> List[str]:
+def get_chain_of_process(pid: int) -> List[int]:
     """
     Get the chain of process of the given process ID.
     """

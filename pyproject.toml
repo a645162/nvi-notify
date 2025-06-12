@@ -1,0 +1,21 @@
+[project]
+name = "nvi-notify"
+version = "2.5.0"
+description = "Auto monitor NVIDIA GPU auto sends a status message to webhook when GPU usage is changed."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chardet>=5.2.0",
+    "flask>=3.1.1",
+    "flask-cors>=6.0.1",
+    "flask-socketio>=5.5.1",
+    "humanfriendly>=10.0",
+    "li-group-center>=2.2.2",
+    "loguru>=0.7.3",
+    "nvitop>=1.5.1",
+    "packaging>=25.0",
+    "python-dotenv>=1.1.0",
+    "pyyaml>=6.0.2",
+    "requests>=2.32.4",
+    "urllib3>=2.4.0",
+]

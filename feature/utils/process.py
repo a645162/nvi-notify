@@ -143,6 +143,23 @@ def is_run_by_tmux() -> bool:
     return check_parent_process_name_keywords(keywords)
 
 
+def check_process_exists(pid: int) -> bool:
+    """
+    根据PID判断进程是否存在
+    :param pid: 进程ID
+    :return: 进程是否存在
+    """
+    try:
+        process = psutil.Process(pid)
+        
+        # 检查进程是否真的存在并且正在运行
+        return process.is_running()
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        return False
+    except Exception as e:
+        return False
+
+
 if __name__ == "__main__":
     print(get_parent_process_pid(-1))
     print(get_process_name(get_parent_process_pid(-1)))

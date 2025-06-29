@@ -3,6 +3,7 @@ import datetime
 import os
 import platform
 import socket
+from tkinter.tix import MAX
 
 import psutil
 from dotenv import dotenv_values, load_dotenv
@@ -255,6 +256,21 @@ GPU_MONITOR_SAMPLING_INTERVAL = EnvironmentManager.get_int(
     "GPU_MONITOR_SAMPLING_INTERVAL", 5
 )
 GPU_MONITOR_AUTO_RESTART = EnvironmentManager.get_bool("GPU_MONITOR_AUTO_RESTART", True)
+
+# 0占用监视器
+
+# max_consecutive_zero_count
+# 刷新间隔为GPU_MONITOR_SAMPLING_INTERVAL秒，按5秒算
+# 至少30分钟，也就是30*60/5=360次
+MAX_CONSECUTIVE_ZERO_COUNT = EnvironmentManager.get_int(
+    "MAX_CONSECUTIVE_ZERO_COUNT", 360
+)
+CPU_CONSECUTIVE_ZERO_ENABLE = EnvironmentManager.get_bool(
+    "CPU_CONSECUTIVE_ZERO_ENABLE", False
+)
+GPU_CONSECUTIVE_ZERO_ENABLE = EnvironmentManager.get_bool(
+    "GPU_CONSECUTIVE_ZERO_ENABLE", False
+)
 
 # Hard Disk Monitor
 HARD_DISK_MONITOR_PASS_ROOT_CHECK = EnvironmentManager.get_bool(

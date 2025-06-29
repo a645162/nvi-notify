@@ -11,6 +11,8 @@ from config.settings import (
     WEBHOOK_SEND_LAUNCH_MESSAGE,
     CPU_CONSECUTIVE_ZERO_ENABLE,
     GPU_CONSECUTIVE_ZERO_ENABLE,
+    SERVER_NAME,
+    SERVER_NAME_SHORT,
 )
 from feature.group_center import message
 from feature.group_center.data_manager import DataManager
@@ -192,6 +194,19 @@ class NvidiaMonitor(Monitor):
             Webhook.enqueue_msg_to_webhook(
                 msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
             )
+            
+            # 通过 group_center发送到群组
+            from group_center.core.feature.custom_client_message import (
+                machine_message_directly,
+            )
+
+            # Send to lark by Group Center
+            machine_message_directly(
+                server_name=SERVER_NAME,
+                server_name_eng=SERVER_NAME_SHORT,
+                content=msg,
+                at=process_info.user.name_cn if process_info.user else "",
+            )
 
             # 通过 group_center 发送给用户
             if process_info.user and process_info.user.name_cn:
@@ -245,6 +260,19 @@ class NvidiaMonitor(Monitor):
             # 发送到 webhook
             Webhook.enqueue_msg_to_webhook(
                 msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
+            )
+
+            # 通过 group_center发送到群组
+            from group_center.core.feature.custom_client_message import (
+                machine_message_directly,
+            )
+
+            # Send to lark by Group Center
+            machine_message_directly(
+                server_name=SERVER_NAME,
+                server_name_eng=SERVER_NAME_SHORT,
+                content=msg,
+                at=process_info.user.name_cn if process_info.user else "",
             )
 
             # 通过 group_center 发送给用户

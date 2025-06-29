@@ -124,13 +124,17 @@ class GPUProcessInfo:
         # GPU占用率监控相关
         self.consecutive_zero_gpu_count: int = 0  # 连续GPU占用率为0的次数
         self.max_consecutive_zero_count: int = (
-            MAX_CONSECUTIVE_ZERO_COUNT  # 连续零占用率报警阈值  # 连续零占用率报警阈值
+            MAX_CONSECUTIVE_ZERO_COUNT  # 连续零占用率报警阈值
         )
-        self.has_alerted_zero_usage: bool = False  # 是否已经发送过零占用率报警
+        self.should_send_gpu_alert: bool = False  # 当前是否需要发送GPU零占用率报警
+        self.already_has_alerted_zero_gpu_usage: bool = False  # 是否曾经报过警报
+        self.total_gpu_zero_alert_count: int = 0  # GPU零占用率报警总计次数
 
         # CPU占用率监控相关
         self.consecutive_zero_cpu_count: int = 0  # 连续CPU占用率为0的次数
-        self.has_alerted_zero_cpu_usage: bool = False  # 是否已经发送过CPU零占用率报警
+        self.should_send_cpu_alert: bool = False  # 当前是否需要发送CPU零占用率报警
+        self.already_has_alerted_zero_cpu_usage: bool = False  # 是否曾经报过警报
+        self.total_cpu_zero_alert_count: int = 0  # CPU零占用率报警总计次数
 
         self._gpu = None
         self._state: Optional[TaskState] = TaskState.DEFAULT  # init
@@ -492,10 +496,10 @@ class GPUProcessInfo:
             # 因为我们的监控间隔(5秒)已经足够长，能提供准确的数据
             # self.cpu_percent = process.cpu_percent(interval=None)
             self.cpu_times = process.cpu_times()._asdict()
-            
+
             # 可选：如果需要更精确的瞬时CPU使用率，可以使用短时间阻塞模式
             self.cpu_percent = process.cpu_percent(interval=0.1)
-            
+
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             self.cpu_percent = 0.0
             self.cpu_times = None
@@ -518,10 +522,10 @@ class GPUProcessInfo:
                 logger.error(
                     f"GPU process {self.pid} does not have gpu_sm_utilization attribute."
                 )
-                
+
                 # Print all attributes of the gpu_process for debugging
                 logger.debug(f"Available attributes: {dir(self.gpu_process)}")
-                
+
         except Exception as e:
             logger.error(f"Error getting GPU utilization for PID {self.pid}: {e}")
             self.gpu_utilization = 0.0
@@ -534,17 +538,19 @@ class GPUProcessInfo:
         if self.gpu_utilization == 0.0:
             self.consecutive_zero_gpu_count += 1
 
-            # 达到阈值且未发送过报警
-            if (
-                self.consecutive_zero_gpu_count >= self.max_consecutive_zero_count
-                and not self.has_alerted_zero_usage
-            ):
-                self.has_alerted_zero_usage = True
+            # 每达到阈值就发送报警，然后重置计数器继续下一轮检测
+            if self.consecutive_zero_gpu_count >= self.max_consecutive_zero_count:
+                self.should_send_gpu_alert = True
+                self.already_has_alerted_zero_gpu_usage = True  # 记录曾经报过警，不重置
+                self.total_gpu_zero_alert_count += 1
+                # 重置计数器，准备下一轮检测
+                self.consecutive_zero_gpu_count = 0
                 return True
         else:
-            # GPU占用率不为0，重置计数器和报警标志
+            # GPU占用率不为0，重置计数器和当前报警状态
             self.consecutive_zero_gpu_count = 0
-            self.has_alerted_zero_usage = False
+            self.should_send_gpu_alert = False
+            # 注意：不重置 already_has_alerted_zero_gpu_usage，保持历史记录
 
         return False
 
@@ -556,17 +562,19 @@ class GPUProcessInfo:
         if self.cpu_percent == 0.0:
             self.consecutive_zero_cpu_count += 1
 
-            # 达到阈值且未发送过报警
-            if (
-                self.consecutive_zero_cpu_count >= self.max_consecutive_zero_count
-                and not self.has_alerted_zero_cpu_usage
-            ):
-                self.has_alerted_zero_cpu_usage = True
+            # 每达到阈值就发送报警，然后重置计数器继续下一轮检测
+            if self.consecutive_zero_cpu_count >= self.max_consecutive_zero_count:
+                self.should_send_cpu_alert = True
+                self.already_has_alerted_zero_cpu_usage = True  # 记录曾经报过警，不重置
+                self.total_cpu_zero_alert_count += 1
+                # 重置计数器，准备下一轮检测
+                self.consecutive_zero_cpu_count = 0
                 return True
         else:
-            # CPU占用率不为0，重置计数器和报警标志
+            # CPU占用率不为0，重置计数器和当前报警状态
             self.consecutive_zero_cpu_count = 0
-            self.has_alerted_zero_cpu_usage = False
+            self.should_send_cpu_alert = False
+            # 注意：不重置 already_has_alerted_zero_cpu_usage，保持历史记录
 
         return False
 
@@ -583,9 +591,11 @@ class GPUProcessInfo:
     def reset_zero_usage_alert(self):
         """重置零占用率报警状态"""
         self.consecutive_zero_gpu_count = 0
-        self.has_alerted_zero_usage = False
+        self.should_send_gpu_alert = False
         self.consecutive_zero_cpu_count = 0
-        self.has_alerted_zero_cpu_usage = False
+        self.should_send_cpu_alert = False
+        # 注意：不重置 already_has_alerted_zero_gpu_usage 和 total_*_zero_alert_count
+        # 因为这些是历史记录和累积统计
 
     @property
     def state(self):
@@ -701,6 +711,38 @@ class GPUProcessInfo:
     def update_user_env(self) -> None:
         self.group_center_user_realtime_str = show_realtime_str(self.pid)
 
+    @staticmethod
+    def format_duration(total_seconds: int) -> str:
+        """
+        将秒数转换为人类可读的时间格式
+        支持秒、分钟、小时、天
+        """
+        if total_seconds < 60:
+            return f"{total_seconds}秒"
+
+        minutes = total_seconds // 60
+        if minutes < 60:
+            remaining_seconds = total_seconds % 60
+            if remaining_seconds > 0:
+                return f"{minutes}分钟{remaining_seconds}秒"
+            else:
+                return f"{minutes}分钟"
+
+        hours = minutes // 60
+        if hours < 24:
+            remaining_minutes = minutes % 60
+            if remaining_minutes > 0:
+                return f"{hours}小时{remaining_minutes}分钟"
+            else:
+                return f"{hours}小时"
+
+        days = hours // 24
+        remaining_hours = hours % 24
+        if remaining_hours > 0:
+            return f"{days}天{remaining_hours}小时"
+        else:
+            return f"{days}天"
+
 
 def log_task_info(process_info: dict, task_event: TaskEvent):
     """
@@ -732,4 +774,7 @@ def log_task_info(process_info: dict, task_event: TaskEvent):
                 f"task: {task.pid}，用时{task.running_time_human}"
             )
         log_writer.write(f"[{EnvironmentManager.now_time_str()}]+{output_log} + \n")
+        logger.info(output_log)
+        log_writer.write(f"[{EnvironmentManager.now_time_str()}]+{output_log} + \n")
+        logger.info(output_log)
         logger.info(output_log)

@@ -106,26 +106,38 @@ class NvidiaMonitor(Monitor):
                     process_info.consecutive_zero_gpu_count = (
                         historical_process.consecutive_zero_gpu_count
                     )
-                    process_info.has_alerted_zero_usage = (
-                        historical_process.has_alerted_zero_usage
+                    process_info.should_send_gpu_alert = (
+                        historical_process.should_send_gpu_alert
+                    )
+                    process_info.already_has_alerted_zero_gpu_usage = (
+                        historical_process.already_has_alerted_zero_gpu_usage
+                    )
+                    process_info.total_gpu_zero_alert_count = (
+                        historical_process.total_gpu_zero_alert_count
                     )
 
                 if CPU_CONSECUTIVE_ZERO_ENABLE:
                     process_info.consecutive_zero_cpu_count = (
                         historical_process.consecutive_zero_cpu_count
                     )
-                    process_info.has_alerted_zero_cpu_usage = (
-                        historical_process.has_alerted_zero_cpu_usage
+                    process_info.should_send_cpu_alert = (
+                        historical_process.should_send_cpu_alert
+                    )
+                    process_info.already_has_alerted_zero_cpu_usage = (
+                        historical_process.already_has_alerted_zero_cpu_usage
+                    )
+                    process_info.total_cpu_zero_alert_count = (
+                        historical_process.total_cpu_zero_alert_count
                     )
 
-            # 检查是否需要发送零占用率报警 - 使用dummy逻辑
+            # 检查是否需要发送零占用率报警
             alert_info = process_info.should_send_zero_usage_alert()
 
-            if GPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_gpu_alert"]:
-                self.send_zero_gpu_usage_alert(process_info)
+            # 只有当CPU和GPU都需要报警时才发送（如果相应开关都启用）
+            should_send_combined_alert = self._should_send_combined_alert(alert_info)
 
-            if CPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_cpu_alert"]:
-                self.send_zero_cpu_usage_alert(process_info)
+            if should_send_combined_alert:
+                self.send_combined_zero_usage_alert(process_info, alert_info)
 
             # 更新历史记录
             self.process_gpu_usage_history[pid] = process_info
@@ -148,205 +160,259 @@ class NvidiaMonitor(Monitor):
             del self.process_gpu_usage_history[pid]
 
     @staticmethod
-    def gpu_zero_time_str() -> str:
-        # 时间计算
-        time_min = (GPU_MONITOR_SAMPLING_INTERVAL * MAX_CONSECUTIVE_ZERO_COUNT) // 60
-        if time_min < 1:
-            time_sec = GPU_MONITOR_SAMPLING_INTERVAL * MAX_CONSECUTIVE_ZERO_COUNT
-            time_str = f"{time_sec}秒"
-        else:
-            time_str = f"{time_min}分钟"
+    def calculate_zero_time_str(count: int) -> str:
+        """根据计数计算总共为0的时间"""
+        total_seconds = GPU_MONITOR_SAMPLING_INTERVAL * count
 
-        return time_str
+        if total_seconds < 60:
+            return f"{total_seconds}秒"
+
+        minutes = total_seconds // 60
+        if minutes < 60:
+            remaining_seconds = total_seconds % 60
+            if remaining_seconds > 0:
+                return f"{minutes}分钟{remaining_seconds}秒"
+            else:
+                return f"{minutes}分钟"
+
+        hours = minutes // 60
+        if hours < 24:
+            remaining_minutes = minutes % 60
+            if remaining_minutes > 0:
+                return f"{hours}小时{remaining_minutes}分钟"
+            else:
+                return f"{hours}小时"
+
+        days = hours // 24
+        remaining_hours = hours % 24
+        if remaining_hours > 0:
+            return f"{days}天{remaining_hours}小时"
+        else:
+            return f"{days}天"
+
+    @staticmethod
+    def get_detection_interval_str() -> str:
+        """获取检测间隔时间字符串"""
+        total_seconds = GPU_MONITOR_SAMPLING_INTERVAL * MAX_CONSECUTIVE_ZERO_COUNT
+
+        if total_seconds < 60:
+            return f"{total_seconds}秒"
+
+        minutes = total_seconds // 60
+        if minutes < 60:
+            remaining_seconds = total_seconds % 60
+            if remaining_seconds > 0:
+                return f"{minutes}分钟{remaining_seconds}秒"
+            else:
+                return f"{minutes}分钟"
+
+        hours = minutes // 60
+        if hours < 24:
+            remaining_minutes = minutes % 60
+            if remaining_minutes > 0:
+                return f"{hours}小时{remaining_minutes}分钟"
+            else:
+                return f"{hours}小时"
+
+        days = hours // 24
+        remaining_hours = hours % 24
+        if remaining_hours > 0:
+            return f"{days}天{remaining_hours}小时"
+        else:
+            return f"{days}天"
+
+    @staticmethod
+    def gpu_zero_time_str() -> str:
+        """获取零占用率检测间隔时间字符串"""
+        return NvidiaMonitor.get_detection_interval_str()
+
+    def _should_send_combined_alert(self, alert_info: dict) -> bool:
+        """
+        判断是否应该发送综合报警
+        只有当启用的监控项都满足报警条件时才返回True
+        """
+        # 获取各项是否需要报警
+        gpu_alert_needed = alert_info["should_send_gpu_alert"]
+        cpu_alert_needed = alert_info["should_send_cpu_alert"]
+
+        # 检查启用的监控项
+        gpu_enabled = GPU_CONSECUTIVE_ZERO_ENABLE
+        cpu_enabled = CPU_CONSECUTIVE_ZERO_ENABLE
+
+        # 如果两个监控都启用，则需要都满足条件才发送
+        if gpu_enabled and cpu_enabled:
+            return gpu_alert_needed and cpu_alert_needed
+
+        # 如果只启用GPU监控
+        elif gpu_enabled and not cpu_enabled:
+            return gpu_alert_needed
+
+        # 如果只启用CPU监控
+        elif cpu_enabled and not gpu_enabled:
+            return cpu_alert_needed
+
+        # 如果都没启用，不发送报警
+        else:
+            return False
+
+    def send_combined_zero_usage_alert(
+        self, process_info: "GPUProcessInfo", alert_info: dict
+    ):
+        """发送综合的零占用率报警"""
+        try:
+            # 检查dummy逻辑
+            if not self._should_send_combined_alert_dummy_check(process_info):
+                logger.info(
+                    f"Combined alert blocked by dummy check for process {process_info.pid}"
+                )
+                return
+
+            # 构建报警消息
+            alert_msg_parts = [
+                f"🚨 [GPU {process_info.gpu_id}] 资源 0% 占用率报警 🚨\n"
+            ]
+
+            # 基本信息
+            alert_msg_parts.extend(
+                [
+                    f"进程PID: {process_info.pid}\n",
+                    f"进程名称: {process_info.project_name}-{process_info.python_file}\n",
+                    f"用户: {process_info.user.name_cn if process_info.user else '未知'}\n",
+                    f"检测间隔: {self.get_detection_interval_str()}\n",
+                ]
+            )
+
+            # 添加具体的占用率信息和统计信息
+            if GPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_gpu_alert"]:
+                # 使用报警次数乘以检测间隔计算总时间
+                gpu_total_zero_time = self.calculate_zero_time_str(
+                    process_info.total_gpu_zero_alert_count
+                    * process_info.max_consecutive_zero_count
+                )
+                alert_msg_parts.append(
+                    f"当前进程GPU占用率: {process_info.gpu_utilization:.1f}%\n"
+                )
+                alert_msg_parts.append(
+                    f"GPU零占用计次: {process_info.total_gpu_zero_alert_count}\n"
+                )
+                alert_msg_parts.append(f"GPU总共0%时间: {gpu_total_zero_time}\n")
+
+            if CPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_cpu_alert"]:
+                # 使用报警次数乘以检测间隔计算总时间
+                cpu_total_zero_time = self.calculate_zero_time_str(
+                    process_info.total_cpu_zero_alert_count
+                    * process_info.max_consecutive_zero_count
+                )
+                alert_msg_parts.append(
+                    f"当前进程CPU占用率: {process_info.cpu_percent:.1f}%\n"
+                )
+                alert_msg_parts.append(
+                    f"CPU零占用计次: {process_info.total_cpu_zero_alert_count}\n"
+                )
+                alert_msg_parts.append(f"CPU总共0%时间: {cpu_total_zero_time}\n")
+
+            alert_msg_parts.extend(
+                [
+                    f"已经运行: {process_info.running_time_human}\n\n",
+                    f"报警时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n",
+                ]
+            )
+
+            alert_msg = "".join(alert_msg_parts)
+            msg = MessageHandler.handle_normal_text(alert_msg)
+
+            # 发送到 webhook
+            Webhook.enqueue_msg_to_webhook(
+                msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
+            )
+
+            # 通过 group_center发送到群组
+            from group_center.core.feature.custom_client_message import (
+                machine_message_directly,
+            )
+
+            # Send to lark by Group Center
+            machine_message_directly(
+                server_name=SERVER_NAME,
+                server_name_eng=SERVER_NAME_SHORT,
+                content=msg,
+                at=process_info.user.name_cn if process_info.user else "",
+            )
+
+            # 通过 group_center 发送给用户
+            if process_info.user and process_info.user.name_cn:
+                from group_center.core.feature.custom_client_message import (
+                    machine_user_message_directly,
+                )
+
+                machine_user_message_directly(
+                    user_name=process_info.user.name_cn, content=msg
+                )
+
+            logger.warning(
+                f"Combined zero usage alert sent for process {process_info.pid} (GPU count: {process_info.total_gpu_zero_alert_count}, CPU count: {process_info.total_cpu_zero_alert_count})"
+            )
+
+            # 发送成功后，重置当前报警标志，准备下一轮检测
+            if GPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_gpu_alert"]:
+                process_info.should_send_gpu_alert = False
+
+            if CPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_cpu_alert"]:
+                process_info.should_send_cpu_alert = False
+
+        except Exception as e:
+            logger.error(f"Failed to send combined zero usage alert: {e}")
+
+    def _should_send_combined_alert_dummy_check(
+        self, process_info: "GPUProcessInfo"
+    ) -> bool:
+        """
+        综合报警发送前的dummy检测逻辑
+        """
+        # 示例条件（可以根据需要修改）：
+        # 1. 检查进程是否是调试模式
+        if hasattr(process_info, "is_debug") and process_info.is_debug:
+            return False
+
+        # 2. 检查运行时间是否足够长
+        if process_info.running_time_in_seconds < 300:  # 5分钟
+            return False
+
+        # 3. 检查是否是忽略的任务
+        if process_info.ignore_task:
+            return False
+
+        # 4. 其他自定义条件...
+
+        return True
 
     def send_zero_cpu_usage_alert(self, process_info: "GPUProcessInfo"):
-        """发送CPU零占用率报警"""
-        # 检查CPU监控开关
-        if not CPU_CONSECUTIVE_ZERO_ENABLE:
-            logger.debug(
-                f"CPU zero usage monitoring is disabled, skipping alert for process {process_info.pid}"
-            )
-            return
-
-        try:
-            # if True:
-            # Dummy检测逻辑 - 可以在这里添加更复杂的判断条件
-            if not self._should_send_cpu_alert_dummy_check(process_info):
-                logger.info(
-                    f"CPU alert blocked by dummy check for process {process_info.pid}"
-                )
-                return
-
-            alert_msg = (
-                f"🚨 [GPU {process_info.gpu_id}] CPU 0% 占用率报警 🚨\n"
-                f"进程PID: {process_info.pid}\n"
-                f"进程名称: {process_info.project_name}-{process_info.python_file}\n"
-                f"用户: {process_info.user.name_cn if process_info.user else ''}\n"
-                f"连续0%时间: {self.gpu_zero_time_str()}\n"
-                f"当前进程CPU占用率: {process_info.cpu_percent:.1f}%\n"
-                f"已经运行: {process_info.running_time_human}\n\n"
-                f"报警时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-            )
-
-            msg = MessageHandler.handle_normal_text(alert_msg)
-
-            # 发送到 webhook
-            Webhook.enqueue_msg_to_webhook(
-                msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
-            )
-            
-            # 通过 group_center发送到群组
-            from group_center.core.feature.custom_client_message import (
-                machine_message_directly,
-            )
-
-            # Send to lark by Group Center
-            machine_message_directly(
-                server_name=SERVER_NAME,
-                server_name_eng=SERVER_NAME_SHORT,
-                content=msg,
-                at=process_info.user.name_cn if process_info.user else "",
-            )
-
-            # 通过 group_center 发送给用户
-            if process_info.user and process_info.user.name_cn:
-                from group_center.core.feature.custom_client_message import (
-                    machine_user_message_directly,
-                )
-
-                machine_user_message_directly(
-                    user_name=process_info.user.name_cn, content=msg
-                )
-
-            logger.warning(f"CPU zero usage alert sent for process {process_info.pid}")
-
-            # 发送成功后重置CPU报警状态和计数器
-            process_info.consecutive_zero_cpu_count = 0
-            process_info.has_alerted_zero_cpu_usage = False
-
-        except Exception as e:
-            logger.error(f"Failed to send CPU zero usage alert: {e}")
+        """发送CPU零占用率报警（已废弃，请使用综合报警）"""
+        logger.warning(
+            "send_zero_cpu_usage_alert is deprecated, use send_combined_zero_usage_alert instead"
+        )
 
     def send_zero_gpu_usage_alert(self, process_info: "GPUProcessInfo"):
-        """发送GPU零占用率报警"""
-        # 检查GPU监控开关
-        if not GPU_CONSECUTIVE_ZERO_ENABLE:
-            logger.debug(
-                f"GPU zero usage monitoring is disabled, skipping alert for process {process_info.pid}"
-            )
-            return
-
-        try:
-            # Dummy检测逻辑 - 可以在这里添加更复杂的判断条件
-            if not self._should_send_gpu_alert_dummy_check(process_info):
-                logger.info(
-                    f"GPU alert blocked by dummy check for process {process_info.pid}"
-                )
-                return
-
-            alert_msg = (
-                f"🚨 [GPU {process_info.gpu_id}] GPU 0% 占用率报警 🚨\n"
-                f"进程PID: {process_info.pid}\n"
-                f"进程名称: {process_info.project_name}-{process_info.python_file}\n"
-                f"用户: {process_info.user.name_cn if process_info.user else '未知'}\n"
-                f"连续0%时间: {self.gpu_zero_time_str()}\n"
-                f"当前进程GPU占用率: {process_info.gpu_utilization:.1f}%\n"
-                f"已经运行: {process_info.running_time_human}\n\n"
-                f"报警时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-            )
-
-            msg = MessageHandler.handle_normal_text(alert_msg)
-
-            # 发送到 webhook
-            Webhook.enqueue_msg_to_webhook(
-                msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
-            )
-
-            # 通过 group_center发送到群组
-            from group_center.core.feature.custom_client_message import (
-                machine_message_directly,
-            )
-
-            # Send to lark by Group Center
-            machine_message_directly(
-                server_name=SERVER_NAME,
-                server_name_eng=SERVER_NAME_SHORT,
-                content=msg,
-                at=process_info.user.name_cn if process_info.user else "",
-            )
-
-            # 通过 group_center 发送给用户
-            if process_info.user and process_info.user.name_cn:
-                from group_center.core.feature.custom_client_message import (
-                    machine_user_message_directly,
-                )
-
-                machine_user_message_directly(
-                    user_name=process_info.user.name_cn, content=msg
-                )
-
-            logger.warning(f"GPU zero usage alert sent for process {process_info.pid}")
-
-            # 发送成功后重置GPU报警状态和计数器
-            process_info.consecutive_zero_gpu_count = 0
-            process_info.has_alerted_zero_usage = False
-
-        except Exception as e:
-            logger.error(f"Failed to send GPU zero usage alert: {e}")
+        """发送GPU零占用率报警（已废弃，请使用综合报警）"""
+        logger.warning(
+            "send_zero_gpu_usage_alert is deprecated, use send_combined_zero_usage_alert instead"
+        )
 
     def _should_send_gpu_alert_dummy_check(
         self, process_info: "GPUProcessInfo"
     ) -> bool:
         """
-        GPU报警发送前的dummy检测逻辑
-        在这里可以实现更复杂的判断条件
-        返回True表示可以发送报警，False表示不发送
+        GPU报警发送前的dummy检测逻辑（已废弃）
         """
-        # TODO: 在这里实现您的具体逻辑
-
-        # 示例条件（可以根据需要修改）：
-        # 1. 检查进程是否是调试模式
-        if hasattr(process_info, "is_debug") and process_info.is_debug:
-            return False
-
-        # 2. 检查运行时间是否足够长
-        if process_info.running_time_in_seconds < 300:  # 5分钟
-            return False
-
-        # 3. 检查是否是忽略的任务
-        if process_info.ignore_task:
-            return False
-
-        # 4. 其他自定义条件...
-
-        return True
+        return self._should_send_combined_alert_dummy_check(process_info)
 
     def _should_send_cpu_alert_dummy_check(
         self, process_info: "GPUProcessInfo"
     ) -> bool:
         """
-        CPU报警发送前的dummy检测逻辑
-        在这里可以实现更复杂的判断条件
-        返回True表示可以发送报警，False表示不发送
+        CPU报警发送前的dummy检测逻辑（已废弃）
         """
-        # TODO: 在这里实现您的具体逻辑
-
-        # 示例条件（可以根据需要修改）：
-        # 1. 检查进程是否是调试模式
-        if hasattr(process_info, "is_debug") and process_info.is_debug:
-            return False
-
-        # 2. 检查运行时间是否足够长
-        if process_info.running_time_in_seconds < 300:  # 5分钟
-            return False
-
-        # 3. 检查是否是忽略的任务
-        if process_info.ignore_task:
-            return False
-
-        # 4. 其他自定义条件...
-
-        return True
+        return self._should_send_combined_alert_dummy_check(process_info)
 
     @property
     def should_send_monitor_launch_msg(self):

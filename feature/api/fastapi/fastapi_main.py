@@ -1,9 +1,8 @@
 from html import escape
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
-from starlette.responses import RedirectResponse
 
 app = FastAPI(
     title="FastAPI",
@@ -14,7 +13,6 @@ app = FastAPI(
 )
 templates = Jinja2Templates(directory="templates")
 
-from config.settings import GPU_BOARD_WEB_URL, SERVER_NAME
 
 from feature.api.api_data_common import *
 

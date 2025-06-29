@@ -156,7 +156,7 @@ def check_process_exists(pid: int) -> bool:
         return process.is_running()
     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
         return False
-    except Exception as e:
+    except Exception:
         return False
 
 

@@ -3,7 +3,6 @@ import datetime
 import os
 import platform
 import socket
-from tkinter.tix import MAX
 
 import psutil
 from dotenv import dotenv_values, load_dotenv

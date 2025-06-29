@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.utils.logs import get_logger
 

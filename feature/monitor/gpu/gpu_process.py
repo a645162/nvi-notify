@@ -488,8 +488,14 @@ class GPUProcessInfo:
         """获取进程的CPU利用率"""
         try:
             process = psutil.Process(self.pid)
-            self.cpu_percent = process.cpu_percent()
+            # 对于连续监控，使用默认的非阻塞模式更合适
+            # 因为我们的监控间隔(5秒)已经足够长，能提供准确的数据
+            # self.cpu_percent = process.cpu_percent(interval=None)
             self.cpu_times = process.cpu_times()._asdict()
+            
+            # 可选：如果需要更精确的瞬时CPU使用率，可以使用短时间阻塞模式
+            self.cpu_percent = process.cpu_percent(interval=0.1)
+            
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             self.cpu_percent = 0.0
             self.cpu_times = None

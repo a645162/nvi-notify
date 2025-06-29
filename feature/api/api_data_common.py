@@ -63,12 +63,21 @@ def get_gpu_usage_dict(gpu_index: int) -> dict:
 
 def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
     from feature.monitor.gpu.gpu_process import GPUProcessInfo
+    from config.settings import (
+        GPU_MONITOR_SAMPLING_INTERVAL,
+        MAX_CONSECUTIVE_ZERO_COUNT,
+    )
 
     current_gpu_processes: list[GPUProcessInfo] = DataManager().gpu_task[gpu_index]
 
     task_list = []
 
     for process_obj in current_gpu_processes:
+        # 计算检测间隔（秒）
+        detection_interval_seconds = int(
+            GPU_MONITOR_SAMPLING_INTERVAL * MAX_CONSECUTIVE_ZERO_COUNT
+        )
+
         task_list.append(
             {
                 "id": process_obj.pid,
@@ -94,6 +103,16 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
                 "cudaVisibleDevices": str(process_obj.cuda_visible_devices),
                 "driverVersion": str(process_obj.nvidia_driver_version),
                 "userEnvEpoch": str(process_obj.group_center_user_realtime_str),
+                # 使用率
+                "cpuPercent": round(process_obj.cpu_percent, 1),
+                "gpuUtilization": round(process_obj.gpu_utilization, 1),
+                # 零占用率监控相关字段
+                "zeroTotalGpuAlertCount": process_obj.total_gpu_zero_alert_count,
+                "zeroTotalCpuAlertCount": process_obj.total_cpu_zero_alert_count,
+                "zeroAlreadyAlertedGpuUsage": process_obj.already_has_alerted_zero_gpu_usage,
+                "zeroAlreadyAlertedCpuUsage": process_obj.already_has_alerted_zero_cpu_usage,
+                "zeroMaxConsecutiveCount": process_obj.max_consecutive_zero_count,
+                "zeroDetectionIntervalSeconds": detection_interval_seconds,
             }
         )
 

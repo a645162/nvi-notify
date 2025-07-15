@@ -8,7 +8,7 @@ flask-cors
 # fastapi
 # uvicorn
 
-urllib3<2
+urllib3
 requests
 
 chardet
@@ -19,4 +19,4 @@ humanfriendly
 
 loguru
 
-li-group-center>=1.7.5
+li-group-center>=2.1.0

@@ -1,12 +1,7 @@
 from group_center.core.feature.machine_message import new_message_enqueue
 
-from config.settings import (
-    USE_GROUP_CENTER,
-    SERVER_NAME,
-    SERVER_NAME_SHORT
-)
-from feature.group_center. \
-    datatype.group_center_task_info import TaskInfoForGroupCenter
+from config.settings import SERVER_NAME, SERVER_NAME_SHORT, USE_GROUP_CENTER
+from feature.group_center.datatype.task_info import TaskInfoForGroupCenter
 from feature.monitor.monitor_enum import TaskEvent
 from feature.utils.logs import get_logger
 

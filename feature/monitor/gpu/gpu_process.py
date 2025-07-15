@@ -7,23 +7,49 @@ from pathlib import Path
 from typing import Optional
 
 import psutil
+from group_center.tools.user_env.realtime import show_realtime_str
 from nvitop import GpuProcess
 
 from config.settings import USERS, WEBHOOK_DELAY_SEND_SECONDS, EnvironmentManager
 from config.user_info import UserInfo
-from feature.group_center import group_center_message
+from feature.group_center import message
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent, TaskState
-from feature.notify.message_handler import MessageHandler
-from feature.notify.webhook import Webhook
-from feature.sql.sqlite import get_sql
-from feature.utils.logs import get_logger
+from feature.database.sqlite import get_sql
 from feature.utils.common_utils import do_command
-from feature.utils.process.linux_process import get_top_python_process_pid
+from feature.utils.logs import get_logger
+from feature.utils.process import get_top_python_process_pid
+from feature.webhook.msg_handler import MessageHandler
+from feature.webhook.webhook import Webhook
 
 logger = get_logger()
 sql = get_sql()
+
+
+def check_process_env(pid: int, env_name: str, check_parent: bool = False) -> bool:
+    try:
+        process = psutil.Process(pid)
+
+        if env_name in process.environ():
+            return True
+
+        if check_parent:
+            parent = process.parent()
+
+            pid = parent.pid
+
+            # Stop when the parent process is the init process
+            if pid == 1:
+                return False
+
+            if check_process_env(pid, env_name):
+                return True
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        return False
+    except Exception as e:
+        logger.error(e)
+        return False
 
 
 class GPUProcessInfo:
@@ -75,11 +101,13 @@ class GPUProcessInfo:
         self.cuda_version: str = ""
 
         # User Env
-        self.group_center_user_env_epoch: str = ""
+        self.group_center_user_realtime_str: str = ""
 
         self.top_python_pid: int = -1
 
         self.nvidia_driver_version: str = ""
+
+        self.ignore_task: bool = False
 
         self._gpu = None
         self._state: Optional[TaskState] = TaskState.DEFAULT  # init
@@ -109,7 +137,11 @@ class GPUProcessInfo:
 
             self.update_gpu_process_info()
 
+            self.update_ignore_mode()
+
             sql.insert_task_data(TaskInfoForSQL(self.__dict__))
+        else:
+            self.ignore_task = True
 
     def get_all_env(self):
         self.get_screen_session_name()
@@ -126,8 +158,13 @@ class GPUProcessInfo:
         self.get_cuda_root()
         self.get_cuda_version()
 
-        # User Env
-        self.get_user_env()
+    def update_ignore_mode(self):
+        try:
+            self.ignore_task = check_process_env(
+                pid=self.pid, env_name="NVI_NOTIFY_IGNORE_TASK", check_parent=True
+            )
+        except Exception as e:
+            logger.error(e)
 
     def update_gpu_process_info(self):
         self.get_task_main_memory_mb()
@@ -135,6 +172,9 @@ class GPUProcessInfo:
         self.get_task_gpu_memory()
         self.get_running_time_human()
         self.get_running_time_in_seconds()
+
+        # User Env
+        self.update_user_env()
 
     @property
     def gpu(self):
@@ -354,11 +394,6 @@ class GPUProcessInfo:
                     dot_index + 1 :
                 ].strip()
 
-    def get_user_env(self):
-        self.group_center_user_env_epoch = self.get_env_value(
-            "GROUP_CENTER_USER_ENV_EPOCH", ""
-        ).strip()
-
     def init_top_python_pid(self):
         if not self.is_multi_gpu:
             return
@@ -459,19 +494,30 @@ class GPUProcessInfo:
             self._transition_newborn_to_death()
 
     def _transition_to_newborn(self):
+        logger.info(f"Task {self.pid} is created.")
+        if self.ignore_task:
+            logger.info(f"[Create] Task {self.pid} is ignored.")
         log_task_info(self.__dict__, TaskEvent.CREATE)
 
     def _transition_newborn_to_working(self):
         sql.update_task_data(TaskInfoForSQL(self.__dict__, TaskState.WORKING))
 
-        group_center_message.gpu_task_message(self, TaskEvent.CREATE)
+        if self.ignore_task:
+            logger.info(f"[Start] Task {self.pid} is ignored.")
+            return
+
+        message.gpu_task_message(self, TaskEvent.CREATE)
         self._send_gpu_task_message(TaskEvent.CREATE)
 
     def _transition_working_to_death(self):
         log_task_info(self.__dict__, TaskEvent.FINISH)
         sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, TaskState.DEATH))
 
-        group_center_message.gpu_task_message(self, TaskEvent.FINISH)
+        if self.ignore_task:
+            logger.info(f"[Finish] Task {self.pid} is ignored.")
+            return
+
+        message.gpu_task_message(self, TaskEvent.FINISH)
         self._send_gpu_task_message(TaskEvent.FINISH)
 
     def _transition_newborn_to_death(self):
@@ -520,6 +566,9 @@ class GPUProcessInfo:
             return ""
         except Exception:
             return ""
+
+    def update_user_env(self) -> None:
+        self.group_center_user_realtime_str = show_realtime_str(self.pid)
 
 
 def log_task_info(process_info: dict, task_event: TaskEvent):

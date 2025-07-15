@@ -1,6 +1,7 @@
 import sys
 import threading
 import time
+import traceback
 
 from config.settings import GPU_MONITOR_AUTO_RESTART
 from feature.utils.logs import get_logger
@@ -31,6 +32,7 @@ class Monitor:
                         monitor_thread()
                     except Exception as e:
                         logger.error(f"{self.monitor_name} monitor error: {e}")
+                        logger.error(traceback.format_exc())
                         time.sleep(60)
                 else:
                     # 不需要重启就正常报错

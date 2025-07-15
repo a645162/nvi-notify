@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import time
 
 import psutil
@@ -8,8 +7,8 @@ from config.settings import TEMPERATURE_MONITOR_SAMPLING_INTERVAL
 from feature.monitor.cpu.cpu import CPU
 from feature.monitor.memory.memory import MemoryInfo
 from feature.monitor.monitor import Monitor
-from feature.notify.message_handler import MessageHandler
 from feature.utils.logs import get_logger
+from feature.webhook.msg_handler import MessageHandler
 
 logger = get_logger()
 
@@ -34,12 +33,17 @@ class CPUMonitor(Monitor):
             memory.update()
 
             temperature_info = self.get_cpu_temperature()
-            if temperature_info[0] == -1.0:
+            # 检查是否有有效的温度数据
+            if not temperature_info or -1.0 in temperature_info.values():
                 MessageHandler.enqueue_except_warning_msg("cpu")
                 time.sleep(10)
                 continue
 
             for cpu in self.cpu_dict.values():
+                if cpu.idx not in temperature_info:
+                    logger.warning(f"No temperature data available for CPU {cpu.idx}")
+                    continue
+
                 cpu.temperature = temperature_info[cpu.idx]
                 cpu.average_temperature = sum(cpu.temperature_samples) / len(
                     cpu.temperature_samples
@@ -68,7 +72,10 @@ class CPUMonitor(Monitor):
             if name not in ("coretemp", "k10temp"):
                 continue
             for entry in entries:
-                if not (("Package" in entry.label or "Package" in name) or ("Tctl" in entry.label)):
+                if not (
+                    ("Package" in entry.label or "Package" in name)
+                    or ("Tctl" in entry.label)
+                ):
                     continue
                 cpu_temperature_info.update({idx: entry.current})
                 idx += 1

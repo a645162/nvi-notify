@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-
 import time
-from typing import Tuple, Union
 
 import humanfriendly
 
+from config.config_utils import is_webhook_sleep_time
 from config.settings import (
     HARD_DISK_MONITOR_PASS_ROOT_CHECK,
     HARD_DISK_MONITOR_SAMPLING_INTERVAL,
@@ -12,28 +11,27 @@ from config.settings import (
     USERS,
 )
 from config.user_info import UserInfo
-from config.config_utils import is_webhook_sleep_time
+from feature.group_center.data_manager import DataManager
 from feature.monitor.hard_disk.hard_disk import DiskPurpose, HardDisk
 from feature.monitor.monitor import Monitor
-from feature.notify.message_handler import MessageHandler
+from feature.utils.common_utils import cat_info, do_command
 from feature.utils.logs import get_logger
-from feature.utils.common_utils import do_command
-from feature.utils.system.linux_system import check_is_root, check_is_linux
-from feature.global_variable.disk_status import disk_info_response_dict
+from feature.utils.system import check_is_linux, check_is_root, get_os_release_id
+from feature.webhook.msg_handler import MessageHandler
 
 logger = get_logger()
 
 
 class HardDiskMonitor(Monitor):
-    def __init__(self, mount_points: Union[set, list]):
+    def __init__(self, mount_points: set):
         """
         Initialize the HardDiskMonitor with the specified mount points.
 
         Parameters:
-        mount_points (Union[set, list]): A set or list of mount points to monitor.
+        mount_points (set): A set or list of mount points to monitor.
         """
         super().__init__("HardDisk")
-        self.mount_points: Union[set, list] = mount_points
+        self.mount_points: set = mount_points
         self.hard_disk_dict: dict[str, HardDisk] = self.get_hard_disk_obj()
 
     def get_hard_disk_obj(self) -> dict[str, HardDisk]:
@@ -45,10 +43,13 @@ class HardDiskMonitor(Monitor):
             and HardDisk objects as values.
         """
         hard_disk_dict = {}
+        machine_hard_disk_dict = self.get_machine_hard_disk_dict()
         for mount_point in self.mount_points:
-            if mount_point not in self.get_machine_hard_disk_dict():
+            if mount_point not in machine_hard_disk_dict:
                 raise Exception(f"{mount_point} is not a valid mount point")
-            hard_disk_dict[mount_point] = HardDisk(mount_point)
+            hard_disk_dict[mount_point] = HardDisk(
+                machine_hard_disk_dict[mount_point], mount_point
+            )
 
         return hard_disk_dict
 
@@ -72,34 +73,32 @@ class HardDiskMonitor(Monitor):
         self.__generate_api_response_data()
 
     def __generate_api_response_data(self):
-        new_dict = {}
-        for mount_point in self.hard_disk_dict.keys():
-            current_disk_obj: HardDisk = self.hard_disk_dict[mount_point]
 
-            current_dict = {
+        disk_info_dict = {}
+
+        for mount_point, disk_obj in self.hard_disk_dict.items():
+            disk_info_dict[mount_point] = {
                 "mountPoint": mount_point,
-                "usedPercentage": current_disk_obj.percentage_used_int,
-                "usedStr": current_disk_obj.used_str,
-                "freeStr": current_disk_obj.free_str,
-                "totalStr": current_disk_obj.total_str,
-                "triggerHighPercentageUsed": current_disk_obj.high_percentage_used_trigger,
-                "triggerLowFreeBytes": current_disk_obj.low_free_bytes_trigger,
-                "triggerSizeWarning": current_disk_obj.size_warning_trigger,
-                "type": current_disk_obj.type.name,
-                "purpose": current_disk_obj.purpose_cn.value,
+                "usedPercentage": disk_obj.percentage_used_int,
+                "usedStr": disk_obj.used_str,
+                "freeStr": disk_obj.free_str,
+                "totalStr": disk_obj.total_str,
+                "triggerHighPercentageUsed": disk_obj.high_percentage_used_trigger,
+                "triggerLowFreeBytes": disk_obj.low_free_bytes_trigger,
+                "triggerSizeWarning": disk_obj.size_warning_trigger,
+                "type": disk_obj.type.name,
+                "purpose": disk_obj.purpose_cn.value,
             }
-
-            new_dict[mount_point] = current_dict
-        disk_info_response_dict.clear()
-        disk_info_response_dict.update(new_dict)
+        DataManager().disk_info_response_dict.clear()
+        DataManager().disk_info_response_dict.update(disk_info_dict)
 
     def hard_disk_monitor_thread(self):
         """
         Monitor the hard disk in a separate thread, checking for warnings and sending notifications.
         """
+        disk_warning_cnt = {}
         while self.monitor_thread_work:
             self.update_disk_detail_info()
-            disk_warning_cnt = {}
             for mount_point, hard_disk in self.hard_disk_dict.items():
                 if not hard_disk.size_warning_trigger:
                     continue
@@ -107,14 +106,14 @@ class HardDiskMonitor(Monitor):
 
                 if not is_webhook_sleep_time():
                     disk_warning_cnt[mount_point] = (
-                            disk_warning_cnt.get(mount_point, 0) + 1
+                        disk_warning_cnt.get(mount_point, 0) + 1
                     )
-                    if disk_warning_cnt[mount_point] % 4 == 0:
+                    if disk_warning_cnt[mount_point] % 4 == 2:
                         logger.warning(f"[硬盘{mount_point}]开始扫描目录占用容量...")
                         self.get_user_dir_size_info(hard_disk)
                         disk_warning_cnt[mount_point] = 0
 
-                    MessageHandler.enqueue_hard_disk_size_msg(hard_disk.disk_info)
+                    MessageHandler.enqueue_hard_disk_warning_msg(hard_disk.disk_info)
 
             time.sleep(HARD_DISK_MONITOR_SAMPLING_INTERVAL)
 
@@ -128,15 +127,40 @@ class HardDiskMonitor(Monitor):
         if hard_disk.purpose != DiskPurpose.DATA:
             return
 
-        command_args: list[str] = ["du", "-sh"]
+        scan_path = ""
 
-        if hard_disk.mount_point == "/home":
-            command_args.append("~/data/*")
+        if hard_disk.mount_point == "/":
+            # root path is not allowed to scan
+            return
+
+        if get_os_release_id() == "centos":
+            if hard_disk.mount_point == "/home":
+                scan_path = "~/data"
+            else:
+                raise ValueError("Error hard disk mount point!")
+        elif get_os_release_id() == "ubuntu":
+            if "hdd" in hard_disk.mount_point:
+                if hard_disk.mount_point[-1] == "1":
+                    scan_path = f"{hard_disk.mount_point}/data"
+                elif hard_disk.mount_point[-1] == "2":
+                    scan_path = f"{hard_disk.mount_point}/data1"
+            else:
+                scan_path = hard_disk.mount_point
         else:
-            command_args.append(f"{hard_disk.mount_point}/data/*")
+            raise ValueError("Error hard disk mount point!")
+
+        scan_path = scan_path.strip()
+        if len(scan_path) == 0:
+            return
+
+        du_command = "du -sh *"
+        # du_command = "du -lh --max-depth=1"
+
+        command_args: str = f"cd {scan_path} && {du_command}"
+        # print(command_args)
 
         retry_count = 0
-        while retry_count + 1 < 5:
+        while retry_count < 5:
             try:
                 result_code, results, _ = do_command(command_args)
                 if result_code == 0:
@@ -147,11 +171,12 @@ class HardDiskMonitor(Monitor):
             if retry_count == 5:
                 logger.error("Max retries exceeded.")
                 return
+            retry_count += 1
 
             logger.warning(f"Retry {retry_count}-th in progress...")
 
-        detail_dirs_info = results.split("\n")
-        self.parse_dir_size_info(detail_dirs_info, hard_disk.disk_info)
+        detail_dirs_info = results.strip().split("\n")
+        self.parse_dir_size_info(detail_dirs_info, hard_disk)
 
     def get_machine_hard_disk_dict(self) -> dict[str, str]:
         """
@@ -162,77 +187,33 @@ class HardDiskMonitor(Monitor):
             and `disk name` as values.
         """
         machine_all_hard_disk_dict = {}
-        command = "lsblk | grep disk"
-        result_code, results, _ = do_command(command)
-        if result_code != 0:
-            return machine_all_hard_disk_dict
+        results = cat_info("/proc/mounts")
+        for line in results.strip().split("\n"):
+            mount_device = line.split(" ")
 
-        detail_info = results.strip().split("\n")
-        for disk in detail_info:
-            disk_name, mount_point = self.parse_lsblk_result(disk)
-            if len(disk_name) == 0 or len(mount_point) == 0:
+            if mount_device[1].startswith("/var/snap") or mount_device[2] != "ext4":
                 continue
+
+            mount_point = mount_device[1]
+
+            disk_name = mount_device[0].split("/")[-1]
+            if "nvme" in disk_name:
+                disk_name = disk_name[:7]
+            else:
+                disk_name = disk_name[:3]
+
             machine_all_hard_disk_dict[mount_point] = disk_name
 
         return machine_all_hard_disk_dict
 
-    def parse_lsblk_result(self, line: str) -> Tuple[str, str]:
-        """
-        Parse the result of 'lsblk' command to extract `disk name` and `mount point`.
-
-        Parameters:
-        line (str): A line of output from the 'lsblk' command.
-
-        Returns:
-        Tuple[str, str]: A tuple containing the `disk name` and `mount point`.
-        """
-        mount_point = ""
-
-        line_unit = line.split()
-        if len(line_unit) == 0:
-            return "", ""
-
-        name = line_unit[0]
-        if len(name) == 0:
-            return "", ""
-
-        if len(line_unit) == 6:
-            command = f"lsblk | grep {name}"
-            result_code, results, _ = do_command(command)
-            if result_code != 0:
-                return "", ""
-
-            results_units = results.strip().split("\n")
-            for results_unit in results_units:
-                results_unit = results_unit.split()
-                if len(results_unit) != 7:
-                    continue
-
-                _mount_point = results_unit[-1].lower()
-                if "boot" not in _mount_point and "swap" not in _mount_point:
-                    mount_point = results_unit[-1]
-                else:
-                    mount_point = ""
-                """ TODO: Hack implementation. Only for Ubuntu 22.04 and Ubuntu 24.04.
-                """
-                if _mount_point == "/var/snap/firefox/common/host-hunspell":
-                    mount_point = "/"
-
-        elif len(line_unit) == 7:
-            mount_point = line_unit[-1]
-        else:
-            pass
-
-        return name, mount_point
-
     @staticmethod
-    def parse_dir_size_info(detail_dirs_info: list[str], disk_info: str):
+    def parse_dir_size_info(detail_dirs_info: list[str], hard_disk: HardDisk):
         """
         Parse the directory size information and send warnings if necessary.
 
         Parameters:
         detail_dirs_info (list[str]): A list of directory size information strings.
-        disk_info (str): The disk information string for warning message.
+        hard_disk (HardDisk): The HardDisk object representing the hard disk to be checked.
         """
         for lines in detail_dirs_info:
             if len(lines) == 0:
@@ -240,16 +221,21 @@ class HardDiskMonitor(Monitor):
 
             dir_size, dir_path = lines.split()
             if humanfriendly.parse_size(
-                    dir_size, binary=True
+                dir_size, binary=True
             ) < humanfriendly.parse_size("10GB", binary=True):
                 continue
 
             user = UserInfo.find_user_by_path(USERS, dir_path)
             if user is None:
                 continue
+            user_dir = hard_disk.handle_disk_info_mountpoint(hard_disk.mount_point)
 
-            MessageHandler.enqueue_hard_disk_size_warning_msg_to_user(
-                disk_info, dir_path, dir_size, user
+            logger.warning(
+                f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}的个人目录'{user_dir}'占用{dir_size}"
+            )
+
+            MessageHandler.enqueue_hard_disk_warning_msg_to_user(
+                hard_disk.disk_info, user_dir, dir_size, user
             )
 
 

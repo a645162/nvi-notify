@@ -1,12 +1,7 @@
 import threading
 
-from config.settings import (
-    FLASK_SERVER_HOST,
-    FLASK_SERVER_PORT,
-)
-
+from config.settings import FLASK_SERVER_HOST, FLASK_SERVER_PORT
 from feature.api.flask.flask_main import app
-
 from feature.utils.logs import get_logger
 
 logger = get_logger()

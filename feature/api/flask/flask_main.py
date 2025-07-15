@@ -3,11 +3,14 @@
 import json
 from html import escape
 
+import requests
+from flask import Flask, Response, redirect, render_template, request
+
 from config.settings import (
-    WEB_SERVER_CORS_ENABLE,
     FLASK_LOG_DISABLE,
     GPU_BOARD_WEB_URL,
     SERVER_NAME,
+    WEB_SERVER_CORS_ENABLE,
 )
 
 ##################################################
@@ -20,14 +23,20 @@ if FLASK_LOG_DISABLE:
     log.setLevel(logging.ERROR)
 ##################################################
 
-import requests
-from flask import Flask, Response, redirect, render_template, request
-
-from feature.api.api_data_common import *
-
-from feature.utils.logs import get_logger
 
 from flask_cors import CORS
+
+from feature.api.api_data_common import (
+    get_disk_usage_dict_list,
+    get_disk_usage_user_dict_list,
+    get_gpu_count_backend,
+    get_gpu_task_dict_list,
+    get_gpu_usage_dict,
+    get_nvitop_result,
+    get_system_info_dict,
+    machine_user_message_backend,
+)
+from feature.utils.logs import get_logger
 
 logger = get_logger()
 logger.info("Flask server is starting...")
@@ -49,17 +58,13 @@ def get_nvitop_output():
     )
 
 
-@app.route("/machine_user_message", methods=['POST'])
+@app.route("/machine_user_message", methods=["POST"])
 def post_machine_user_message():
-    final_data: dict = {
-        "haveError": True,
-        "isSucceed": False,
-        "result": "error"
-    }
+    final_data: dict = {"haveError": True, "isSucceed": False, "result": "error"}
 
-    if request.method == 'POST':
-        user_name = request.form['userName']
-        content = request.form['content']
+    if request.method == "POST":
+        user_name = request.form["userName"]
+        content = request.form["content"]
 
         machine_user_message_backend(
             user_name=user_name,

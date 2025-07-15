@@ -5,19 +5,14 @@ from nvitop.api.process import GpuProcess
 from nvitop.api.utils import NaType
 
 from config.settings import WEBHOOK_DELAY_SEND_SECONDS
-from feature.global_variable.gpu import (
-    global_gpu_info,
-    global_gpu_task,
-    global_gpu_usage,
-    global_variable_gpu_updated
-)
+from feature.group_center.data_manager import DataManager
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import TaskState
 from feature.monitor.utils import Converter
-from feature.notify.message_handler import MessageHandler
-from feature.sql.sqlite import get_sql
+from feature.database.sqlite import get_sql
 from feature.utils.logs import get_logger
+from feature.webhook.msg_handler import MessageHandler
 
 logger = get_logger()
 sql = get_sql()
@@ -36,11 +31,11 @@ class GPU:
         self.get_gpu_info()
 
     def update(self):
-        self.update_global_gpu_status()
+        self.update_datamanager_gpu_status()
         self.update_all_processes_info()
         self.handle_death_processes()
         self.update_new_processes_info()
-        self.update_global_gpu_task()
+        self.update_datamanager_gpu_task()
 
     def update_all_processes_info(self):
         for pid in self.processes:
@@ -104,12 +99,12 @@ class GPU:
                 index = current_str_upper.index(keyword_upper)
                 # 计算关键词在原始字符串中的起始位置
                 index_original = current_str_upper[:index].count(" ") - current_str[
-                                                                        :index
-                                                                        ].count(" ")
+                    :index
+                ].count(" ")
                 # 删除原始字符串中的关键词
                 current_str = (
-                        current_str[:index_original]
-                        + current_str[index_original + len(keyword) + 1:]
+                    current_str[:index_original]
+                    + current_str[index_original + len(keyword) + 1 :]
                 )
                 current_str_upper = current_str.upper()
         return current_str.strip()
@@ -225,32 +220,35 @@ class GPU:
         return task_msg
 
     def get_gpu_info(self):
-        try:
-            if self.gpu_id not in global_gpu_info:
-                global_gpu_info[self.gpu_id] = {}
 
-            global_gpu_info[self.gpu_id].update(
+
+        try:
+            if self.gpu_id not in DataManager().gpu_info:
+                DataManager().gpu_info[self.gpu_id] = {}
+
+            DataManager().gpu_info[self.gpu_id].update(
                 {
                     "gpuName": self.name_short,
                     "gpuTDP": self.TDP,
-
                 }
             )
 
-            global_variable_gpu_updated()
+            DataManager().gpu_updated()
         except AttributeError as e:
             print(f"Error updating GPU info: Missing attribute {e}")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
-    def update_global_gpu_status(self):
+    def update_datamanager_gpu_status(self):
+
+
         try:
             # 确保gpu_id对应的字典项存在
-            if self.gpu_id not in global_gpu_usage:
-                global_gpu_usage[self.gpu_id] = {}
+            if self.gpu_id not in DataManager().gpu_usage:
+                DataManager().gpu_usage[self.gpu_id] = {}
 
             # 直接使用字典的update方法更新信息，同时添加异常处理
-            global_gpu_usage[self.gpu_id].update(
+            DataManager().gpu_usage[self.gpu_id].update(
                 {
                     "coreUsage": self.gpu_utilization,
                     "memoryUsage": self.memory_percent,
@@ -264,17 +262,17 @@ class GPU:
                 }
             )
 
-            global_variable_gpu_updated()
+            DataManager().gpu_updated()
         except AttributeError as e:
             print(f"Error updating GPU status: Missing attribute {e}")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
-    def update_global_gpu_task(self):
+    def update_datamanager_gpu_task(self):
         # 在监视线程中就进行处理，哪怕这里阻塞了，也就是相当于多加一点延时
         current_gpu_tasks_list = list(self.processes.values()).copy()
         current_gpu_tasks_list.sort(key=lambda x: x.pid)
 
-        global_gpu_task[self.gpu_id].clear()
-        global_gpu_task[self.gpu_id].extend(current_gpu_tasks_list)
-        global_variable_gpu_updated()
+        DataManager().gpu_task[self.gpu_id].clear()
+        DataManager().gpu_task[self.gpu_id].extend(current_gpu_tasks_list)
+        DataManager().gpu_updated()

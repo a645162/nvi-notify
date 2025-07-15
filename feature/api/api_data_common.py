@@ -1,32 +1,19 @@
-import subprocess
 from typing import List
 
-from feature.global_variable.gpu import (
-    global_gpu_info,
-    global_gpu_task,
-    global_gpu_usage,
+from group_center.core.feature.custom_client_message import (
+    machine_user_message_directly,
 )
-from feature.global_variable.system import global_system_info
-from feature.global_variable.disk_status import disk_info_response_dict
 
-from group_center.core.feature.machine_user_message \
-    import machine_user_message_directly
-
+from feature.group_center.data_manager import DataManager
+from feature.utils.common_utils import do_command
 from feature.utils.logs import get_logger
 
 logger = get_logger()
 
 
-def run_command(command):
-    try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        return result.stdout
-    except Exception as e:
-        return str(e), 500
-
-
 def get_nvitop_result() -> str:
-    return run_command("nvitop -U")
+    _, result, _ = do_command("nvitop -U")
+    return result
 
 
 def get_system_info_dict() -> dict:
@@ -37,27 +24,27 @@ def get_system_info_dict() -> dict:
         "memorySwapUsedMb": 2048,
     }
 
-    system_info.update(global_system_info)
+    system_info.update(DataManager().system_info)
 
     return system_info
 
 
 def get_gpu_count_backend() -> int:
     # For debug use
-    current_gpu_task = global_gpu_task
+    current_gpu_task = DataManager().gpu_task
 
     return len(current_gpu_task)
 
 
 def get_gpu_usage_dict(gpu_index: int) -> dict:
-    # all_gpu_info = global_gpu_info
-    # all_gpu_usage = global_gpu_usage
+    # all_gpu_info = DataManager().gpu_info
+    # all_gpu_usage = DataManager().gpu_usage
 
-    current_gpu_info = global_gpu_info[gpu_index]
-    current_gpu_usage = global_gpu_usage[gpu_index]
+    current_gpu_info = DataManager().gpu_info[gpu_index]
+    current_gpu_usage = DataManager().gpu_usage[gpu_index]
 
     response_gpu_usage = {
-        "result": len(global_gpu_usage),
+        "result": len(DataManager().gpu_usage),
         "gpuName": "Test GPU",
         "coreUsage": "0",
         "memoryUsage": "0",
@@ -77,7 +64,7 @@ def get_gpu_usage_dict(gpu_index: int) -> dict:
 def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
     from feature.monitor.gpu.gpu_process import GPUProcessInfo
 
-    current_gpu_processes: list[GPUProcessInfo] = global_gpu_task[gpu_index]
+    current_gpu_processes: list[GPUProcessInfo] = DataManager().gpu_task[gpu_index]
 
     task_list = []
 
@@ -106,7 +93,7 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
                 "cudaVersion": str(process_obj.cuda_version),
                 "cudaVisibleDevices": str(process_obj.cuda_visible_devices),
                 "driverVersion": str(process_obj.nvidia_driver_version),
-                "userEnvEpoch": str(process_obj.group_center_user_env_epoch),
+                "userEnvEpoch": str(process_obj.group_center_user_realtime_str),
             }
         )
 
@@ -115,17 +102,14 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
 
 def get_disk_usage_dict_list() -> List[dict]:
     mount_point_list: List[str] = [
-        key
-        for key in disk_info_response_dict.keys()
+        key for key in DataManager().disk_info_response_dict.keys()
     ]
-
-    # Sort
     mount_point_list.sort()
 
     dict_list: List[dict] = []
 
     for mount_point in mount_point_list:
-        dict_list.append(disk_info_response_dict[mount_point])
+        dict_list.append(DataManager().disk_info_response_dict[mount_point])
 
     return dict_list
 
@@ -136,7 +120,4 @@ def get_disk_usage_user_dict_list() -> List[dict]:
 
 def machine_user_message_backend(user_name: str, content: str):
     logger.info(f"[Machine User Message]userName: {user_name}, content: {content}")
-    machine_user_message_directly(
-        user_name=user_name,
-        content=content
-    )
+    machine_user_message_directly(user_name=user_name, content=content)

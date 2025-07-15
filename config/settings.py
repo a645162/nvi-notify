@@ -3,24 +3,22 @@ import datetime
 import os
 import platform
 import socket
-import sys
 from typing import Dict
 
 import psutil
 from dotenv import dotenv_values, load_dotenv
 from group_center.core import group_center_machine
 from group_center.utils.log import logger as group_center_logger_utils
+from group_center.utils.process.process_env import is_debug_mode
 from nvitop import Device
 from packaging import version
 
-from feature.utils.python_status import is_debug_mode
-from config.user_info import UserInfo
 from config.config_utils import get_users, set_iptables
+from config.user_info import UserInfo
 from feature.monitor.monitor_enum import AllWebhookName
 from feature.utils.logs import get_logger
 
 logger = get_logger()
-
 path_base = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 
@@ -29,7 +27,7 @@ class EnvironmentManager:
 
     @classmethod
     def load_env_file(
-            cls, env_file: str, verbose: bool = True, override: bool = False
+        cls, env_file: str, verbose: bool = True, override: bool = False
     ) -> Dict[str, str]:
         """Load environment variables from a file."""
         if os.path.exists(env_file):
@@ -55,12 +53,8 @@ class EnvironmentManager:
         # )
         # env_vars.update(cls.load_env_file(extend_env_file, override=True))
 
-        secure_env_file = os.path.join(
-            os.getcwd(), ".env.secure"
-        )
-        dev_env_file = os.path.join(
-            os.getcwd(), ".env.dev"
-        )
+        secure_env_file = os.path.join(os.getcwd(), ".env.secure")
+        dev_env_file = os.path.join(os.getcwd(), ".env.dev")
 
         if os.path.exists(secure_env_file):
             logger.info("Load Secure .env File")
@@ -238,14 +232,12 @@ group_center_machine.set_group_center_host_url(GROUP_CENTER_URL)
 group_center_machine.set_machine_name_full(SERVER_NAME)
 group_center_machine.set_machine_name_short(SERVER_NAME_SHORT)
 group_center_machine.set_machine_password(GROUP_CENTER_PASSWORD)
-group_center_logger_utils.set_is_print_mode(is_print=False)
-group_center_logger_utils.set_logger(logger)
+group_center_logger_utils.set_print_mode(enabled=False)
+group_center_logger_utils.set_default_logger(logger)
 
-ENV_FROM_GROUP_CENTER = \
-    EnvironmentManager.get_bool("ENV_FROM_GROUP_CENTER", False)
+ENV_FROM_GROUP_CENTER = EnvironmentManager.get_bool("ENV_FROM_GROUP_CENTER", False)
 if USE_GROUP_CENTER and ENV_FROM_GROUP_CENTER:
-    from feature.group_center.group_center_remote_config import \
-        init_remote_env_list
+    from feature.group_center.remote_config import init_remote_env_list
 
     init_remote_env_list()
 
@@ -264,8 +256,9 @@ GPU_MONITOR_SAMPLING_INTERVAL = EnvironmentManager.get_int(
 GPU_MONITOR_AUTO_RESTART = EnvironmentManager.get_bool("GPU_MONITOR_AUTO_RESTART", True)
 
 # Hard Disk Monitor
-HARD_DISK_MONITOR_PASS_ROOT_CHECK = \
-    EnvironmentManager.get_bool("HARD_DISK_MONITOR_PASS_ROOT_CHECK", False)
+HARD_DISK_MONITOR_PASS_ROOT_CHECK = EnvironmentManager.get_bool(
+    "HARD_DISK_MONITOR_PASS_ROOT_CHECK", False
+)
 HARD_DISK_MOUNT_POINT = set(
     m.strip() for m in EnvironmentManager.get("HARD_DISK_MOUNT_POINT", "/").split(",")
 )

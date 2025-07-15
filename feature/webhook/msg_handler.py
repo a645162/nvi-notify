@@ -1,9 +1,21 @@
 # -*- coding: utf-8 -*-
-from config.settings import SERVER_DOMAIN, SERVER_NAME, EnvironmentManager, IPv4, IPv6
+from group_center.core.feature.custom_client_message import (
+    machine_message_directly,
+    machine_user_message_directly,
+)
+
+from config.settings import (
+    SERVER_DOMAIN,
+    SERVER_NAME,
+    SERVER_NAME_SHORT,
+    EnvironmentManager,
+    IPv4,
+    IPv6,
+)
 from config.user_info import UserInfo
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
-from feature.notify.webhook import Webhook
 from feature.utils.logs import get_logger
+from feature.webhook.webhook import Webhook
 
 logger = get_logger()
 
@@ -79,26 +91,35 @@ class MessageHandler:
         Webhook.send_warning_msg_to_webhook_all_time(msg, MsgType.WARNING)
 
     @classmethod
-    def enqueue_hard_disk_size_msg(cls, disk_info: str):
+    def enqueue_hard_disk_warning_msg(cls, disk_info: str):
         """
-        发送硬盘高占用警告消息函数
+        向群聊中发送硬盘高占用警告消息
         """
         warning_message = f"⚠️【硬盘可用空间不足】⚠️\n{disk_info}"
         msg = cls.handle_normal_text(warning_message)
 
+        # Send to wework directly
         Webhook.enqueue_msg_to_webhook(
             msg,
             MsgType.NORMAL,
             mention_everyone=True,
-            enable_webhook_name=AllWebhookName.ALL,
+            enable_webhook_name=AllWebhookName.WEWORK,
+        )
+
+        # Send to lark by Group Center
+        machine_message_directly(
+            server_name=SERVER_NAME,
+            server_name_eng=SERVER_NAME_SHORT,
+            content=msg,
+            at="all",
         )
 
     @classmethod
-    def enqueue_hard_disk_size_warning_msg_to_user(
-        cls, disk_info: str, dir_path, dir_size: str, user: UserInfo
+    def enqueue_hard_disk_warning_msg_to_user(
+        cls, disk_info: str, dir_path: str, dir_size: str, user: UserInfo
     ):
         """
-        向用户发送硬盘高占用警告消息函数
+        通过飞书app向各用户发送硬盘高占用警告消息
         """
         if user.lark_info["mention_id"] == [""]:
             logger.warning(f"用户{user.name_cn}没有配置Lark通知ID，无法发送消息。")
@@ -106,8 +127,13 @@ class MessageHandler:
         warning_message = (
             f"⚠️【硬盘可用空间不足】⚠️\n"
             f"{disk_info}\n"
-            f"⚠️用户{user.name_cn}的个人目录[{dir_path}]占用容量为{dir_size}。\n"
+            f"⚠️用户{user.name_cn}的个人目录[{dir_path}]占用容量为{dir_size}，"
+            f"请及时清理不需要的文件。\n"
         )
         msg = cls.handle_normal_text(warning_message)
 
-        Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
+        # Send to lark app directly
+        # Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
+
+        # Send to lark app by Group Center
+        machine_user_message_directly(user_name=user.name_cn, content=msg)

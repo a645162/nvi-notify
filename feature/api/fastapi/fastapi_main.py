@@ -6,11 +6,11 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 
 app = FastAPI(
-    title='FastAPI',
-    description='FastAPI',
-    version='1.0.0',
-    docs_url='/docs',
-    redoc_url='/redocs',
+    title="FastAPI",
+    description="FastAPI",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redocs",
 )
 templates = Jinja2Templates(directory="templates")
 
@@ -36,14 +36,10 @@ def get_result():
 
 @app.post("/machine_user_message")
 def machine_user_message(request: Request):
-    final_data: dict = {
-        "haveError": True,
-        "isSucceed": False,
-        "result": "error"
-    }
+    final_data: dict = {"haveError": True, "isSucceed": False, "result": "error"}
 
-    user_name = request.form.get('userName')
-    content = request.form.get('content')
+    user_name = request.form.get("userName")
+    content = request.form.get("content")
 
     if user_name and content:
         machine_user_message_backend(
@@ -83,7 +79,11 @@ def get_gpu_count():
 @app.get("/gpu_usage_info")
 def get_gpu_usage(request: Request):
     gpu_index = request.query_params.get("gpu_index", None)
-    if gpu_index is None or not gpu_index.isdigit() or int(gpu_index) > get_gpu_count_backend():
+    if (
+        gpu_index is None
+        or not gpu_index.isdigit()
+        or int(gpu_index) > get_gpu_count_backend()
+    ):
         return JSONResponse(
             content={"result": "Invalid GPU Index(gpu_index)."},
             status_code=400,
@@ -103,7 +103,11 @@ def get_gpu_usage(request: Request):
 def get_gpu_task(request: Request):
     gpu_index = request.query_params.get("gpu_index", None)
 
-    if gpu_index is None or not gpu_index.isdigit() or int(gpu_index) > get_gpu_count_backend():
+    if (
+        gpu_index is None
+        or not gpu_index.isdigit()
+        or int(gpu_index) > get_gpu_count_backend()
+    ):
         return JSONResponse(
             content={"result": "Invalid GPU Index(gpu_index)."},
             status_code=400,

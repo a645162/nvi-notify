@@ -20,3 +20,5 @@ humanfriendly
 loguru
 
 li-group-center>=2.1.0
+
+ruff

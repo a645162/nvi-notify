@@ -8,4 +8,7 @@ fi
 
 echo "Python path: $python_path"
 
+unset http_proxy
+unset https_proxy
+
 sudo "$python_path" main.py

@@ -57,7 +57,7 @@ def get_process_name_list(pid: List[int]) -> List[str]:
     return [get_process_name(pid) for pid in pid]
 
 
-def get_chain_of_process(pid: int) -> List[str]:
+def get_chain_of_process(pid: int) -> List[int]:
     """
     Get the chain of process of the given process ID.
     """
@@ -141,6 +141,23 @@ def is_run_by_screen() -> bool:
 def is_run_by_tmux() -> bool:
     keywords = ["tmux"]
     return check_parent_process_name_keywords(keywords)
+
+
+def check_process_exists(pid: int) -> bool:
+    """
+    根据PID判断进程是否存在
+    :param pid: 进程ID
+    :return: 进程是否存在
+    """
+    try:
+        process = psutil.Process(pid)
+        
+        # 检查进程是否真的存在并且正在运行
+        return process.is_running()
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        return False
+    except Exception:
+        return False
 
 
 if __name__ == "__main__":

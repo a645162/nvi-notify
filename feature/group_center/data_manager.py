@@ -1,6 +1,3 @@
-from datetime import datetime
-from typing import Dict, List
-
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.utils.logs import get_logger
 
@@ -30,18 +27,18 @@ class DataManager:
     def _initialize_variables(cls):
         logger.info("Global Variable Initializing...")
 
-        cls.disk_info_response_dict: Dict[str, dict] = {}
-        cls.disk_info_user_response_dict: Dict[str, dict] = {}
+        cls.disk_info_response_dict: dict[str, dict] = {}
+        cls.disk_info_user_response_dict: dict[str, dict] = {}
 
-        cls.gpu_info: List[dict] = []
-        cls.gpu_usage: List[dict] = []
-        cls.gpu_task: List[List[GPUProcessInfo]] = []
+        cls.gpu_info: list[dict] = []
+        cls.gpu_usage: list[dict] = []
+        cls.gpu_task: list[list[GPUProcessInfo]] = []
 
         cls.system_info: dict = {}
 
         # cls.record_latest_timestamp: int = 0
-        # cls.task_new_born: List[PythonGPUProcessRecord] = []
-        # cls.task_history: List[PythonGPUProcessRecord] = []
+        # cls.task_new_born: list[PythonGPUProcessRecord] = []
+        # cls.task_history: list[PythonGPUProcessRecord] = []
 
     @classmethod
     def get_gpu_count(cls):

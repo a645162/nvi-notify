@@ -73,13 +73,11 @@ class HardDisk:
 
     @name.setter
     def name(self, value: str) -> None:
-        if (
-            "nvme" not in value
-            and cat_info(f"/sys/block/{value}/queue/rotational").strip() == 1
-        ):
-            self.type = DiskType.HDD
-        else:
-            self.type = DiskType.SSD
+        rotational = "0"
+        if "nvme" not in value:
+            rotational = cat_info(f"/sys/block/{value}/queue/rotational").strip()
+
+        self.type = DiskType.HDD if rotational == "1" else DiskType.SSD
         self._name = value
 
     @property
@@ -108,16 +106,16 @@ class HardDisk:
         self._free_str = value
 
     @property
-    def free_bytes(self) -> float:
+    def free_bytes(self) -> int:
         return self._free_bytes
 
     @free_bytes.setter
-    def free_bytes(self, cur_free_bytes: float) -> None:
-        self.low_free_bytes_trigger = cur_free_bytes < self.low_free_bytes_threshold
+    def free_bytes(self, value: int) -> None:
+        self.low_free_bytes_trigger = value < self.low_free_bytes_threshold
         # self.low_free_bytes_trigger = (
-        #     cur_free_bytes < self.low_free_bytes_threshold
-        # ) and (cur_free_bytes < self._free_bytes)
-        self._free_bytes = cur_free_bytes
+        #     value < self.low_free_bytes_threshold
+        # ) and (value < self._free_bytes)
+        self._free_bytes = value
 
     @property
     def percentage_used_str(self) -> str:
@@ -255,9 +253,9 @@ class HardDisk:
         try:
             result_code, output_stdout, output_stderr = do_command(command)
 
-            if result_code.returncode != 0:
+            if result_code != 0:
                 logger.warning(f"Error running smartctl: {output_stderr}")
-                return
+                return ""
 
             smart_info = output_stdout
             return smart_info

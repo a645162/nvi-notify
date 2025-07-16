@@ -1,5 +1,3 @@
-import threading
-
 from uvicorn import run
 
 from config.settings import (

@@ -3,7 +3,6 @@ import datetime
 import os
 import platform
 import socket
-from typing import Dict
 
 import psutil
 from dotenv import dotenv_values, load_dotenv
@@ -23,12 +22,12 @@ path_base = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 
 class EnvironmentManager:
-    all_env_dict: Dict[str, str] = {}
+    all_env_dict: dict[str, str] = {}
 
     @classmethod
     def load_env_file(
         cls, env_file: str, verbose: bool = True, override: bool = False
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Load environment variables from a file."""
         if os.path.exists(env_file):
             load_dotenv(env_file, verbose=verbose, override=override)
@@ -120,9 +119,11 @@ class EnvironmentManager:
         for ip in ip_dict.values():
             return ip
 
+        return ""
+
     @classmethod
-    def get_interface_ip_dict(cls, ip_type: str = "v4") -> dict:
-        interface_ip_dict = {}
+    def get_interface_ip_dict(cls, ip_type: str = "v4") -> dict[str, str]:
+        interface_ip_dict: dict[str, str] = {}
         family = socket.AF_INET if ip_type == "v4" else socket.AF_INET6
 
         # get local ip from dns
@@ -255,6 +256,21 @@ GPU_MONITOR_SAMPLING_INTERVAL = EnvironmentManager.get_int(
 )
 GPU_MONITOR_AUTO_RESTART = EnvironmentManager.get_bool("GPU_MONITOR_AUTO_RESTART", True)
 
+# 0占用监视器
+
+# max_consecutive_zero_count
+# 刷新间隔为GPU_MONITOR_SAMPLING_INTERVAL秒，按5秒算
+# 至少30分钟，也就是30*60/5=360次
+MAX_CONSECUTIVE_ZERO_COUNT = EnvironmentManager.get_int(
+    "MAX_CONSECUTIVE_ZERO_COUNT", 360
+)
+CPU_CONSECUTIVE_ZERO_ENABLE = EnvironmentManager.get_bool(
+    "CPU_CONSECUTIVE_ZERO_ENABLE", False
+)
+GPU_CONSECUTIVE_ZERO_ENABLE = EnvironmentManager.get_bool(
+    "GPU_CONSECUTIVE_ZERO_ENABLE", False
+)
+
 # Hard Disk Monitor
 HARD_DISK_MONITOR_PASS_ROOT_CHECK = EnvironmentManager.get_bool(
     "HARD_DISK_MONITOR_PASS_ROOT_CHECK", False
@@ -312,7 +328,7 @@ WEBHOOK_LARK_DEPLOY = EnvironmentManager.get("WEBHOOK_LARK_DEPLOY", "")
 WEBHOOK_LARK_DEV = EnvironmentManager.get("WEBHOOK_LARK_DEV", "")
 
 # User
-USERS: Dict[str, UserInfo] = get_users()
+USERS: dict[str, UserInfo] = get_users()
 if SUDO_PERMISSION:
     set_iptables(FLASK_SERVER_PORT)
 

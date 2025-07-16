@@ -16,8 +16,9 @@ from feature.monitor.hard_disk.hard_disk import DiskPurpose, HardDisk
 from feature.monitor.monitor import Monitor
 from feature.utils.common_utils import cat_info, do_command
 from feature.utils.logs import get_logger
-from feature.utils.system import check_is_linux, check_is_root, get_os_release_id
+from feature.utils.system import check_is_linux, check_is_root
 from feature.webhook.msg_handler import MessageHandler
+
 
 logger = get_logger()
 
@@ -73,7 +74,6 @@ class HardDiskMonitor(Monitor):
         self.__generate_api_response_data()
 
     def __generate_api_response_data(self):
-
         disk_info_dict = {}
 
         for mount_point, disk_obj in self.hard_disk_dict.items():
@@ -129,29 +129,17 @@ class HardDiskMonitor(Monitor):
 
         scan_path = ""
 
-        if hard_disk.mount_point == "/":
+        if hard_disk.mount_point == "/" or len(hard_disk.mount_point.strip()) == 0:
             # root path is not allowed to scan
             return
 
-        if get_os_release_id() == "centos":
-            if hard_disk.mount_point == "/home":
-                scan_path = "~/data"
-            else:
-                raise ValueError("Error hard disk mount point!")
-        elif get_os_release_id() == "ubuntu":
-            if "hdd" in hard_disk.mount_point:
-                if hard_disk.mount_point[-1] == "1":
-                    scan_path = f"{hard_disk.mount_point}/data"
-                elif hard_disk.mount_point[-1] == "2":
-                    scan_path = f"{hard_disk.mount_point}/data1"
-            else:
-                scan_path = hard_disk.mount_point
+        if "hdd" in hard_disk.mount_point:
+            if hard_disk.mount_point[-1] == "1":
+                scan_path = f"{hard_disk.mount_point}/data"
+            elif hard_disk.mount_point[-1] == "2":
+                scan_path = f"{hard_disk.mount_point}/data1"
         else:
-            raise ValueError("Error hard disk mount point!")
-
-        scan_path = scan_path.strip()
-        if len(scan_path) == 0:
-            return
+            scan_path = hard_disk.mount_point.strip()
 
         du_command = "du -sh *"
         # du_command = "du -lh --max-depth=1"
@@ -160,6 +148,7 @@ class HardDiskMonitor(Monitor):
         # print(command_args)
 
         retry_count = 0
+        results = ""
         while retry_count < 5:
             try:
                 result_code, results, _ = do_command(command_args)
@@ -168,10 +157,10 @@ class HardDiskMonitor(Monitor):
             except Exception as e:
                 logger.warning(f"Error executing command: {e}")
 
+            retry_count += 1
             if retry_count == 5:
                 logger.error("Max retries exceeded.")
                 return
-            retry_count += 1
 
             logger.warning(f"Retry {retry_count}-th in progress...")
 
@@ -235,7 +224,7 @@ class HardDiskMonitor(Monitor):
             )
 
             MessageHandler.enqueue_hard_disk_warning_msg_to_user(
-                hard_disk.disk_info, user_dir, dir_size, user
+                hard_disk.disk_info, (user_dir, dir_size), user
             )
 
 

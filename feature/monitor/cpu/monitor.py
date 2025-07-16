@@ -62,10 +62,17 @@ class CPUMonitor(Monitor):
     @staticmethod
     def get_cpu_temperature() -> dict[int, float]:
         if not hasattr(psutil, "sensors_temperatures"):
+            logger.warning(
+                "psutil.sensors_temperatures() is not available on this platform."
+            )
             return {0: -1.0}
-        temps = psutil.sensors_temperatures()
-        if not temps:
+
+        try:
+            temps = psutil.sensors_temperatures() # type: ignore
+        except NotImplementedError:
+            logger.warning("Temperature sensors are not supported on this system.")
             return {0: -1.0}
+
         cpu_temperature_info: dict[int, float] = {}
         idx = 0
         for name, entries in temps.items():

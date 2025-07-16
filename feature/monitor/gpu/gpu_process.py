@@ -68,41 +68,27 @@ class GPUProcessInfo:
         self.gpu_id: int = gpu_id
         self.gpu_process: GpuProcess = gpu_process
 
+        # 缓存psutil.Process对象，避免重复实例化
+        self._process: Optional[psutil.Process] = None
+        self._init_process()
+
         self.num_task: int = 0
         self.process_environ: Optional[dict[str, str]] = None
 
-        # Current Process
-        self.cwd: str = ""  # pwd
+        # 静态信息 - 初始化时获取，不会变化
+        self.cwd: str = ""
         self.command: str = ""
         self.cmdline: Optional[list] = None
-
         self.is_debug: Optional[bool] = None
-
-        self.task_main_memory_mb: int = 0
-
-        self.task_gpu_memory: int = 0
-        self.task_gpu_memory_max: int = 0
-        self.task_gpu_memory_human: str = ""
-
         self.user: Optional[UserInfo] = None
         self.conda_env: str = ""
         self.project_name: str = ""
         self.python_file: str = ""
-
         self.python_version: str = ""
+        self.start_time: float = 0.0
+        self.is_python: bool = False
 
-        self.start_time: float = 0.0  # Timestamp
-        self.finish_time: float = 0.0  # Timestamp
-        self.running_time_human: str = ""
-
-        # CPU utilization
-        self.cpu_percent: float = 0.0  # CPU利用率百分比
-        self.cpu_times: Optional[dict] = None  # CPU时间信息
-
-        # GPU utilization
-        self.gpu_utilization: float = 0.0  # GPU核心利用率百分比
-
-        # Props get from env var
+        # 环境变量相关静态信息
         self.is_multi_gpu: bool = False
         self.world_size: int = 0
         self.local_rank: int = 0
@@ -111,81 +97,311 @@ class GPUProcessInfo:
         self.cuda_root: str = ""
         self.cuda_nvcc_bin: str = ""
         self.cuda_version: str = ""
-
-        # User Env
-        self.group_center_user_realtime_str: str = ""
-
         self.top_python_pid: int = -1
-
         self.nvidia_driver_version: str = ""
-
         self.ignore_task: bool = False
 
+        # 动态信息 - 需要定期更新
+        self.task_main_memory_mb: int = 0
+        self.task_gpu_memory: int = 0
+        self.task_gpu_memory_max: int = 0
+        self.task_gpu_memory_human: str = ""
+        self.finish_time: float = 0.0
+        self.running_time_human: str = ""
+        self.cpu_percent: float = 0.0
+        self.cpu_times: Optional[dict] = None
+        self.gpu_utilization: float = 0.0
+        self.group_center_user_realtime_str: str = ""
+
         # GPU占用率监控相关
-        self.consecutive_zero_gpu_count: int = 0  # 连续GPU占用率为0的次数
-        self.max_consecutive_zero_count: int = (
-            MAX_CONSECUTIVE_ZERO_COUNT  # 连续零占用率报警阈值
-        )
-        self.should_send_gpu_alert: bool = False  # 当前是否需要发送GPU零占用率报警
-        self.already_has_alerted_zero_gpu_usage: bool = False  # 是否曾经报过警报
-        self.total_gpu_zero_alert_count: int = 0  # GPU零占用率报警总计次数
+        self.consecutive_zero_gpu_count: int = 0
+        self.max_consecutive_zero_count: int = MAX_CONSECUTIVE_ZERO_COUNT
+        self.should_send_gpu_alert: bool = False
+        self.already_has_alerted_zero_gpu_usage: bool = False
+        self.total_gpu_zero_alert_count: int = 0
 
         # CPU占用率监控相关
-        self.consecutive_zero_cpu_count: int = 0  # 连续CPU占用率为0的次数
-        self.should_send_cpu_alert: bool = False  # 当前是否需要发送CPU零占用率报警
-        self.already_has_alerted_zero_cpu_usage: bool = False  # 是否曾经报过警报
-        self.total_cpu_zero_alert_count: int = 0  # CPU零占用率报警总计次数
+        self.consecutive_zero_cpu_count: int = 0
+        self.should_send_cpu_alert: bool = False
+        self.already_has_alerted_zero_cpu_usage: bool = False
+        self.total_cpu_zero_alert_count: int = 0
 
         self._gpu = None
-        self._state: Optional[TaskState] = TaskState.DEFAULT  # init
-        self._running_time_in_seconds: int = 0  # init
+        self._state: Optional[TaskState] = TaskState.DEFAULT
+        self._running_time_in_seconds: int = 0
 
-        self.__init_info__()
+        # 初始化静态信息
+        self._init_static_info()
 
-    def __init_info__(self):
-        self.get_cwd()
-        self.get_command()
-        self.get_cmdline()
-        self.get_process_environ()
+    def _init_process(self):
+        """初始化psutil.Process对象"""
+        try:
+            self._process = psutil.Process(self.pid)
+            # 初始化CPU监控，第一次调用会启动监控
+            self._process.cpu_percent()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            self._process = None
 
-        self.get_all_env()
+    def _init_static_info(self):
+        """初始化静态信息 - 只在创建对象时调用一次"""
+        try:
+            self._get_basic_process_info()
+            self._get_environment_info()
+            self._judge_is_python()
 
-        self.judge_is_python()
+            if self.is_python:
+                self._get_python_info()
+                self._get_user_info()
+                self._get_project_info()
+                self._get_nvidia_driver_version()
 
-        if self.is_python:
-            self.get_python_version()
-            self.get_debug_flag()
-            self.get_user()
-            self.get_project_name()
-            self.get_python_filename()
-            self.get_start_time()
+                # 更新动态信息（首次）
+                self.update()
 
-            self.get_nvidia_gpu_version()
+                # 检查是否忽略任务
+                self._update_ignore_mode()
 
-            self.update_gpu_process_info()
-
-            self.update_ignore_mode()
-
-            sql.insert_task_data(TaskInfoForSQL(self.__dict__))
-        else:
+                # 插入数据库
+                sql.insert_task_data(TaskInfoForSQL(self.__dict__))
+            else:
+                self.ignore_task = True
+        except Exception as e:
+            logger.error(f"Error initializing static info for PID {self.pid}: {e}")
             self.ignore_task = True
 
-    def get_all_env(self):
-        self.get_screen_session_name()
-        self.get_conda_env_name()
+    def _get_basic_process_info(self):
+        """获取基础进程信息"""
+        try:
+            self.cwd = self.gpu_process.cwd()
+            self.command = self.gpu_process.command()
+            self.cmdline = self.gpu_process.cmdline()
+            self.start_time = self.gpu_process.create_time()
 
-        # Multi-GPU
-        self.get_world_size()
-        self.get_local_rank()
-        self.get_is_multi_gpu()
-        self.init_top_python_pid()
+            if self._process:
+                self.process_environ = self._process.environ().copy()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
 
-        self.get_cuda_visible_devices()
+    def _get_environment_info(self):
+        """获取环境变量相关信息"""
+        self._get_conda_env_name()
+        self._get_screen_session_name()
+        self._get_multi_gpu_info()
+        self._get_cuda_info()
 
-        self.get_cuda_root()
-        self.get_cuda_version()
+    def _get_multi_gpu_info(self):
+        """获取多GPU相关信息"""
+        world_size = self._get_env_value("WORLD_SIZE", "").strip()
+        self.world_size = int(world_size) if world_size.isdigit() else 0
 
-    def update_ignore_mode(self):
+        local_rank = self._get_env_value("LOCAL_RANK", "").strip()
+        self.local_rank = int(local_rank) if local_rank.isdigit() else 0
+
+        self.is_multi_gpu = (
+            self._get_env_value("LOCAL_RANK", "") != "" and self.world_size > 1
+        )
+        self.cuda_visible_devices = self._get_env_value("CUDA_VISIBLE_DEVICES", "")
+
+        if self.is_multi_gpu:
+            try:
+                self.top_python_pid = get_top_python_process_pid(self.pid)
+            except Exception:
+                self.top_python_pid = -1
+
+    def _get_cuda_info(self):
+        """获取CUDA相关信息"""
+        cuda_home = self._get_env_value("CUDA_HOME", "").strip()
+        if cuda_home and os.path.exists(os.path.join(cuda_home, "bin", "nvcc")):
+            self.cuda_root = cuda_home
+            self.cuda_nvcc_bin = os.path.join(cuda_home, "bin", "nvcc")
+        else:
+            cuda_toolkit_root = self._get_env_value("CUDAToolkit_ROOT", "").strip()
+            if cuda_toolkit_root and os.path.exists(
+                os.path.join(cuda_toolkit_root, "bin", "nvcc")
+            ):
+                self.cuda_root = cuda_toolkit_root
+                self.cuda_nvcc_bin = os.path.join(cuda_toolkit_root, "bin", "nvcc")
+
+        # 获取CUDA版本
+        if self.cuda_nvcc_bin and os.path.exists(self.cuda_nvcc_bin):
+            try:
+                _, result, _ = do_command(f"{self.cuda_nvcc_bin} --version")
+                if "release" in result:
+                    for line in result.split("\n"):
+                        if "release" in line:
+                            version = line.split(",")[-1].strip()
+                            self.cuda_version = version.strip().lower().replace("v", "")
+                            break
+            except Exception:
+                pass
+
+    def _get_python_info(self):
+        """获取Python相关信息"""
+        if self._process:
+            try:
+                binary_path = self._process.exe()
+                if "python" in binary_path:
+                    _, result, _ = do_command(f"'{binary_path}' --version")
+                    if "Python" in result:
+                        self.python_version = result.replace("Python", "").strip()
+            except Exception:
+                pass
+
+        # 获取调试标志
+        if self.cmdline:
+            cmdline = [line for line in self.cmdline if not line.endswith("python")]
+            debug_keywords = ["vscode-server", "debugpy", "pydev/pydevd.py"]
+            self.is_debug = any(
+                any(keyword in unit for unit in cmdline) for keyword in debug_keywords
+            )
+
+    def _get_user_info(self):
+        """获取用户信息"""
+        self.user = USERS.get(self.gpu_process.username(), None)
+        if self.user is None and self.cwd:
+            cwd = self.cwd + "/"
+            self.user = UserInfo.find_user_by_path(USERS, cwd, is_project_path=True)
+
+    def _get_project_info(self):
+        """获取项目信息"""
+        if self.cwd:
+            self.project_name = self.cwd.split("/")[-1].strip()
+
+        if self.cmdline:
+            file_name = next(
+                (cmd for cmd in self.cmdline if cmd.lower().endswith(".py")), ""
+            )
+            if file_name:
+                self.python_file = (
+                    file_name.split("/")[-1].strip()
+                    if "/" in file_name
+                    else file_name.strip()
+                )
+
+    def update(self):
+        """更新动态信息 - 定期调用此方法刷新状态"""
+        try:
+            self._update_memory_info()
+            self._update_runtime_info()
+            self._update_utilization_info()
+            self._update_user_env()
+        except Exception as e:
+            logger.error(f"Error updating dynamic info for PID {self.pid}: {e}")
+
+    def _update_memory_info(self):
+        """更新内存信息"""
+        try:
+            if self._process:
+                self.task_main_memory_mb = (
+                    self._process.memory_info().rss // 1024 // 1024
+                )
+
+            self.task_gpu_memory_human = self.gpu_process.gpu_memory_human()
+            task_gpu_memory = self.gpu_process.gpu_memory()
+            self.task_gpu_memory = task_gpu_memory
+
+            if self.task_gpu_memory_max < task_gpu_memory:
+                self.task_gpu_memory_max = task_gpu_memory
+                self.task_gpu_memory_max_human = self.task_gpu_memory_human
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
+    def _update_runtime_info(self):
+        """更新运行时间信息"""
+        try:
+            self.running_time_in_seconds = self.gpu_process.running_time_in_seconds()
+            self.running_time_human = self.gpu_process.running_time_human()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
+    def _update_utilization_info(self):
+        """更新CPU和GPU利用率信息"""
+        # 更新CPU利用率 - 使用非阻塞模式
+        if self._process:
+            try:
+                self.cpu_times = self._process.cpu_times()._asdict()
+                # 使用interval=None获取非阻塞的CPU使用率
+                self.cpu_percent = self._process.cpu_percent(interval=None)
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                self.cpu_percent = 0.0
+                self.cpu_times = None
+            except Exception as e:
+                logger.error(f"Error getting CPU utilization for PID {self.pid}: {e}")
+                self.cpu_percent = 0.0
+                self.cpu_times = None
+        else:
+            self.cpu_percent = 0.0
+            self.cpu_times = None
+
+        # 更新GPU利用率
+        try:
+            if hasattr(self.gpu_process, "gpu_sm_utilization"):
+                util = self.gpu_process.gpu_sm_utilization
+                self.gpu_utilization = util() if callable(util) else util
+            else:
+                self.gpu_utilization = 0.0
+        except Exception as e:
+            logger.error(f"Error getting GPU utilization for PID {self.pid}: {e}")
+            self.gpu_utilization = 0.0
+
+    def _update_user_env(self):
+        """更新用户环境信息"""
+        try:
+            self.group_center_user_realtime_str = show_realtime_str(self.pid)
+        except Exception as e:
+            logger.error(f"Error updating user env for PID {self.pid}: {e}")
+
+    def _get_env_value(self, key: str, default_value: str = "") -> str:
+        """获取环境变量值"""
+        if self.process_environ is None:
+            return default_value
+        return self.process_environ.get(key, default_value)
+
+    def _judge_is_python(self):
+        """判断是否为Python进程"""
+        try:
+            gpu_process_name = self.gpu_process.name()
+            self.is_python = gpu_process_name in ["python", "yolo"] or (
+                self.cmdline and any("python" in cmd for cmd in self.cmdline)
+            )
+        except Exception as e:
+            if "process no longer exists" not in str(e):
+                logger.warn(e)
+            self.is_python = False
+
+    def _get_conda_env_name(self):
+        """获取conda环境名"""
+        pattern = r"envs/(.*?)/bin/python "
+        match = re.search(pattern, self.command)
+        if match:
+            self.conda_env = match.group(1)
+        else:
+            env_str = self._get_env_value("CONDA_DEFAULT_ENV", "").strip()
+            self.conda_env = env_str if env_str else "base"
+
+    def _get_screen_session_name(self):
+        """获取screen会话名"""
+        self.screen_session_name = self._get_env_value("STY", "").strip()
+        if self.screen_session_name and "." in self.screen_session_name:
+            parts = self.screen_session_name.split(".")
+            if len(parts) >= 2 and parts[0].isdigit():
+                self.screen_session_name = ".".join(parts[1:]).strip()
+
+    def _get_nvidia_driver_version(self) -> str:
+        """获取NVIDIA驱动版本"""
+        try:
+            with open("/proc/driver/nvidia/version", "r") as f:
+                content = f.read()
+            match = re.search(r"Kernel Module {2}(\d+\.\d+\.\d+)", content)
+            if match:
+                self.nvidia_driver_version = match.group(1).strip()
+                return self.nvidia_driver_version
+        except Exception:
+            pass
+        return ""
+
+    def _update_ignore_mode(self):
+        """更新忽略模式"""
         try:
             self.ignore_task = check_process_env(
                 pid=self.pid, env_name="NVI_NOTIFY_IGNORE_TASK", check_parent=True
@@ -193,21 +409,7 @@ class GPUProcessInfo:
         except Exception as e:
             logger.error(e)
 
-    def update_gpu_process_info(self):
-        self.get_task_main_memory_mb()
-
-        self.get_task_gpu_memory_human()
-        self.get_task_gpu_memory()
-
-        self.get_running_time_human()
-        self.get_running_time_in_seconds()
-
-        self.get_cpu_utilization()
-        self.get_gpu_utilization()
-
-        # User Env
-        self.update_user_env()
-
+    # 属性和状态管理
     @property
     def gpu(self):
         return self._gpu
@@ -216,386 +418,19 @@ class GPUProcessInfo:
     def gpu(self, value):
         self._gpu = value
 
-    def get_cwd(self):
-        try:
-            self.cwd = self.gpu_process.cwd()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            # self.state = "death"
-            pass
-
-    def get_command(self):
-        try:
-            self.command = self.gpu_process.command()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            # self.state = "death"
-            pass
-
-    def get_cmdline(self):
-        try:
-            self.cmdline = self.gpu_process.cmdline()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            # self.state = "death"
-            pass
-
-    def get_process_environ(self):
-        try:
-            process = psutil.Process(self.pid)
-            self.process_environ = process.environ().copy()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-
-    def get_task_main_memory_mb(self):
-        try:
-            self.task_main_memory_mb = (
-                self.gpu_process.memory_info().rss // 1024 // 1024
-            )
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-
-    # Task Gpu Memory(Bytes)
-    def get_task_gpu_memory(self):
-        task_gpu_memory = self.gpu_process.gpu_memory()
-        self.task_gpu_memory = task_gpu_memory
-
-        if (
-            self.task_gpu_memory_max is None
-            or self.task_gpu_memory_max < task_gpu_memory
-        ):
-            self.task_gpu_memory_max = task_gpu_memory
-            self.task_gpu_memory_max_human = self.task_gpu_memory_human
-
-    def get_task_gpu_memory_human(self):
-        self.task_gpu_memory_human = self.gpu_process.gpu_memory_human()
-
-    def get_running_time_in_seconds(self):
-        self.running_time_in_seconds = self.gpu_process.running_time_in_seconds()
-
-    def get_running_time_human(self):
-        self.running_time_human = self.gpu_process.running_time_human()
-
-    def get_start_time(self):
-        self.start_time = self.gpu_process.create_time()
-
-    def set_finish_time(self):
-        self.finish_time = datetime.timestamp(datetime.now())
-
-    def judge_is_python(self):
-        try:
-            gpu_process_name = self.gpu_process.name()
-        except Exception as e:
-            e_str = str(e)
-            if "process no longer exists" not in e_str:
-                logger.warn(e)
-            self.is_python = False
-            return
-        self.is_python = gpu_process_name in ["python", "yolo"] or any(
-            "python" in cmd for cmd in self.cmdline
-        )
-
-    def get_debug_flag(self):
-        if self.cmdline is None:
-            self.is_debug = False
-            return
-
-        cmdline = [line for line in self.cmdline if not line.endswith("python")]
-        debug_cmd_keywords = ["vscode-server", "debugpy", "pydev/pydevd.py"]
-        self.is_debug = any(
-            any(keyword in _unit for _unit in cmdline) for keyword in debug_cmd_keywords
-        )
-
-    def get_user(self):
-        self.user = USERS.get(self.gpu_process.username(), None)
-
-        if self.user is not None:
-            return
-
-        cwd = self.cwd + "/" if self.cwd is not None else ""
-        self.user = UserInfo.find_user_by_path(USERS, cwd, is_project_path=True)
-
-    def get_env_value(self, key: str, default_value: str):
-        if self.process_environ is None:
-            return default_value
-
-        return self.process_environ.get(key, default_value)
-
-    def get_conda_env_name(self):
-        pattern = r"envs/(.*?)/bin/python "
-        match = re.search(pattern, self.command)
-        if match:
-            conda_env_name = match.group(1)
-            env_str = conda_env_name
-        else:
-            env_str = self.get_env_value("CONDA_DEFAULT_ENV", "")
-
-        env_str = env_str.strip()
-
-        if env_str == "":
-            env_str = "base"
-
-        self.conda_env = env_str
-
-    def get_python_version(self):
-        try:
-            binary_path = psutil.Process(self.pid).exe()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            # self.state = "death"
-            binary_path = ""
-        self.get_python_version_by_path(binary_path)
-
-    def get_conda_python_version(self, conda_env: str) -> str:
-        command = f"conda run -n {conda_env} python --version"
-        python_version = self.get_python_version_by_command(command)
-
-        self.python_version = python_version
-        return python_version
-
-    def get_python_version_by_path(self, binary_path: str) -> str:
-        if "python" not in binary_path:
-            self.python_version = ""
-
-        command = f"'{binary_path}' --version"
-        python_version = self.get_python_version_by_command(command)
-
-        self.python_version = python_version
-        return python_version
-
-    def get_world_size(self):
-        # 多卡任务的进程数
-        world_size = self.get_env_value("WORLD_SIZE", "").strip()
-        self.world_size = int(world_size) if world_size.isdigit() else 0
-
-    def get_local_rank(self):
-        # 多卡任务的卡号
-        local_rank = self.get_env_value("LOCAL_RANK", "").strip()
-        self.local_rank = int(local_rank) if local_rank.isdigit() else 0
-
-    def get_is_multi_gpu(self):
-        self.is_multi_gpu = self.get_local_rank() != "" and self.world_size > 1
-
-    def get_cuda_visible_devices(self):
-        self.cuda_visible_devices = self.get_env_value("CUDA_VISIBLE_DEVICES", "")
-
-    def get_cuda_root(self):
-        cuda_home = self.get_env_value("CUDA_HOME", "").strip()
-        nvcc_path = os.path.join(cuda_home, "bin", "nvcc")
-        if os.path.exists(nvcc_path):
-            self.cuda_root = cuda_home
-            self.cuda_nvcc_bin = nvcc_path
-            return
-
-        cuda_toolkit_root = self.get_env_value("CUDAToolkit_ROOT", "").strip()
-        nvcc_path = os.path.join(cuda_toolkit_root, "bin", "nvcc")
-        if os.path.exists(nvcc_path):
-            self.cuda_root = cuda_toolkit_root
-            self.cuda_nvcc_bin = nvcc_path
-            return
-
-    def get_cuda_version(self):
-        if self.cuda_nvcc_bin.strip() == "" or (not os.path.exists(self.cuda_nvcc_bin)):
-            return
-
-        try:
-            cmd = f"{self.cuda_nvcc_bin} --version"
-            _, result, _ = do_command(cmd)
-
-            if "release" not in result:
-                return
-            result_list = result.split("\n")
-            version: str = ""
-
-            for line in result_list:
-                if "release" in line:
-                    version = line.split(",")[-1].strip()
-                    break
-
-            self.cuda_version = version.strip().lower().replace("v", "")
-        except Exception:
-            return
-
-    def get_screen_session_name(self):
-        self.screen_session_name = self.get_env_value("STY", "").strip()
-
-        if self.screen_session_name == "":
-            return
-
-        dot_index = self.screen_session_name.find(".")
-        if dot_index != -1:
-            name_spilt_list = self.screen_session_name.split(".")
-            if len(name_spilt_list) >= 2 and name_spilt_list[0].isdigit():
-                self.screen_session_name = self.screen_session_name[
-                    dot_index + 1 :
-                ].strip()
-
-    def init_top_python_pid(self):
-        if not self.is_multi_gpu:
-            return
-
-        try:
-            self.top_python_pid = get_top_python_process_pid(self.pid)
-        except Exception:
-            self.top_python_pid = -1
-
-    def get_project_name(self):
-        if self.cwd is not None:
-            self.project_name = self.cwd.split("/")[-1].strip()
-        else:
-            self.project_name = "".strip()
-
-    def get_python_filename(self):
-        if self.cmdline is None:
-            self.python_file = ""
-            return
-
-        file_name = next(
-            (cmd_str for cmd_str in self.cmdline if cmd_str.lower().endswith(".py")), ""
-        )
-        if "/" in file_name:
-            self.python_file = file_name.split("/")[-1].strip()
-        else:
-            self.python_file = file_name.strip()
-
-    def get_nvidia_gpu_version(self) -> str:
-        try:
-            with open("/proc/driver/nvidia/version", "r") as f:
-                nvidia_driver_version = f.read()
-        except Exception:
-            return ""
-
-        version_pattern = re.compile(r"Kernel Module {2}(\d+\.\d+\.\d+)")
-        match = version_pattern.search(nvidia_driver_version)
-
-        if match:
-            version = match.group(1).strip()
-            self.nvidia_driver_version = version
-
-            return version
-        else:
-            return ""
-
     @property
     def running_time_in_seconds(self):
         return self._running_time_in_seconds
 
     @running_time_in_seconds.setter
     def running_time_in_seconds(self, new_running_time_in_seconds):
-        # 上次不满足，但是这次满足
         if (
             new_running_time_in_seconds
             > WEBHOOK_DELAY_SEND_SECONDS
             > self._running_time_in_seconds
         ):
             self.state = TaskState.WORKING
-
         self._running_time_in_seconds = new_running_time_in_seconds
-
-    def get_cpu_utilization(self):
-        """获取进程的CPU利用率"""
-        try:
-            process = psutil.Process(self.pid)
-            # 对于连续监控，使用默认的非阻塞模式更合适
-            # 因为我们的监控间隔(5秒)已经足够长，能提供准确的数据
-            # self.cpu_percent = process.cpu_percent(interval=None)
-            self.cpu_times = process.cpu_times()._asdict()
-
-            # 可选：如果需要更精确的瞬时CPU使用率，可以使用短时间阻塞模式
-            self.cpu_percent = process.cpu_percent(interval=0.1)
-
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            self.cpu_percent = 0.0
-            self.cpu_times = None
-        except Exception as e:
-            logger.error(f"Error getting CPU utilization for PID {self.pid}: {e}")
-            self.cpu_percent = 0.0
-            self.cpu_times = None
-
-    def get_gpu_utilization(self):
-        """获取进程的GPU利用率（SM占用率）"""
-        try:
-            # 获取进程级别的GPU利用率，而不是整张卡的利用率
-            if hasattr(self.gpu_process, "gpu_sm_utilization"):
-                # 尝试访问gpu_sm_utilization属性或方法
-                util = self.gpu_process.gpu_sm_utilization
-                self.gpu_utilization = util() if callable(util) else util
-            else:
-                # 如果没有直接的GPU利用率属性，设为0
-                self.gpu_utilization = 0.0
-                logger.error(
-                    f"GPU process {self.pid} does not have gpu_sm_utilization attribute."
-                )
-
-                # Print all attributes of the gpu_process for debugging
-                logger.debug(f"Available attributes: {dir(self.gpu_process)}")
-
-        except Exception as e:
-            logger.error(f"Error getting GPU utilization for PID {self.pid}: {e}")
-            self.gpu_utilization = 0.0
-
-    def check_consecutive_zero_gpu_usage(self) -> bool:
-        """
-        检查连续GPU零占用率
-        返回True表示需要发送报警
-        """
-        if self.gpu_utilization == 0.0:
-            self.consecutive_zero_gpu_count += 1
-
-            # 每达到阈值就发送报警，然后重置计数器继续下一轮检测
-            if self.consecutive_zero_gpu_count >= self.max_consecutive_zero_count:
-                self.should_send_gpu_alert = True
-                self.already_has_alerted_zero_gpu_usage = True  # 记录曾经报过警，不重置
-                self.total_gpu_zero_alert_count += 1
-                # 重置计数器，准备下一轮检测
-                self.consecutive_zero_gpu_count = 0
-                return True
-        else:
-            # GPU占用率不为0，重置计数器和当前报警状态
-            self.consecutive_zero_gpu_count = 0
-            self.should_send_gpu_alert = False
-            # 注意：不重置 already_has_alerted_zero_gpu_usage，保持历史记录
-
-        return False
-
-    def check_consecutive_zero_cpu_usage(self) -> bool:
-        """
-        检查连续CPU零占用率
-        返回True表示需要发送报警
-        """
-        if self.cpu_percent == 0.0:
-            self.consecutive_zero_cpu_count += 1
-
-            # 每达到阈值就发送报警，然后重置计数器继续下一轮检测
-            if self.consecutive_zero_cpu_count >= self.max_consecutive_zero_count:
-                self.should_send_cpu_alert = True
-                self.already_has_alerted_zero_cpu_usage = True  # 记录曾经报过警，不重置
-                self.total_cpu_zero_alert_count += 1
-                # 重置计数器，准备下一轮检测
-                self.consecutive_zero_cpu_count = 0
-                return True
-        else:
-            # CPU占用率不为0，重置计数器和当前报警状态
-            self.consecutive_zero_cpu_count = 0
-            self.should_send_cpu_alert = False
-            # 注意：不重置 already_has_alerted_zero_cpu_usage，保持历史记录
-
-        return False
-
-    def should_send_zero_usage_alert(self) -> dict:
-        """
-        检查是否需要发送零占用率报警
-        返回包含GPU和CPU报警状态的字典
-        """
-        return {
-            "should_send_gpu_alert": self.check_consecutive_zero_gpu_usage(),
-            "should_send_cpu_alert": self.check_consecutive_zero_cpu_usage(),
-        }
-
-    def reset_zero_usage_alert(self):
-        """重置零占用率报警状态"""
-        self.consecutive_zero_gpu_count = 0
-        self.should_send_gpu_alert = False
-        self.consecutive_zero_cpu_count = 0
-        self.should_send_cpu_alert = False
-        # 注意：不重置 already_has_alerted_zero_gpu_usage 和 total_*_zero_alert_count
-        # 因为这些是历史记录和累积统计
 
     @property
     def state(self):
@@ -624,6 +459,56 @@ class GPUProcessInfo:
 
         self._state = new_state
 
+    def set_finish_time(self):
+        """设置结束时间"""
+        self.finish_time = datetime.timestamp(datetime.now())
+
+    # 零占用率监控相关方法
+    def check_consecutive_zero_gpu_usage(self) -> bool:
+        """检查连续GPU零占用率，返回True表示需要发送报警"""
+        if self.gpu_utilization == 0.0:
+            self.consecutive_zero_gpu_count += 1
+            if self.consecutive_zero_gpu_count >= self.max_consecutive_zero_count:
+                self.should_send_gpu_alert = True
+                self.already_has_alerted_zero_gpu_usage = True
+                self.total_gpu_zero_alert_count += 1
+                self.consecutive_zero_gpu_count = 0
+                return True
+        else:
+            self.consecutive_zero_gpu_count = 0
+            self.should_send_gpu_alert = False
+        return False
+
+    def check_consecutive_zero_cpu_usage(self) -> bool:
+        """检查连续CPU零占用率，返回True表示需要发送报警"""
+        if self.cpu_percent == 0.0:
+            self.consecutive_zero_cpu_count += 1
+            if self.consecutive_zero_cpu_count >= self.max_consecutive_zero_count:
+                self.should_send_cpu_alert = True
+                self.already_has_alerted_zero_cpu_usage = True
+                self.total_cpu_zero_alert_count += 1
+                self.consecutive_zero_cpu_count = 0
+                return True
+        else:
+            self.consecutive_zero_cpu_count = 0
+            self.should_send_cpu_alert = False
+        return False
+
+    def should_send_zero_usage_alert(self) -> dict:
+        """检查是否需要发送零占用率报警"""
+        return {
+            "should_send_gpu_alert": self.check_consecutive_zero_gpu_usage(),
+            "should_send_cpu_alert": self.check_consecutive_zero_cpu_usage(),
+        }
+
+    def reset_zero_usage_alert(self):
+        """重置零占用率报警状态"""
+        self.consecutive_zero_gpu_count = 0
+        self.should_send_gpu_alert = False
+        self.consecutive_zero_cpu_count = 0
+        self.should_send_cpu_alert = False
+
+    # 状态转换处理
     def _handle_state_change(self, new_state):
         if new_state == TaskState.NEWBORN and self._state is TaskState.DEFAULT:
             self._transition_to_newborn()
@@ -642,22 +527,18 @@ class GPUProcessInfo:
 
     def _transition_newborn_to_working(self):
         sql.update_task_data(TaskInfoForSQL(self.__dict__, TaskState.WORKING))
-
         if self.ignore_task:
             logger.info(f"[Start] Task {self.pid} is ignored.")
             return
-
         message.gpu_task_message(self, TaskEvent.CREATE)
         self._send_gpu_task_message(TaskEvent.CREATE)
 
     def _transition_working_to_death(self):
         log_task_info(self.__dict__, TaskEvent.FINISH)
         sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, TaskState.DEATH))
-
         if self.ignore_task:
             logger.info(f"[Finish] Task {self.pid} is ignored.")
             return
-
         message.gpu_task_message(self, TaskEvent.FINISH)
         self._send_gpu_task_message(TaskEvent.FINISH)
 
@@ -666,17 +547,10 @@ class GPUProcessInfo:
         sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, TaskState.DEATH))
 
     def _send_gpu_task_message(self, task_event: TaskEvent):
-        """
-        发送GPU任务消息函数
-        :param task_event: 任务状态
-        """
+        """发送GPU任务消息函数"""
         task = TaskInfoForWebHook(self.__dict__, task_event)
         if task.is_debug:
             return
-
-        # multi_gpu_msg = task.multi_gpu_msg
-        # if multi_gpu_msg == "-1":  # 非第一个使用的GPU不发送消息
-        #     return
 
         msg = MessageHandler.handle_normal_text(
             self.gpu.name_for_msg_header
@@ -695,61 +569,36 @@ class GPUProcessInfo:
         )
 
     @staticmethod
-    def get_python_version_by_command(command) -> str:
-        try:
-            _, result, _ = do_command(command)
-
-            if "Python" not in result:
-                return ""
-            result = result.replace("Python", "").strip()
-            if "." in result:
-                return result
-            return ""
-        except Exception:
-            return ""
-
-    def update_user_env(self) -> None:
-        self.group_center_user_realtime_str = show_realtime_str(self.pid)
-
-    @staticmethod
     def format_duration(total_seconds: int) -> str:
-        """
-        将秒数转换为人类可读的时间格式
-        支持秒、分钟、小时、天
-        """
+        """将秒数转换为人类可读的时间格式"""
         if total_seconds < 60:
             return f"{total_seconds}秒"
 
         minutes = total_seconds // 60
         if minutes < 60:
             remaining_seconds = total_seconds % 60
-            if remaining_seconds > 0:
-                return f"{minutes}分钟{remaining_seconds}秒"
-            else:
-                return f"{minutes}分钟"
+            return (
+                f"{minutes}分钟{remaining_seconds}秒"
+                if remaining_seconds > 0
+                else f"{minutes}分钟"
+            )
 
         hours = minutes // 60
         if hours < 24:
             remaining_minutes = minutes % 60
-            if remaining_minutes > 0:
-                return f"{hours}小时{remaining_minutes}分钟"
-            else:
-                return f"{hours}小时"
+            return (
+                f"{hours}小时{remaining_minutes}分钟"
+                if remaining_minutes > 0
+                else f"{hours}小时"
+            )
 
         days = hours // 24
         remaining_hours = hours % 24
-        if remaining_hours > 0:
-            return f"{days}天{remaining_hours}小时"
-        else:
-            return f"{days}天"
+        return f"{days}天{remaining_hours}小时" if remaining_hours > 0 else f"{days}天"
 
 
 def log_task_info(process_info: dict, task_event: TaskEvent):
-    """
-    任务日志函数
-    :param process_info: 进程信息字典
-    :task_event: 任务类型, `create` or `finish`
-    """
+    """任务日志函数"""
     if task_event is None:
         raise ValueError("task_event is None")
 
@@ -774,7 +623,4 @@ def log_task_info(process_info: dict, task_event: TaskEvent):
                 f"task: {task.pid}，用时{task.running_time_human}"
             )
         log_writer.write(f"[{EnvironmentManager.now_time_str()}]+{output_log} + \n")
-        logger.info(output_log)
-        log_writer.write(f"[{EnvironmentManager.now_time_str()}]+{output_log} + \n")
-        logger.info(output_log)
         logger.info(output_log)

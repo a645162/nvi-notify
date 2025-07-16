@@ -61,12 +61,14 @@ class NvidiaMonitor(Monitor):
     def gpu_monitor_thread(self):
         while self.monitor_thread_work:
             self.total_num_task = 0
+            current_all_processes = {}
+
             for idx, gpu in self.gpu_obj_dict.items():
                 gpu.update()
                 self.total_num_task += gpu.num_task
-                self.all_processes.update(gpu.processes)
+                current_all_processes.update(gpu.processes)
 
-                # 监控GPU占用率
+                # 监控GPU占用率 - 使用增量更新逻辑
                 self.monitor_gpu_usage_for_processes(gpu.processes)
 
                 # Get gpu status info for webhook msg
@@ -77,8 +79,8 @@ class NvidiaMonitor(Monitor):
                 message.gpu_monitor_start(idx)
                 sql.check_finish_task(gpu.processes, idx)
 
-            # 每次都是要清空，下一轮会重新创建对象
-            self.all_processes.clear()
+            # 更新全局进程字典，但不清空历史记录
+            self.all_processes = current_all_processes
 
             if self.should_send_monitor_launch_msg:
                 self.send_gpu_monitor_launch_msg()
@@ -93,54 +95,28 @@ class NvidiaMonitor(Monitor):
     ):
         """监控进程的GPU和CPU占用率，检测连续零占用率"""
         for pid, process_info in current_processes.items():
-            # 获取GPU和CPU利用率
-            process_info.get_gpu_utilization()
-            process_info.get_cpu_utilization()
-
-            # 如果历史记录中存在该进程，更新连续零占用率计数
+            # 如果历史记录中存在该进程，使用历史对象并更新其动态信息
             if pid in self.process_gpu_usage_history:
+                # 使用历史对象，保持连续性
                 historical_process = self.process_gpu_usage_history[pid]
-
-                # 将历史计数传递给当前进程
-                if GPU_CONSECUTIVE_ZERO_ENABLE:
-                    process_info.consecutive_zero_gpu_count = (
-                        historical_process.consecutive_zero_gpu_count
-                    )
-                    process_info.should_send_gpu_alert = (
-                        historical_process.should_send_gpu_alert
-                    )
-                    process_info.already_has_alerted_zero_gpu_usage = (
-                        historical_process.already_has_alerted_zero_gpu_usage
-                    )
-                    process_info.total_gpu_zero_alert_count = (
-                        historical_process.total_gpu_zero_alert_count
-                    )
-
-                if CPU_CONSECUTIVE_ZERO_ENABLE:
-                    process_info.consecutive_zero_cpu_count = (
-                        historical_process.consecutive_zero_cpu_count
-                    )
-                    process_info.should_send_cpu_alert = (
-                        historical_process.should_send_cpu_alert
-                    )
-                    process_info.already_has_alerted_zero_cpu_usage = (
-                        historical_process.already_has_alerted_zero_cpu_usage
-                    )
-                    process_info.total_cpu_zero_alert_count = (
-                        historical_process.total_cpu_zero_alert_count
-                    )
+                # 更新动态信息
+                historical_process.update()
+                # 使用历史对象进行后续处理
+                process_to_check = historical_process
+            else:
+                # 新进程，使用当前对象
+                process_to_check = process_info
+                # 将新进程加入历史记录
+                self.process_gpu_usage_history[pid] = process_info
 
             # 检查是否需要发送零占用率报警
-            alert_info = process_info.should_send_zero_usage_alert()
+            alert_info = process_to_check.should_send_zero_usage_alert()
 
             # 只有当CPU和GPU都需要报警时才发送（如果相应开关都启用）
             should_send_combined_alert = self._should_send_combined_alert(alert_info)
 
             if should_send_combined_alert:
-                self.send_combined_zero_usage_alert(process_info, alert_info)
-
-            # 更新历史记录
-            self.process_gpu_usage_history[pid] = process_info
+                self.send_combined_zero_usage_alert(process_to_check, alert_info)
 
         # 清理已结束进程的历史记录
         self.cleanup_finished_processes(current_processes)

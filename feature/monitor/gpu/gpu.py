@@ -39,7 +39,7 @@ class GPU:
 
     def update_all_processes_info(self):
         for pid in self.processes:
-            self.processes[pid].update_gpu_process_info()
+            self.processes[pid].update()
 
     def handle_death_processes(self):
         tmp_process = copy.copy(self.processes)
@@ -91,7 +91,7 @@ class GPU:
     def name_short(self) -> str:
         current_str = self.name
         current_str_upper = self.name.upper()
-        keywords = ["NVIDIA", "GeForce", "Quadro"]
+        keywords = ["NVIDIA", "GeForce", "Quadro", "Tesla"]
 
         for keyword in keywords:
             keyword_upper = keyword.upper()
@@ -220,8 +220,6 @@ class GPU:
         return task_msg
 
     def get_gpu_info(self):
-
-
         try:
             if self.gpu_id not in DataManager().gpu_info:
                 DataManager().gpu_info[self.gpu_id] = {}
@@ -240,8 +238,6 @@ class GPU:
             print(f"An unexpected error occurred: {e}")
 
     def update_datamanager_gpu_status(self):
-
-
         try:
             # 确保gpu_id对应的字典项存在
             if self.gpu_id not in DataManager().gpu_usage:

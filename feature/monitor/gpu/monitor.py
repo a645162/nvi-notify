@@ -254,7 +254,9 @@ class NvidiaMonitor(Monitor):
                     f"进程PID: {process_info.pid}\n",
                     f"进程名称: {process_info.project_name}-{process_info.python_file}\n",
                     f"用户: {process_info.user.name_cn if process_info.user else '未知'}\n",
+                    "\n",
                     f"检测间隔: {self.get_detection_interval_str()}\n",
+                    "\n",
                 ]
             )
 
@@ -289,7 +291,7 @@ class NvidiaMonitor(Monitor):
 
             alert_msg_parts.extend(
                 [
-                    f"已经运行: {process_info.running_time_human}\n\n",
+                    f"\n已经运行: {process_info.running_time_human}\n\n",
                     f"报警时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n",
                 ]
             )

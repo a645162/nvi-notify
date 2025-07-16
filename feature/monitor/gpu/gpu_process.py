@@ -87,6 +87,7 @@ class GPUProcessInfo:
         self.python_version: str = ""
         self.start_time: float = 0.0
         self.is_python: bool = False
+        self.is_multiprocessing_spawn: bool = False
 
         # 环境变量相关静态信息
         self.is_multi_gpu: bool = False
@@ -149,6 +150,9 @@ class GPUProcessInfo:
             self._get_basic_process_info()
             self._get_environment_info()
             self._judge_is_python()
+            self.is_multiprocessing_spawn = (
+                self._check_multiprocessing_spawn()
+            )  # 新增检查
 
             if self.is_python:
                 self._get_python_info()
@@ -169,6 +173,13 @@ class GPUProcessInfo:
         except Exception as e:
             logger.error(f"Error initializing static info for PID {self.pid}: {e}")
             self.ignore_task = True
+
+    def _check_multiprocessing_spawn(self) -> bool:
+        """检查是否为multiprocessing的spawn进程"""
+        if self.cmdline:
+            # multiprocessing spawn 进程通常命令行包含 '--multiprocessing-fork'
+            return any("--multiprocessing-fork" in cmd for cmd in self.cmdline)
+        return False
 
     def _get_basic_process_info(self):
         """获取基础进程信息"""
@@ -489,7 +500,7 @@ class GPUProcessInfo:
     def check_consecutive_zero_cpu_usage(self) -> bool:
         """检查连续CPU零占用率，返回True表示需要发送报警"""
         # print(f"[{self.pid}]Current CPU percent: {self.cpu_percent}")  # 调试用
-        
+
         if self.cpu_percent < 1.0:  # 容忍极小波动
             self.consecutive_zero_cpu_count += 1
             # print(

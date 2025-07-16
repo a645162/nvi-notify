@@ -91,6 +91,7 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
                 "startTimestamp": int(process_obj.start_time) * 1000,
                 "gpuMemoryUsage": int(process_obj.task_gpu_memory >> 10 >> 10),
                 "gpuMemoryUsageMax": int(process_obj.task_gpu_memory_max >> 10 >> 10),
+                "isMultiprocessingSpawn": process_obj.is_multiprocessing_spawn,
                 "worldSize": process_obj.world_size,
                 "localRank": process_obj.local_rank,
                 "topPythonPid": process_obj.top_python_pid,

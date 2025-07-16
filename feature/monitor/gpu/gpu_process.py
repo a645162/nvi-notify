@@ -27,6 +27,7 @@ from feature.utils.logs import get_logger
 from feature.utils.process import get_top_python_process_pid
 from feature.webhook.msg_handler import MessageHandler
 from feature.webhook.webhook import Webhook
+from feature.utils.spawn import is_multiprocessing_spawn
 
 logger = get_logger()
 sql = get_sql()
@@ -150,9 +151,7 @@ class GPUProcessInfo:
             self._get_basic_process_info()
             self._get_environment_info()
             self._judge_is_python()
-            self.is_multiprocessing_spawn = (
-                self._check_multiprocessing_spawn()
-            )  # 新增检查
+            self.is_multiprocessing_spawn = is_multiprocessing_spawn(self.cmdline)
 
             if self.is_python:
                 self._get_python_info()
@@ -173,13 +172,6 @@ class GPUProcessInfo:
         except Exception as e:
             logger.error(f"Error initializing static info for PID {self.pid}: {e}")
             self.ignore_task = True
-
-    def _check_multiprocessing_spawn(self) -> bool:
-        """检查是否为multiprocessing的spawn进程"""
-        if self.cmdline:
-            # multiprocessing spawn 进程通常命令行包含 '--multiprocessing-fork'
-            return any("--multiprocessing-fork" in cmd for cmd in self.cmdline)
-        return False
 
     def _get_basic_process_info(self):
         """获取基础进程信息"""

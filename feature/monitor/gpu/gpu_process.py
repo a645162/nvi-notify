@@ -109,7 +109,7 @@ class GPUProcessInfo:
         self.finish_time: float = 0.0
         self.running_time_human: str = ""
         self.cpu_percent: float = 0.0
-        self.cpu_times: Optional[dict] = None
+        # self.cpu_times: Optional[dict] = None
         self.gpu_utilization: float = 0.0
         self.group_center_user_realtime_str: str = ""
 
@@ -137,7 +137,8 @@ class GPUProcessInfo:
         """初始化psutil.Process对象"""
         try:
             self._process = psutil.Process(self.pid)
-            # 初始化CPU监控，第一次调用会启动监控
+
+            # 初始化CPU监控，第一次调用会启动监控，第一次总为0
             self._process.cpu_percent()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             self._process = None
@@ -319,19 +320,19 @@ class GPUProcessInfo:
         # 更新CPU利用率 - 使用非阻塞模式
         if self._process:
             try:
-                self.cpu_times = self._process.cpu_times()._asdict()
+                # self.cpu_times = self._process.cpu_times()._asdict()
                 # 使用interval=None获取非阻塞的CPU使用率
                 self.cpu_percent = self._process.cpu_percent(interval=None)
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 self.cpu_percent = 0.0
-                self.cpu_times = None
+                # self.cpu_times = None
             except Exception as e:
                 logger.error(f"Error getting CPU utilization for PID {self.pid}: {e}")
                 self.cpu_percent = 0.0
-                self.cpu_times = None
+                # self.cpu_times = None
         else:
             self.cpu_percent = 0.0
-            self.cpu_times = None
+            # self.cpu_times = None
 
         # 更新GPU利用率
         try:
@@ -468,11 +469,17 @@ class GPUProcessInfo:
         """检查连续GPU零占用率，返回True表示需要发送报警"""
         if self.gpu_utilization == 0.0:
             self.consecutive_zero_gpu_count += 1
+            # print(
+            #     f"[{self.pid}]Consecutive zero GPU count: {self.consecutive_zero_gpu_count}"
+            # )
             if self.consecutive_zero_gpu_count >= self.max_consecutive_zero_count:
                 self.should_send_gpu_alert = True
                 self.already_has_alerted_zero_gpu_usage = True
                 self.total_gpu_zero_alert_count += 1
                 self.consecutive_zero_gpu_count = 0
+                # print(
+                #     f"[{self.pid}]Total GPU zero alert count: {self.total_gpu_zero_alert_count}"
+                # )
                 return True
         else:
             self.consecutive_zero_gpu_count = 0
@@ -481,12 +488,20 @@ class GPUProcessInfo:
 
     def check_consecutive_zero_cpu_usage(self) -> bool:
         """检查连续CPU零占用率，返回True表示需要发送报警"""
-        if self.cpu_percent == 0.0:
+        # print(f"[{self.pid}]Current CPU percent: {self.cpu_percent}")  # 调试用
+        
+        if self.cpu_percent < 1.0:  # 容忍极小波动
             self.consecutive_zero_cpu_count += 1
+            # print(
+            #     f"[{self.pid}]Consecutive zero CPU count: {self.consecutive_zero_cpu_count}"
+            # )
             if self.consecutive_zero_cpu_count >= self.max_consecutive_zero_count:
                 self.should_send_cpu_alert = True
                 self.already_has_alerted_zero_cpu_usage = True
                 self.total_cpu_zero_alert_count += 1
+                # print(
+                #     f"[{self.pid}]Total CPU zero alert count: {self.total_cpu_zero_alert_count}"
+                # )
                 self.consecutive_zero_cpu_count = 0
                 return True
         else:

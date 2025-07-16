@@ -81,6 +81,7 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
         task_list.append(
             {
                 "id": process_obj.pid,
+                "pid": process_obj.pid,
                 "name": process_obj.user.name_cn,
                 "debugMode": process_obj.is_debug,
                 "projectDirectory": process_obj.cwd,

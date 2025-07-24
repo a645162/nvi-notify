@@ -46,7 +46,7 @@ class LarkWebhook(Webhook):
         self,
         msg: str,
         msg_type: MsgType = MsgType.NORMAL,
-        user: UserInfo = None,
+        user: UserInfo | None = None,
         mention_everyone: bool = False,
     ):
         if msg_type != MsgType.WARNING:
@@ -70,7 +70,7 @@ class LarkWebhook(Webhook):
         msg: str,
         webhook_url: str,
         webhook_secret: str,
-        user: UserInfo = None,
+        user: UserInfo | None = None,
         mention_everyone: bool = False,
     ):
         headers = {"Content-Type": "application/json"}
@@ -97,7 +97,7 @@ class LarkWebhook(Webhook):
         r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
         logger.info(f"Lark[text]{r.text}")
 
-    def get_group_msg_mention_header(self, user: UserInfo = None) -> str:
+    def get_group_msg_mention_header(self, user: UserInfo | None = None) -> str:
         if user is None:
             return ""
 
@@ -112,7 +112,7 @@ class LarkWebhook(Webhook):
         return mention_header
 
     def send_lark_message_by_app(
-        self, msg: str, msg_type: MsgType, user: UserInfo = None
+        self, msg: str, msg_type: MsgType, user: UserInfo | None = None
     ):
         tenant_access_token = self.get_lark_app_tenant_access_token()
         if (

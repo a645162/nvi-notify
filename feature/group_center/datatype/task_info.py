@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from feature.monitor.gpu.gpu import GPU
+    from feature.monitor.gpu.gpu_process import GPUProcessInfo
+
+
 class TaskInfoForGroupCenter:
     taskId: str = ""
 
@@ -71,12 +80,7 @@ class TaskInfoForGroupCenter:
 
         return new_size_str
 
-    def update(self, gpu_process_obj):
-        from feature.monitor.gpu.gpu import GPU
-        from feature.monitor.gpu.gpu_process import GPUProcessInfo
-
-        gpu_process_obj: GPUProcessInfo = gpu_process_obj
-
+    def update(self, gpu_process_obj: GPUProcessInfo) -> None:
         # 任务唯一标识符
         self.taskId = gpu_process_obj.task_id
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os
+from pathlib import Path
 
 import loguru
 
@@ -12,14 +12,14 @@ class Logger:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(Logger, cls).__new__(cls)
-            cls._instance._initialize_logger()
+            cls._instance._initialize_logger()  # noqa: SLF001
         return cls._instance
 
     def _initialize_logger(self):
-        log_dir = "./log"
+        log_dir = Path("./log")
 
         check_permission(log_dir)
-        log_path = os.path.join(log_dir, "nvinotify.log")
+        log_path = Path(log_dir / "nvinotify.log")
         self.logger = loguru.logger
         self.logger.add(log_path, retention="30 days")
 

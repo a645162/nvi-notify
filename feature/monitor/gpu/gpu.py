@@ -5,12 +5,12 @@ from nvitop.api.process import GpuProcess
 from nvitop.api.utils import NaType
 
 from config.settings import WEBHOOK_DELAY_SEND_SECONDS
+from feature.database.sqlite import get_sql
 from feature.group_center.data_manager import DataManager
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import TaskState
 from feature.monitor.utils import Converter
-from feature.database.sqlite import get_sql
 from feature.utils.logs import get_logger
 from feature.webhook.msg_handler import MessageHandler
 
@@ -19,7 +19,7 @@ sql = get_sql()
 
 
 class GPU:
-    def __init__(self, gpu_id: int, multi_gpu_machine_flag: bool):
+    def __init__(self, gpu_id: int, multi_gpu_machine_flag: bool) -> None:
         self.gpu_id = gpu_id
         self.is_multi_gpu_machine = multi_gpu_machine_flag
 
@@ -30,18 +30,18 @@ class GPU:
 
         self.get_gpu_info()
 
-    def update(self):
+    def update(self) -> None:
         self.update_datamanager_gpu_status()
         self.update_all_processes_info()
         self.handle_death_processes()
         self.update_new_processes_info()
         self.update_datamanager_gpu_task()
 
-    def update_all_processes_info(self):
+    def update_all_processes_info(self) -> None:
         for pid in self.processes:
             self.processes[pid].update()
 
-    def handle_death_processes(self):
+    def handle_death_processes(self) -> None:
         tmp_process = copy.copy(self.processes)
         cur_gpu_all_processes = self.all_processes
         for pid in tmp_process:
@@ -56,7 +56,11 @@ class GPU:
 
         self.get_all_tasks_msg_body()
 
-    def update_new_processes_info(self):
+    def update_new_processes_info(self) -> None:
+        if self.all_processes is None:
+            self._num_task: int = 0
+            return
+
         for pid, gpu_process in self.all_processes.items():
             if pid in self.processes:
                 continue
@@ -73,7 +77,7 @@ class GPU:
             new_process.gpu = self
             self.processes[pid] = new_process
 
-        self.num_task: int = len(self.processes)
+        self._num_task: int = len(self.processes)
 
     @property
     def all_processes(self) -> dict[int, GpuProcess] | None:
@@ -124,7 +128,7 @@ class GPU:
             return ""
 
     @property
-    def num_task(self):
+    def num_task(self) -> int:
         return self._num_task
 
     @num_task.setter
@@ -134,32 +138,53 @@ class GPU:
 
     @property
     def gpu_utilization(self) -> int | NaType:
-        return self.nvidia_i.gpu_utilization()
+        ret = self.nvidia_i.gpu_utilization()
+        if isinstance(ret, int):
+            return ret
+        return -1
 
     @property
     def memory_utilization(self) -> int | NaType:
-        return self.nvidia_i.memory_utilization()
+        ret = self.nvidia_i.memory_utilization()
+        if isinstance(ret, int):
+            return ret
+        return -1
 
     @property
-    def memory_used_human(self) -> str | NaType:
-        return self.nvidia_i.memory_used_human()
+    def memory_used_human(self) -> str:
+        ret = self.nvidia_i.memory_used_human()
+        if isinstance(ret, str):
+            return ret
+        return "0MiB"
 
     @property
-    def memory_free_human(self) -> str | NaType:
-        return self.nvidia_i.memory_free_human()
+    def memory_free_human(self) -> str:
+        ret = self.nvidia_i.memory_free_human()
+        if isinstance(ret, str):
+            return ret
+        return "0MiB"
 
     @property
-    def memory_percent(self) -> float | NaType:
-        return self.nvidia_i.memory_percent()
+    def memory_percent(self) -> float:
+        ret = self.nvidia_i.memory_percent()
+        if isinstance(ret, float):
+            return ret
+        return -1.0
 
     @property
-    def memory_total(self) -> int | NaType:
+    def memory_total(self) -> int:
         """Total GPU memory in `bytes`."""
-        return self.nvidia_i.memory_total()
+        ret = self.nvidia_i.memory_total()
+        if isinstance(ret, int):
+            return ret
+        return -1
 
     @property
-    def memory_total_human(self) -> str | NaType:
-        return self.nvidia_i.memory_total_human()
+    def memory_total_human(self) -> str:
+        ret = self.nvidia_i.memory_total_human()
+        if isinstance(ret, str):
+            return ret
+        return "0MiB"
 
     @property
     def power_usage(self) -> int:
@@ -171,9 +196,12 @@ class GPU:
 
     @property
     def temperature(self) -> int:
-        return self.nvidia_i.temperature()
+        ret = self.nvidia_i.temperature()
+        if isinstance(ret, int):
+            return ret
+        return -1
 
-    def get_gpu_tasks_num_msg_header(self):
+    def get_gpu_tasks_num_msg_header(self) -> None:
         if self.num_task == 0:
             self.gpu_tasks_num_msg_header = f"{self.name_for_msg}当前无任务\n"
         else:
@@ -219,7 +247,7 @@ class GPU:
 
         return task_msg
 
-    def get_gpu_info(self):
+    def get_gpu_info(self) -> None:
         try:
             if self.gpu_id not in DataManager().gpu_info:
                 DataManager().gpu_info[self.gpu_id] = {}
@@ -237,7 +265,7 @@ class GPU:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
-    def update_datamanager_gpu_status(self):
+    def update_datamanager_gpu_status(self) -> None:
         try:
             # 确保gpu_id对应的字典项存在
             if self.gpu_id not in DataManager().gpu_usage:
@@ -264,7 +292,7 @@ class GPU:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
-    def update_datamanager_gpu_task(self):
+    def update_datamanager_gpu_task(self) -> None:
         # 在监视线程中就进行处理，哪怕这里阻塞了，也就是相当于多加一点延时
         current_gpu_tasks_list = list(self.processes.values()).copy()
         current_gpu_tasks_list.sort(key=lambda x: x.pid)

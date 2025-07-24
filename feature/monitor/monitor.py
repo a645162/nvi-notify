@@ -10,13 +10,13 @@ logger = get_logger()
 
 
 class Monitor:
-    def __init__(self, monitor_name: str):
+    def __init__(self, monitor_name: str) -> None:
         self.monitor_name = monitor_name
         self.thread = None
         self.monitor_thread_work = False
 
-    def start_monitor(self, monitor_thread):
-        def thread_worker():
+    def start_monitor(self, monitor_thread) -> None:
+        def thread_worker() -> None:
             restart_times = 0
 
             while self.monitor_thread_work:
@@ -47,7 +47,7 @@ class Monitor:
         self.monitor_thread_work = True
         self.thread.start()
 
-    def stop_monitor(self):
+    def stop_monitor(self) -> None:
         self.monitor_thread_work = False
         if self.thread is not None and self.thread.is_alive():
             self.thread.join()

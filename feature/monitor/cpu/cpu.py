@@ -72,15 +72,17 @@ class CPU:
             return 0
 
     @staticmethod
-    def get_cpu_physics_core_num():
-        return psutil.cpu_count(logical=False)
+    def get_cpu_physics_core_num() -> int:
+        ret = psutil.cpu_count(logical=False)
+        return ret if ret else -1
 
     @staticmethod
-    def get_cpu_logic_core_num():
-        return psutil.cpu_count(logical=True)
+    def get_cpu_logic_core_num() -> int:
+        ret = psutil.cpu_count(logical=True)
+        return ret if ret else -1
 
     @staticmethod
-    def get_cpu_percent(interval=0):
+    def get_cpu_percent(interval=0) -> float:
         if interval == 0:
             return psutil.cpu_percent()
         return psutil.cpu_percent(interval=interval)

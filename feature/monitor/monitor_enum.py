@@ -11,6 +11,7 @@ class MonitorEnum(Enum):
 
 
 class TaskState(MonitorEnum):
+    UNKNOWN = "unknown"
     NEWBORN = "newborn"
     WORKING = "working"
     DEATH = "death"
@@ -30,17 +31,20 @@ class TaskState(MonitorEnum):
 
 
 class TaskEvent(MonitorEnum):
+    UNKNOWN = "unknown"
     CREATE = "create"
     FINISH = "finish"
 
 
 class MsgType(MonitorEnum):
+    UNKNOWN = "unknown"
     NORMAL = "normal"
     WARNING = "warning"
     DISK_WARNING_TO_USER = "disk_warning_to_user"
 
 
 class WebhookState(MonitorEnum):
+    UNKNOWN = "unknown"
     WORKING = "working"
     SLEEPING = "sleeping"
 

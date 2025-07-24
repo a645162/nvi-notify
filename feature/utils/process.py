@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 from typing import List
 
 import psutil
@@ -77,8 +78,8 @@ def check_is_python_process(pid: int) -> bool:
         if isinstance(pid, str):
             pid = int(pid)
         process = psutil.Process(pid)
-        exe_path = process.exe()
-        exe_name = os.path.basename(exe_path)
+        exe_path = Path(process.exe())
+        exe_name = (exe_path).name
 
         index = exe_name.find(".")
         if index > -1:
@@ -151,9 +152,7 @@ def check_process_exists(pid: int) -> bool:
     """
     try:
         process = psutil.Process(pid)
-        
-        # 检查进程是否真的存在并且正在运行
-        return process.is_running()
+        return process.is_running() # 检查进程是否真的存在并且正在运行
     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
         return False
     except Exception:

@@ -3,6 +3,7 @@ import datetime
 import os
 import platform
 import socket
+from pathlib import Path
 
 import psutil
 from dotenv import dotenv_values, load_dotenv
@@ -18,18 +19,18 @@ from feature.monitor.monitor_enum import AllWebhookName
 from feature.utils.logs import get_logger
 
 logger = get_logger()
-path_base = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+path_base = Path(__file__).parent.parent
 
 
 class EnvironmentManager:
-    all_env_dict: dict[str, str] = {}
+    all_env_dict: dict[str, str | None] = {}
 
     @classmethod
     def load_env_file(
-        cls, env_file: str, verbose: bool = True, override: bool = False
-    ) -> dict[str, str]:
+        cls, env_file: Path, verbose: bool = True, override: bool = False
+    ) -> dict[str, str | None]:
         """Load environment variables from a file."""
-        if os.path.exists(env_file):
+        if env_file.exists():
             load_dotenv(env_file, verbose=verbose, override=override)
             return dotenv_values(env_file)
         logger.error(f"Env file not found: {env_file}")
@@ -38,7 +39,7 @@ class EnvironmentManager:
     @classmethod
     def load_env(cls):
         """Load environment variables from default and extended env files."""
-        default_env_file = os.path.join(path_base, ".env")
+        default_env_file = Path(path_base / ".env")
         env_vars = cls.load_env_file(default_env_file)
 
         debug_mode = is_debug_mode()
@@ -52,14 +53,14 @@ class EnvironmentManager:
         # )
         # env_vars.update(cls.load_env_file(extend_env_file, override=True))
 
-        secure_env_file = os.path.join(os.getcwd(), ".env.secure")
-        dev_env_file = os.path.join(os.getcwd(), ".env.dev")
+        secure_env_file = Path.cwd() / ".env.secure"
+        dev_env_file = Path.cwd() / ".env.dev"
 
-        if os.path.exists(secure_env_file):
+        if secure_env_file.exists():
             logger.info("Load Secure .env File")
             env_vars.update(cls.load_env_file(secure_env_file, override=True))
 
-        if debug_mode and os.path.exists(dev_env_file):
+        if debug_mode and dev_env_file.exists():
             logger.info("Load Dev .env File")
             env_vars.update(cls.load_env_file(dev_env_file, override=True))
 
@@ -180,11 +181,11 @@ class EnvironmentManager:
         """
         current_version = platform.python_version()
 
-        assert version.parse(current_version) >= version.parse(
-            min_required_version
-        ), logger.error(
-            "Python version must be greater than or equal to {}".format(
-                min_required_version
+        assert version.parse(current_version) >= version.parse(min_required_version), (
+            logger.error(
+                "Python version must be greater than or equal to {}".format(
+                    min_required_version
+                )
             )
         )
 

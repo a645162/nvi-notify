@@ -1,8 +1,13 @@
+from typing import TYPE_CHECKING
+
 import psutil
 
 from feature.group_center.data_manager import DataManager
 from feature.monitor.utils import Converter
 
+if TYPE_CHECKING:
+    from psutil._common import sswap
+    from psutil._pslinux import svmem
 
 
 class MemoryInfo:
@@ -19,7 +24,7 @@ class MemoryInfo:
         )
 
     @staticmethod
-    def update():
+    def update() -> None:
         memory_physic = Memory.get_memory_info()
         memory_swap = Memory.get_swap_memory_info()
         DataManager().system_info.update(
@@ -34,9 +39,9 @@ class MemoryInfo:
 
 class Memory:
     @staticmethod
-    def get_memory_info():
+    def get_memory_info() -> svmem:
         return psutil.virtual_memory()
 
     @staticmethod
-    def get_swap_memory_info():
+    def get_swap_memory_info() -> sswap:
         return psutil.swap_memory()

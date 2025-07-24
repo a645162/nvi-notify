@@ -50,7 +50,7 @@ class MessageHandler:
         return msg
 
     @classmethod
-    def enqueue_except_warning_msg(cls, except_type: str):
+    def enqueue_except_warning_msg(cls, except_type: str) -> None:
         """
         异常警告消息函数
         """

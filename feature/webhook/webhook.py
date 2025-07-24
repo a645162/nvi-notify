@@ -107,8 +107,8 @@ class Webhook:
     def send_message(
         self,
         msg: str,
-        msg_type: str = MsgType.NORMAL,
-        user: UserInfo = None,
+        msg_type: MsgType = MsgType.NORMAL,
+        user: UserInfo | None = None,
         mention_everyone: bool = False,
     ):
         raise NotImplementedError(f"{self.webhook_name} should implement this method.")
@@ -167,7 +167,7 @@ class Webhook:
     def enqueue_msg_to_webhook(
         msg: str,
         msg_type: MsgType = MsgType.NORMAL,
-        user: UserInfo = None,
+        user: UserInfo | None = None,
         mention_everyone: bool = False,
         enable_webhook_name: Union[
             list[AllWebhookName], AllWebhookName
@@ -205,7 +205,7 @@ class Webhook:
     def send_warning_msg_to_webhook_all_time(
         msg: str,
         msg_type: MsgType,
-        user: UserInfo = None,
+        user: UserInfo | None = None,
         mention_everyone: bool = False,
     ):
         if msg_type != MsgType.WARNING:

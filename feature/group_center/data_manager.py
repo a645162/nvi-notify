@@ -1,3 +1,5 @@
+from typing import Self
+
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
 from feature.utils.logs import get_logger
 
@@ -17,14 +19,14 @@ logger = get_logger()
 class DataManager:
     _instance = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> Self:
         if not cls._instance:
             cls._instance = super(DataManager, cls).__new__(cls, *args, **kwargs)
             cls._initialize_variables()
         return cls._instance
 
     @classmethod
-    def _initialize_variables(cls):
+    def _initialize_variables(cls) -> None:
         logger.info("Global Variable Initializing...")
 
         cls.disk_info_response_dict: dict[str, dict] = {}
@@ -41,13 +43,11 @@ class DataManager:
         # cls.task_history: list[PythonGPUProcessRecord] = []
 
     @classmethod
-    def get_gpu_count(cls):
+    def get_gpu_count(cls) -> int:
         if len(cls.gpu_usage) != len(cls.gpu_task):
-            raise ValueError(
-                "gpu_usage and gpu_task should have the same length."
-            )
+            raise ValueError("gpu_usage and gpu_task should have the same length.")
         return len(cls.gpu_task)
 
     @classmethod
-    def gpu_updated(cls):
+    def gpu_updated(cls) -> None:
         pass

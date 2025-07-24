@@ -1,17 +1,19 @@
 import datetime
-import os
+from pathlib import Path
 
 from config.user_info import UserConfigParser, UserInfo
-from feature.utils.logs import get_logger
 from feature.utils.common_utils import do_command
+from feature.utils.logs import get_logger
 
 logger = get_logger()
+default_datetime_time = object()
 
 
 def is_webhook_sleep_time(
-    start_time: datetime.time = None, end_time: datetime.time = None
+    start_time: datetime.time | object = default_datetime_time,
+    end_time: datetime.time | object = default_datetime_time,
 ) -> bool:
-    if start_time is None or end_time is None:
+    if isinstance(start_time, object) or isinstance(end_time, object):
         from config.settings import WEBHOOK_SLEEP_TIME_END, WEBHOOK_SLEEP_TIME_START
 
         start_time = WEBHOOK_SLEEP_TIME_START
@@ -52,7 +54,7 @@ def get_seconds_to_sleep_until_end(end_time=None) -> float:
     return time_to_sleep  # 返回整数秒数
 
 
-def get_users():
+def get_users() -> dict[str, UserInfo]:
     users_obj_dict: dict[str, UserInfo] = {}
     user_config_parser = UserConfigParser()
     from config.settings import USE_GROUP_CENTER, EnvironmentManager
@@ -64,7 +66,7 @@ def get_users():
 
     if user_from_local_files:
         user_list_from_files = user_config_parser.get_user_info_by_yaml_from_directory(
-            os.path.join(os.getcwd(), "config/users")
+            Path.cwd() / "config" / "users"
         )
         logger.info(f"User count from file: {len(user_list_from_files)}")
         users_obj_dict.update(user_list_from_files)

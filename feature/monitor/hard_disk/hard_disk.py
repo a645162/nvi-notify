@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import humanfriendly
 
 from config.settings import (
@@ -13,6 +15,7 @@ logger = get_logger()
 
 
 class DiskPurpose(MonitorEnum):
+    UNKNOWN = "unknown"
     SYSTEM = "system"
     DATA = "data"
     SYSTEM_CN = "系统盘"
@@ -20,6 +23,7 @@ class DiskPurpose(MonitorEnum):
 
 
 class DiskType(MonitorEnum):
+    UNKNOWN = "unknown"
     SSD = "ssd"
     HDD = "hdd"
     SSD_CN = "固态硬盘"
@@ -27,10 +31,6 @@ class DiskType(MonitorEnum):
 
 
 class HardDisk:
-    total_str: str
-    used_str: str
-    free_str: str
-
     def __init__(self, name: str, mount_point: str) -> None:
         """
         Args:
@@ -39,9 +39,9 @@ class HardDisk:
         """
         self._name: str = ""
         self._mount_point: str = ""
-        self._type: DiskType = None
-        self._purpose: DiskPurpose = None
-        self._purpose_cn: DiskPurpose = None
+        self._type: DiskType = DiskType.UNKNOWN
+        self._purpose: DiskPurpose = DiskPurpose.UNKNOWN
+        self._purpose_cn: DiskPurpose = DiskPurpose.UNKNOWN
 
         self._high_percentage_used_threshold: int = 0
         self._low_free_bytes_threshold: int = 0
@@ -58,13 +58,13 @@ class HardDisk:
         self._percentage_used_int: int = 0
         self._percentage_used_str: str = ""
 
-        self.name: str = name
-        self.mount_point: str = mount_point
+        self._name: str = name
+        self._mount_point: str = mount_point
 
     def update_info(self, info: list):
-        self.total_str = info[1]
-        self.used_str = info[2]
-        self.free_str = info[3]
+        self._total_str = info[1]
+        self._used_str = info[2]
+        self._free_str = info[3]
         self.percentage_used_str = info[4]
 
     @property
@@ -75,7 +75,7 @@ class HardDisk:
     def name(self, value: str) -> None:
         rotational = "0"
         if "nvme" not in value:
-            rotational = cat_info(f"/sys/block/{value}/queue/rotational").strip()
+            rotational = cat_info(Path(f"/sys/block/{value}/queue/rotational")).strip()
 
         self.type = DiskType.HDD if rotational == "1" else DiskType.SSD
         self._name = value
@@ -224,6 +224,7 @@ class HardDisk:
             return self.low_free_bytes_trigger
         elif self.purpose == DiskPurpose.DATA:
             return self.low_free_bytes_trigger and self.high_percentage_used_trigger
+        return False
 
     @property
     def disk_info(self) -> str:

@@ -7,7 +7,7 @@ from feature.utils.logs import get_logger
 logger = get_logger()
 
 
-def init_remote_env_list():
+def init_remote_env_list() -> None:
     from config.settings import EnvironmentManager
 
     json_str = get_env_json_str()

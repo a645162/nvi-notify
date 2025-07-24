@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
-import os.path
 import re
 from datetime import datetime
 from pathlib import Path
@@ -11,23 +9,23 @@ from group_center.tools.user_env.realtime import show_realtime_str
 from nvitop import GpuProcess
 
 from config.settings import (
+    MAX_CONSECUTIVE_ZERO_COUNT,
     USERS,
     WEBHOOK_DELAY_SEND_SECONDS,
     EnvironmentManager,
-    MAX_CONSECUTIVE_ZERO_COUNT,
 )
 from config.user_info import UserInfo
+from feature.database.sqlite import get_sql
 from feature.group_center import message
 from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
 from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
 from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent, TaskState
-from feature.database.sqlite import get_sql
 from feature.utils.common_utils import do_command
 from feature.utils.logs import get_logger
 from feature.utils.process import get_top_python_process_pid
+from feature.utils.spawn import is_multiprocessing_spawn
 from feature.webhook.msg_handler import MessageHandler
 from feature.webhook.webhook import Webhook
-from feature.utils.spawn import is_multiprocessing_spawn
 
 logger = get_logger()
 sql = get_sql()
@@ -42,15 +40,18 @@ def check_process_env(pid: int, env_name: str, check_parent: bool = False) -> bo
 
         if check_parent:
             parent = process.parent()
-
-            pid = parent.pid
+            if parent is None:
+                return False
+            
+            ppid = parent.pid
 
             # Stop when the parent process is the init process
-            if pid == 1:
+            if ppid == 1:
                 return False
 
-            if check_process_env(pid, env_name):
+            if check_process_env(ppid, env_name):
                 return True
+        return False
     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
         return False
     except Exception as e:
@@ -79,7 +80,7 @@ class GPUProcessInfo:
         # 静态信息 - 初始化时获取，不会变化
         self.cwd: str = ""
         self.command: str = ""
-        self.cmdline: Optional[list] = None
+        self.cmdline: list[str] = [""]
         self.is_debug: Optional[bool] = None
         self.user: Optional[UserInfo] = None
         self.conda_env: str = ""
@@ -97,7 +98,7 @@ class GPUProcessInfo:
         self.cuda_visible_devices: str = ""
         self.screen_session_name: str = ""
         self.cuda_root: str = ""
-        self.cuda_nvcc_bin: str = ""
+        self.cuda_nvcc_bin: Path = Path()
         self.cuda_version: str = ""
         self.top_python_pid: int = -1
         self.nvidia_driver_version: str = ""
@@ -129,13 +130,13 @@ class GPUProcessInfo:
         self.total_cpu_zero_alert_count: int = 0
 
         self._gpu = None
-        self._state: Optional[TaskState] = TaskState.DEFAULT
+        self._state: TaskState = TaskState.DEFAULT
         self._running_time_in_seconds: int = 0
 
         # 初始化静态信息
         self._init_static_info()
 
-    def _init_process(self):
+    def _init_process(self) -> None:
         """初始化psutil.Process对象"""
         try:
             self._process = psutil.Process(self.pid)
@@ -145,7 +146,7 @@ class GPUProcessInfo:
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             self._process = None
 
-    def _init_static_info(self):
+    def _init_static_info(self) -> None:
         """初始化静态信息 - 只在创建对象时调用一次"""
         try:
             self._get_basic_process_info()
@@ -173,7 +174,7 @@ class GPUProcessInfo:
             logger.error(f"Error initializing static info for PID {self.pid}: {e}")
             self.ignore_task = True
 
-    def _get_basic_process_info(self):
+    def _get_basic_process_info(self) -> None:
         """获取基础进程信息"""
         try:
             self.cwd = self.gpu_process.cwd()
@@ -186,14 +187,14 @@ class GPUProcessInfo:
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
 
-    def _get_environment_info(self):
+    def _get_environment_info(self) -> None:
         """获取环境变量相关信息"""
         self._get_conda_env_name()
         self._get_screen_session_name()
         self._get_multi_gpu_info()
         self._get_cuda_info()
 
-    def _get_multi_gpu_info(self):
+    def _get_multi_gpu_info(self) -> None:
         """获取多GPU相关信息"""
         world_size = self._get_env_value("WORLD_SIZE", "").strip()
         self.world_size = int(world_size) if world_size.isdigit() else 0
@@ -212,22 +213,20 @@ class GPUProcessInfo:
             except Exception:
                 self.top_python_pid = -1
 
-    def _get_cuda_info(self):
+    def _get_cuda_info(self) -> None:
         """获取CUDA相关信息"""
         cuda_home = self._get_env_value("CUDA_HOME", "").strip()
-        if cuda_home and os.path.exists(os.path.join(cuda_home, "bin", "nvcc")):
+        if cuda_home and (Path(cuda_home) / "bin" / "nvcc").exists():
             self.cuda_root = cuda_home
-            self.cuda_nvcc_bin = os.path.join(cuda_home, "bin", "nvcc")
+            self.cuda_nvcc_bin = (Path(cuda_home) / "bin" / "nvcc")
         else:
             cuda_toolkit_root = self._get_env_value("CUDAToolkit_ROOT", "").strip()
-            if cuda_toolkit_root and os.path.exists(
-                os.path.join(cuda_toolkit_root, "bin", "nvcc")
-            ):
+            if cuda_toolkit_root and (Path(cuda_toolkit_root) / "bin" / "nvcc").exists():
                 self.cuda_root = cuda_toolkit_root
-                self.cuda_nvcc_bin = os.path.join(cuda_toolkit_root, "bin", "nvcc")
+                self.cuda_nvcc_bin = (Path(cuda_toolkit_root) / "bin" / "nvcc")
 
         # 获取CUDA版本
-        if self.cuda_nvcc_bin and os.path.exists(self.cuda_nvcc_bin):
+        if self.cuda_nvcc_bin and Path(self.cuda_nvcc_bin).exists():
             try:
                 _, result, _ = do_command(f"{self.cuda_nvcc_bin} --version")
                 if "release" in result:
@@ -239,7 +238,7 @@ class GPUProcessInfo:
             except Exception:
                 pass
 
-    def _get_python_info(self):
+    def _get_python_info(self) -> None:
         """获取Python相关信息"""
         if self._process:
             try:
@@ -259,14 +258,14 @@ class GPUProcessInfo:
                 any(keyword in unit for unit in cmdline) for keyword in debug_keywords
             )
 
-    def _get_user_info(self):
+    def _get_user_info(self) -> None:
         """获取用户信息"""
         self.user = USERS.get(self.gpu_process.username(), None)
         if self.user is None and self.cwd:
             cwd = self.cwd + "/"
             self.user = UserInfo.find_user_by_path(USERS, cwd, is_project_path=True)
 
-    def _get_project_info(self):
+    def _get_project_info(self) -> None:
         """获取项目信息"""
         if self.cwd:
             self.project_name = self.cwd.split("/")[-1].strip()
@@ -282,7 +281,7 @@ class GPUProcessInfo:
                     else file_name.strip()
                 )
 
-    def update(self):
+    def update(self) -> None:
         """更新动态信息 - 定期调用此方法刷新状态"""
         try:
             self._update_memory_info()
@@ -292,7 +291,7 @@ class GPUProcessInfo:
         except Exception as e:
             logger.error(f"Error updating dynamic info for PID {self.pid}: {e}")
 
-    def _update_memory_info(self):
+    def _update_memory_info(self) -> None:
         """更新内存信息"""
         try:
             if self._process:
@@ -318,7 +317,7 @@ class GPUProcessInfo:
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
 
-    def _update_utilization_info(self):
+    def _update_utilization_info(self) -> None:
         """更新CPU和GPU利用率信息"""
         # 更新CPU利用率 - 使用非阻塞模式
         if self._process:
@@ -348,7 +347,7 @@ class GPUProcessInfo:
             logger.error(f"Error getting GPU utilization for PID {self.pid}: {e}")
             self.gpu_utilization = 0.0
 
-    def _update_user_env(self):
+    def _update_user_env(self) -> None:
         """更新用户环境信息"""
         try:
             self.group_center_user_realtime_str = show_realtime_str(self.pid)
@@ -361,19 +360,19 @@ class GPUProcessInfo:
             return default_value
         return self.process_environ.get(key, default_value)
 
-    def _judge_is_python(self):
+    def _judge_is_python(self) -> None:
         """判断是否为Python进程"""
         try:
             gpu_process_name = self.gpu_process.name()
-            self.is_python = gpu_process_name in ["python", "yolo"] or (
-                self.cmdline and any("python" in cmd for cmd in self.cmdline)
+            self.is_python = gpu_process_name in ["python", "yolo"] or any(
+                "python" in cmd for cmd in self.cmdline
             )
         except Exception as e:
             if "process no longer exists" not in str(e):
                 logger.warn(e)
             self.is_python = False
 
-    def _get_conda_env_name(self):
+    def _get_conda_env_name(self) -> None:
         """获取conda环境名"""
         pattern = r"envs/(.*?)/bin/python "
         match = re.search(pattern, self.command)
@@ -394,7 +393,7 @@ class GPUProcessInfo:
     def _get_nvidia_driver_version(self) -> str:
         """获取NVIDIA驱动版本"""
         try:
-            with open("/proc/driver/nvidia/version", "r") as f:
+            with Path.open(Path("/proc/driver/nvidia/version"), "r") as f:
                 content = f.read()
             match = re.search(r"Kernel Module {2}(\d+\.\d+\.\d+)", content)
             if match:
@@ -437,16 +436,11 @@ class GPUProcessInfo:
         self._running_time_in_seconds = new_running_time_in_seconds
 
     @property
-    def state(self):
+    def state(self) -> TaskState:
         return self._state
 
     @state.setter
-    def state(self, new_state: TaskState.__members__):
-        if not isinstance(new_state, TaskState):
-            raise ValueError(
-                f"new_state must be an instance of TaskState, got {new_state}"
-            )
-
+    def state(self, new_state: TaskState) -> None:
         if self._state == new_state:
             return
 
@@ -621,12 +615,12 @@ def log_task_info(process_info: dict, task_event: TaskEvent):
         raise ValueError("task_event is None")
 
     logfile_dir_path = Path("./log")
-    if not os.path.exists(logfile_dir_path):
-        os.makedirs(logfile_dir_path)
+    if not logfile_dir_path.exists():
+        Path.mkdir(logfile_dir_path)
 
     task = TaskInfoForWebHook(process_info, task_event)
 
-    with open(logfile_dir_path / "user_task.log", "a") as log_writer:
+    with Path.open(logfile_dir_path / "user_task.log", "a") as log_writer:
         if task_event == TaskEvent.CREATE:
             output_log = (
                 f"{task.gpu_name}"

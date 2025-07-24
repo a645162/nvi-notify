@@ -1,6 +1,7 @@
 import os
 import sys
 
+
 def check_is_linux() -> bool:
     return sys.platform == "linux"
 

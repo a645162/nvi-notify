@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-
 import json
-import os
-from glob import glob
+from pathlib import Path
 
 import chardet
 import yaml
@@ -65,7 +63,7 @@ class UserInfo:
 
 
 class UserConfigParser:
-    def get_user_info_by_json_from_directory(self):
+    def get_user_info_by_json_from_directory(self) -> None:
         pass
 
     def get_json_user_config_from_group_center(self) -> dict[str, UserInfo]:
@@ -91,7 +89,7 @@ class UserConfigParser:
         return user_info_obj_dict
 
     def get_user_info_by_yaml_from_directory(
-        self, directory: str = ""
+        self, directory: Path = Path()
     ) -> dict[str, UserInfo]:
         yaml_files_path_list = self.get_user_config_files_path(directory, "yaml")
         dict_list = []
@@ -127,26 +125,24 @@ class UserConfigParser:
 
     @staticmethod
     def get_user_config_files_path(
-        directory: str = "", extension: str = "yaml"
-    ) -> list:
-        if len(directory) == 0:
-            directory = os.path.dirname(os.path.abspath(__file__))
+        directory: Path = Path(), extension: str = "yaml"
+    ) -> list[Path]:
+        if not directory.exists():
+            directory = Path(__file__).resolve().parent
             print("Default User Dir:", directory)
 
         recursive = True
         if recursive:
-            search_path = os.path.join(directory, f"**/*.{extension}")
+            files_path_list = [p for p in directory.rglob(f"**/*.{extension}")]
         else:
-            search_path = os.path.join(directory, f"*.{extension}")
-
-        files_path_list = glob(search_path, recursive=recursive)
+            files_path_list = [p for p in directory.glob(f"*.{extension}")]
 
         return files_path_list
 
     @staticmethod
-    def parse_yaml(yaml_file: str) -> dict:
+    def parse_yaml(yaml_file: Path) -> dict:
         # Check Encoding
-        with open(yaml_file, "rb") as f:
+        with Path.open(yaml_file, "rb") as f:
             raw_data = f.read()
             result_encoding = chardet.detect(raw_data)
             encoding = result_encoding["encoding"]

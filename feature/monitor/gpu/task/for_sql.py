@@ -18,7 +18,7 @@ class TaskInfoForSQL:
         )
         self._gpu_mem_usage_max: str = info.get("task_gpu_memory_max_human", "0MiB")
 
-        self._task_state: str = (
+        self._task_state: TaskState = (
             new_state
             if new_state is not None
             else info.get("_state", TaskState.NEWBORN)
@@ -72,11 +72,11 @@ class TaskInfoForSQL:
         return self._gpu_mem_usage_max
 
     @property
-    def task_state(self) -> str:
+    def task_state(self) -> TaskState:
         return self._task_state
 
     @task_state.setter
-    def task_state(self, state: str) -> None:
+    def task_state(self, state: TaskState) -> None:
         self._task_state = state
 
     @property

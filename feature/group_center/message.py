@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from group_center.core.feature.machine_message import new_message_enqueue
 
 from config.settings import SERVER_NAME, SERVER_NAME_SHORT, USE_GROUP_CENTER
@@ -5,23 +9,23 @@ from feature.group_center.datatype.task_info import TaskInfoForGroupCenter
 from feature.monitor.monitor_enum import TaskEvent
 from feature.utils.logs import get_logger
 
+if TYPE_CHECKING:
+    from feature.monitor.gpu.gpu_process import GPUProcessInfo
+
 logger = get_logger()
 
 
-def gpu_monitor_start(gpu_id: int):
+def gpu_monitor_start(gpu_id: int) -> None:
     if not USE_GROUP_CENTER:
         return
 
     logger.info(f"[Group Center] Gpu{gpu_id} Monitor Start")
 
 
-def gpu_task_message(process_obj, task_event: TaskEvent):
+def gpu_task_message(process_obj: GPUProcessInfo, task_event: TaskEvent) -> None:
     if not USE_GROUP_CENTER:
         return
 
-    from feature.monitor.gpu.gpu_process import GPUProcessInfo
-
-    process_obj: GPUProcessInfo = process_obj
     user_name_cn = getattr(process_obj.user, "name_cn", "Unknown")
 
     logger.info(

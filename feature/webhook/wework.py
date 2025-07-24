@@ -18,8 +18,8 @@ class WeworkWebhook(Webhook):
     def send_message(
         self,
         msg: str,
-        msg_type: str = MsgType.NORMAL,
-        user: UserInfo = None,
+        msg_type: MsgType = MsgType.NORMAL,
+        user: UserInfo | None = None,
         mention_everyone: bool = False,
     ):
         keyword = "main" if msg_type == MsgType.NORMAL else "warning"

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+from pathlib import Path
 
 import humanfriendly
 
@@ -18,7 +19,6 @@ from feature.utils.common_utils import cat_info, do_command
 from feature.utils.logs import get_logger
 from feature.utils.system import check_is_linux, check_is_root
 from feature.webhook.msg_handler import MessageHandler
-
 
 logger = get_logger()
 
@@ -73,7 +73,7 @@ class HardDiskMonitor(Monitor):
 
         self.__generate_api_response_data()
 
-    def __generate_api_response_data(self):
+    def __generate_api_response_data(self) -> None:
         disk_info_dict = {}
 
         for mount_point, disk_obj in self.hard_disk_dict.items():
@@ -92,7 +92,7 @@ class HardDiskMonitor(Monitor):
         DataManager().disk_info_response_dict.clear()
         DataManager().disk_info_response_dict.update(disk_info_dict)
 
-    def hard_disk_monitor_thread(self):
+    def hard_disk_monitor_thread(self) -> None:
         """
         Monitor the hard disk in a separate thread, checking for warnings and sending notifications.
         """
@@ -128,18 +128,19 @@ class HardDiskMonitor(Monitor):
             return
 
         scan_path = ""
+        hd_mp = hard_disk.mount_point.strip()
 
-        if hard_disk.mount_point == "/" or len(hard_disk.mount_point.strip()) == 0:
+        if hd_mp == "/" or len(hd_mp) == 0:
             # root path is not allowed to scan
             return
 
-        if "hdd" in hard_disk.mount_point:
-            if hard_disk.mount_point[-1] == "1":
-                scan_path = f"{hard_disk.mount_point}/data"
-            elif hard_disk.mount_point[-1] == "2":
-                scan_path = f"{hard_disk.mount_point}/data1"
+        if "hdd" in hd_mp:
+            if hd_mp[-1] == "1":
+                scan_path = f"{hd_mp}/data"
+            elif hd_mp[-1] == "2":
+                scan_path = f"{hd_mp}/data1"
         else:
-            scan_path = hard_disk.mount_point.strip()
+            scan_path = hd_mp
 
         du_command = "du -sh *"
         # du_command = "du -lh --max-depth=1"
@@ -176,7 +177,7 @@ class HardDiskMonitor(Monitor):
             and `disk name` as values.
         """
         machine_all_hard_disk_dict = {}
-        results = cat_info("/proc/mounts")
+        results = cat_info(Path("/proc/mounts"))
         for line in results.strip().split("\n"):
             mount_device = line.split(" ")
 
@@ -196,7 +197,7 @@ class HardDiskMonitor(Monitor):
         return machine_all_hard_disk_dict
 
     @staticmethod
-    def parse_dir_size_info(detail_dirs_info: list[str], hard_disk: HardDisk):
+    def parse_dir_size_info(detail_dirs_info: list[str], hard_disk: HardDisk) -> None:
         """
         Parse the directory size information and send warnings if necessary.
 
@@ -228,7 +229,7 @@ class HardDiskMonitor(Monitor):
             )
 
 
-def start_resource_monitor_all():
+def start_resource_monitor_all() -> None:
     """
     Start monitoring all resources, specifically the hard disk.
     """

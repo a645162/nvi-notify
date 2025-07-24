@@ -5,28 +5,23 @@ import time
 from group_center.core.path import cleanup_unused_rt_files
 
 from config.settings import (
+    CPU_CONSECUTIVE_ZERO_ENABLE,
+    GPU_CONSECUTIVE_ZERO_ENABLE,
     GPU_MONITOR_SAMPLING_INTERVAL,
     MAX_CONSECUTIVE_ZERO_COUNT,
     NUM_GPU,
-    WEBHOOK_SEND_LAUNCH_MESSAGE,
-    CPU_CONSECUTIVE_ZERO_ENABLE,
-    GPU_CONSECUTIVE_ZERO_ENABLE,
     SERVER_NAME,
     SERVER_NAME_SHORT,
+    WEBHOOK_SEND_LAUNCH_MESSAGE,
 )
+from feature.database.sqlite import get_sql
 from feature.group_center import message
 from feature.group_center.data_manager import DataManager
-
 from feature.monitor.gpu.gpu import GPU
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
-
 from feature.monitor.monitor import Monitor
 from feature.monitor.monitor_enum import AllWebhookName, MsgType
-
-from feature.database.sqlite import get_sql
-
 from feature.utils.logs import get_logger
-
 from feature.webhook.msg_handler import MessageHandler
 from feature.webhook.webhook import Webhook
 
@@ -35,7 +30,7 @@ sql = get_sql()
 
 
 class NvidiaMonitor(Monitor):
-    def __init__(self, num_gpu: int):
+    def __init__(self, num_gpu: int) -> None:
         super().__init__("GPU")
         self.num_gpu = num_gpu
         self.is_multi_gpu_machine: bool = num_gpu > 1
@@ -58,7 +53,7 @@ class NvidiaMonitor(Monitor):
 
         return gpu_dict
 
-    def gpu_monitor_thread(self):
+    def gpu_monitor_thread(self) -> None:
         while self.monitor_thread_work:
             self.total_num_task = 0
             current_all_processes = {}
@@ -91,8 +86,8 @@ class NvidiaMonitor(Monitor):
             time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
 
     def monitor_gpu_usage_for_processes(
-        self, current_processes: dict[int, "GPUProcessInfo"]
-    ):
+        self, current_processes: dict[int, GPUProcessInfo]
+    ) -> None:
         """监控进程的GPU和CPU占用率，检测连续零占用率"""
         for pid, process_info in current_processes.items():
             # 如果历史记录中存在该进程，使用历史对象并更新其动态信息
@@ -122,8 +117,8 @@ class NvidiaMonitor(Monitor):
         self.cleanup_finished_processes(current_processes)
 
     def cleanup_finished_processes(
-        self, current_processes: dict[int, "GPUProcessInfo"]
-    ):
+        self, current_processes: dict[int, GPUProcessInfo]
+    ) -> None:
         """清理已结束进程的GPU占用率历史记录"""
         from feature.utils.process import check_process_exists
 
@@ -233,7 +228,7 @@ class NvidiaMonitor(Monitor):
 
     def send_combined_zero_usage_alert(
         self, process_info: "GPUProcessInfo", alert_info: dict
-    ):
+    ) -> None:
         """发送综合的零占用率报警"""
         try:
             # 检查dummy逻辑
@@ -342,7 +337,7 @@ class NvidiaMonitor(Monitor):
             logger.error(f"Failed to send combined zero usage alert: {e}")
 
     def _should_send_combined_alert_dummy_check(
-        self, process_info: "GPUProcessInfo"
+        self, process_info: GPUProcessInfo
     ) -> bool:
         """
         综合报警发送前的dummy检测逻辑
@@ -393,14 +388,14 @@ class NvidiaMonitor(Monitor):
         return self._should_send_combined_alert_dummy_check(process_info)
 
     @property
-    def should_send_monitor_launch_msg(self):
+    def should_send_monitor_launch_msg(self) -> bool:
         if not self.monitor_launch_flag:
             return False
         else:
             self.monitor_launch_flag = False
         return WEBHOOK_SEND_LAUNCH_MESSAGE and self.total_num_task > 0
 
-    def send_gpu_monitor_launch_msg(self):
+    def send_gpu_monitor_launch_msg(self) -> None:
         launch_msg_text = []
 
         for gpu in self.gpu_obj_dict.values():
@@ -421,7 +416,7 @@ class NvidiaMonitor(Monitor):
             )
 
 
-def init_global_gpu_var():
+def init_global_gpu_var() -> None:
     default_gpu_info_dict = {
         "gpuName": "NVIDIA GeForce RTX",
         "gpuTDP": "0W",
@@ -444,7 +439,7 @@ def init_global_gpu_var():
     DataManager().gpu_updated()
 
 
-def start_gpu_monitor_all():
+def start_gpu_monitor_all() -> None:
     init_global_gpu_var()
 
     if NUM_GPU == 0:

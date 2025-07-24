@@ -62,7 +62,7 @@ class TaskInfoForGroupCenter:
     commandLine: str = ""
     condaEnvName: str = ""
 
-    def __init__(self, gpu_process_obj):
+    def __init__(self, gpu_process_obj: GPUProcessInfo) -> None:
         self.update(gpu_process_obj=gpu_process_obj)
 
     @staticmethod

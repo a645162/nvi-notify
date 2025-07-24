@@ -1,3 +1,4 @@
+import threading
 from typing import Self
 
 from feature.monitor.gpu.gpu_process import GPUProcessInfo
@@ -18,11 +19,14 @@ logger = get_logger()
 
 class DataManager:
     _instance = None
+    _lock = threading.Lock()
 
-    def __new__(cls, *args, **kwargs) -> Self:
+    def __new__(cls) -> Self:
         if not cls._instance:
-            cls._instance = super(DataManager, cls).__new__(cls, *args, **kwargs)
-            cls._initialize_variables()
+            with cls._lock:
+                if not cls._instance:
+                    cls._instance = super().__new__(cls)
+                    cls._initialize_variables()
         return cls._instance
 
     @classmethod

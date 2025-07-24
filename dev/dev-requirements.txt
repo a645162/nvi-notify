@@ -1,4 +1,2 @@
-pylint
-flake8
-pytest
-ruff
+ruff>=0.12.4
+pyright>=1.1.403

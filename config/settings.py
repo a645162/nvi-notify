@@ -295,7 +295,7 @@ WEB_SERVER_CORS_ENABLE = EnvironmentManager.get_bool("WEB_SERVER_CORS_ENABLE", F
 
 # Flask
 FLASK_SERVER_HOST = EnvironmentManager.get("FLASK_SERVER_HOST", "0.0.0.0")
-FLASK_SERVER_PORT = EnvironmentManager.get("FLASK_SERVER_PORT", "5000")
+FLASK_SERVER_PORT = EnvironmentManager.get_int("FLASK_SERVER_PORT", 5000)
 GPU_BOARD_WEB_URL = EnvironmentManager.get("GPU_BOARD_WEB_URL", "")
 
 FLASK_LOG_DISABLE = EnvironmentManager.get_bool("FLASK_LOG_DISABLE", True)

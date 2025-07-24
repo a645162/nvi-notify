@@ -7,19 +7,19 @@ from feature.utils.logs import get_logger
 logger = get_logger()
 
 
-def start_flask_server_ipv4():
+def start_flask_server_ipv4() -> None:
     logger.info("Starting Flask server(IPV4)...")
     app.run(host=FLASK_SERVER_HOST, port=FLASK_SERVER_PORT, debug=False)
 
 
-def start_flask_server_both():
+def start_flask_server_both() -> None:
     logger.info("Starting Flask server(Both IPV4 and IPV6)...")
     app.run(host="::", port=FLASK_SERVER_PORT, threaded=True)
 
 
-def start_flask_server_both_background():
+def start_flask_server_both_background() -> None:
     class FlaskThread(threading.Thread):
-        def run(self):
+        def run(self) -> None:
             start_flask_server_both()
 
     FlaskThread().start()

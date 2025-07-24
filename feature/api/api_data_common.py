@@ -62,11 +62,11 @@ def get_gpu_usage_dict(gpu_index: int) -> dict:
 
 
 def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
-    from feature.monitor.gpu.gpu_process import GPUProcessInfo
     from config.settings import (
         GPU_MONITOR_SAMPLING_INTERVAL,
         MAX_CONSECUTIVE_ZERO_COUNT,
     )
+    from feature.monitor.gpu.gpu_process import GPUProcessInfo
 
     current_gpu_processes: list[GPUProcessInfo] = DataManager().gpu_task[gpu_index]
 

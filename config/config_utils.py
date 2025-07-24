@@ -82,7 +82,7 @@ def get_users() -> dict[str, UserInfo]:
     return users_obj_dict
 
 
-def set_iptables(port: str) -> None:
+def set_iptables(port: int) -> None:
     cmd_list = [
         f"sudo iptables -I INPUT -p tcp --dport {port} -j ACCEPT",
         f"sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port {port}",

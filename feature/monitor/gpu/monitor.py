@@ -1,35 +1,23 @@
-# -*- coding: utf-8 -*-
 import sys
 import time
 
-from group_center.core.path import cleanup_unused_rt_files
+from group_center.core import path as gc_core_path
+from group_center.core.feature import custom_client_message
 
-from config.settings import (
-    CPU_CONSECUTIVE_ZERO_ENABLE,
-    GPU_CONSECUTIVE_ZERO_ENABLE,
-    GPU_MONITOR_SAMPLING_INTERVAL,
-    MAX_CONSECUTIVE_ZERO_COUNT,
-    NUM_GPU,
-    SERVER_NAME,
-    SERVER_NAME_SHORT,
-    WEBHOOK_SEND_LAUNCH_MESSAGE,
-)
-from feature.database.sqlite import get_sql
-from feature.group_center import message
-from feature.group_center.data_manager import DataManager
-from feature.monitor.gpu.gpu import GPU
-from feature.monitor.gpu.gpu_process import GPUProcessInfo
-from feature.monitor.monitor import Monitor
-from feature.monitor.monitor_enum import AllWebhookName, MsgType
-from feature.utils.logs import get_logger
-from feature.webhook.msg_handler import MessageHandler
-from feature.webhook.webhook import Webhook
+from feature.config import settings
+from feature.database import sqlite
+from feature.group_center import data_manager, message
+from feature.monitor import base, enum
+from feature.monitor.gpu import gpu, gpu_process
+from feature.utils import logs, process
+from feature.webhook import msg_handler, webhook
 
-logger = get_logger()
-sql = get_sql()
+logger = logs.get_logger()
+sql = sqlite.get_sql()
+data_manager_ins = data_manager.get_data_manager()
 
 
-class NvidiaMonitor(Monitor):
+class NvidiaMonitor(base.MonitorBase):
     def __init__(self, num_gpu: int) -> None:
         super().__init__("GPU")
         self.num_gpu = num_gpu
@@ -37,19 +25,17 @@ class NvidiaMonitor(Monitor):
         self.monitor_launch_flag = True
         self.total_num_task = 0
 
-        self.gpu_obj_dict: dict[int, GPU] = self.get_gpu_obj()
+        self.gpu_obj_dict: dict[int, gpu.GPU] = self.get_gpu_obj()
 
-        from feature.monitor.gpu.gpu_process import GPUProcessInfo
-
-        self.all_processes: dict[int, GPUProcessInfo] = {}
+        self.all_processes: dict[int, gpu_process.GPUProcessInfo] = {}
 
         # GPU占用率监控历史记录
-        self.process_gpu_usage_history: dict[int, GPUProcessInfo] = {}
+        self.process_gpu_usage_history: dict[int, gpu_process.GPUProcessInfo] = {}
 
-    def get_gpu_obj(self) -> dict[int, GPU]:
+    def get_gpu_obj(self) -> dict[int, gpu.GPU]:
         gpu_dict = {}
-        for idx in range(NUM_GPU):
-            gpu_dict[idx] = GPU(idx, self.is_multi_gpu_machine)
+        for idx in range(settings.NUM_GPU):
+            gpu_dict[idx] = gpu.GPU(idx, self.is_multi_gpu_machine)
 
         return gpu_dict
 
@@ -58,13 +44,13 @@ class NvidiaMonitor(Monitor):
             self.total_num_task = 0
             current_all_processes = {}
 
-            for idx, gpu in self.gpu_obj_dict.items():
-                gpu.update()
-                self.total_num_task += gpu.num_task
-                current_all_processes.update(gpu.processes)
+            for idx, _gpu in self.gpu_obj_dict.items():
+                _gpu.update()
+                self.total_num_task += _gpu.num_task
+                current_all_processes.update(_gpu.processes)
 
                 # 监控GPU占用率 - 使用增量更新逻辑
-                self.monitor_gpu_usage_for_processes(gpu.processes)
+                self.monitor_gpu_usage_for_processes(_gpu.processes)
 
                 # Get gpu status info for webhook msg
                 if sys.gettrace() or not self.monitor_launch_flag:
@@ -72,7 +58,7 @@ class NvidiaMonitor(Monitor):
 
                 # Send to Group Center
                 message.gpu_monitor_start(idx)
-                sql.check_finish_task(gpu.processes, idx)
+                sql.check_finish_task(_gpu.processes, idx)
 
             # 更新全局进程字典，但不清空历史记录
             self.all_processes = current_all_processes
@@ -81,12 +67,12 @@ class NvidiaMonitor(Monitor):
                 self.send_gpu_monitor_launch_msg()
 
             # Cleanup
-            cleanup_unused_rt_files()
+            gc_core_path.cleanup_unused_rt_files()
 
-            time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
+            time.sleep(settings.GPU_MONITOR_SAMPLING_INTERVAL)
 
     def monitor_gpu_usage_for_processes(
-        self, current_processes: dict[int, GPUProcessInfo]
+        self, current_processes: dict[int, gpu_process.GPUProcessInfo]
     ) -> None:
         """监控进程的GPU和CPU占用率，检测连续零占用率"""
         for pid, process_info in current_processes.items():
@@ -117,14 +103,13 @@ class NvidiaMonitor(Monitor):
         self.cleanup_finished_processes(current_processes)
 
     def cleanup_finished_processes(
-        self, current_processes: dict[int, GPUProcessInfo]
+        self, current_processes: dict[int, gpu_process.GPUProcessInfo]
     ) -> None:
         """清理已结束进程的GPU占用率历史记录"""
-        from feature.utils.process import check_process_exists
 
         finished_pids = []
         for pid in self.process_gpu_usage_history.keys():
-            if pid not in current_processes or not check_process_exists(pid):
+            if pid not in current_processes or not process.check_process_exists(pid):
                 finished_pids.append(pid)
 
         for pid in finished_pids:
@@ -133,7 +118,7 @@ class NvidiaMonitor(Monitor):
     @staticmethod
     def calculate_zero_time_str(count: int) -> str:
         """根据计数计算总共为0的时间"""
-        total_seconds = GPU_MONITOR_SAMPLING_INTERVAL * count
+        total_seconds = settings.GPU_MONITOR_SAMPLING_INTERVAL * count
 
         if total_seconds < 60:
             return f"{total_seconds}秒"
@@ -164,7 +149,9 @@ class NvidiaMonitor(Monitor):
     @staticmethod
     def get_detection_interval_str() -> str:
         """获取检测间隔时间字符串"""
-        total_seconds = GPU_MONITOR_SAMPLING_INTERVAL * MAX_CONSECUTIVE_ZERO_COUNT
+        total_seconds = (
+            settings.GPU_MONITOR_SAMPLING_INTERVAL * settings.MAX_CONSECUTIVE_ZERO_COUNT
+        )
 
         if total_seconds < 60:
             return f"{total_seconds}秒"
@@ -207,8 +194,8 @@ class NvidiaMonitor(Monitor):
         cpu_alert_needed = alert_info["should_send_cpu_alert"]
 
         # 检查启用的监控项
-        gpu_enabled = GPU_CONSECUTIVE_ZERO_ENABLE
-        cpu_enabled = CPU_CONSECUTIVE_ZERO_ENABLE
+        gpu_enabled = settings.GPU_CONSECUTIVE_ZERO_ENABLE
+        cpu_enabled = settings.CPU_CONSECUTIVE_ZERO_ENABLE
 
         # 如果两个监控都启用，则需要都满足条件才发送
         if gpu_enabled and cpu_enabled:
@@ -227,7 +214,7 @@ class NvidiaMonitor(Monitor):
             return False
 
     def send_combined_zero_usage_alert(
-        self, process_info: "GPUProcessInfo", alert_info: dict
+        self, process_info: "gpu_process.GPUProcessInfo", alert_info: dict
     ) -> None:
         """发送综合的零占用率报警"""
         try:
@@ -256,7 +243,10 @@ class NvidiaMonitor(Monitor):
             )
 
             # 添加具体的占用率信息和统计信息
-            if GPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_gpu_alert"]:
+            if (
+                settings.GPU_CONSECUTIVE_ZERO_ENABLE
+                and alert_info["should_send_gpu_alert"]
+            ):
                 # 使用报警次数乘以检测间隔计算总时间
                 gpu_total_zero_time = self.calculate_zero_time_str(
                     process_info.total_gpu_zero_alert_count
@@ -270,7 +260,10 @@ class NvidiaMonitor(Monitor):
                 )
                 alert_msg_parts.append(f"GPU总共0%时间: {gpu_total_zero_time}\n")
 
-            if CPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_cpu_alert"]:
+            if (
+                settings.CPU_CONSECUTIVE_ZERO_ENABLE
+                and alert_info["should_send_cpu_alert"]
+            ):
                 # 使用报警次数乘以检测间隔计算总时间
                 cpu_total_zero_time = self.calculate_zero_time_str(
                     process_info.total_cpu_zero_alert_count
@@ -292,33 +285,24 @@ class NvidiaMonitor(Monitor):
             )
 
             alert_msg = "".join(alert_msg_parts)
-            msg = MessageHandler.handle_normal_text(alert_msg)
+            msg = msg_handler.MessageHandler.handle_normal_text(alert_msg)
 
             # 发送到 webhook
-            Webhook.enqueue_msg_to_webhook(
-                msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
+            webhook.Webhook.enqueue_msg_to_webhook(
+                msg, enum.MsgType.NORMAL, enable_webhook_name=enum.AllWebhookName.ALL
             )
 
-            # 通过 group_center发送到群组
-            from group_center.core.feature.custom_client_message import (
-                machine_message_directly,
-            )
-
-            # Send to lark by Group Center
-            machine_message_directly(
-                server_name=SERVER_NAME,
-                server_name_eng=SERVER_NAME_SHORT,
+            # 通过 group_center 发送到群组
+            custom_client_message.machine_message_directly(
+                server_name=settings.SERVER_NAME,
+                server_name_eng=settings.SERVER_NAME_SHORT,
                 content=msg,
                 at=process_info.user.name_cn if process_info.user else "",
             )
 
             # 通过 group_center 发送给用户
             if process_info.user and process_info.user.name_cn:
-                from group_center.core.feature.custom_client_message import (
-                    machine_user_message_directly,
-                )
-
-                machine_user_message_directly(
+                custom_client_message.machine_user_message_directly(
                     user_name=process_info.user.name_cn, content=msg
                 )
 
@@ -327,52 +311,54 @@ class NvidiaMonitor(Monitor):
             )
 
             # 发送成功后，重置当前报警标志，准备下一轮检测
-            if GPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_gpu_alert"]:
+            if (
+                settings.GPU_CONSECUTIVE_ZERO_ENABLE
+                and alert_info["should_send_gpu_alert"]
+            ):
                 process_info.should_send_gpu_alert = False
 
-            if CPU_CONSECUTIVE_ZERO_ENABLE and alert_info["should_send_cpu_alert"]:
+            if (
+                settings.CPU_CONSECUTIVE_ZERO_ENABLE
+                and alert_info["should_send_cpu_alert"]
+            ):
                 process_info.should_send_cpu_alert = False
 
         except Exception as e:
             logger.error(f"Failed to send combined zero usage alert: {e}")
 
     def _should_send_combined_alert_dummy_check(
-        self, process_info: GPUProcessInfo
+        self, process_info: gpu_process.GPUProcessInfo
     ) -> bool:
         """
         综合报警发送前的dummy检测逻辑
         """
-        # 示例条件（可以根据需要修改）：
-        # 1. 检查进程是否是调试模式
-        if hasattr(process_info, "is_debug") and process_info.is_debug:
+        if (
+            process_info.is_debug
+            or process_info.running_time_in_seconds < 300
+            or process_info.ignore_task
+        ):
             return False
-
-        # 2. 检查运行时间是否足够长
-        if process_info.running_time_in_seconds < 300:  # 5分钟
-            return False
-
-        # 3. 检查是否是忽略的任务
-        if process_info.ignore_task:
-            return False
-
-        # 4. 其他自定义条件...
 
         return True
 
-    def send_zero_cpu_usage_alert(self, process_info: "GPUProcessInfo"):
+    def send_zero_cpu_usage_alert(
+        self, process_info: "gpu_process.GPUProcessInfo"
+    ) -> None:
         """发送CPU零占用率报警（已废弃，请使用综合报警）"""
         logger.warning(
             "send_zero_cpu_usage_alert is deprecated, use send_combined_zero_usage_alert instead"
         )
 
-    def send_zero_gpu_usage_alert(self, process_info: "GPUProcessInfo"):
+    def send_zero_gpu_usage_alert(
+        self, process_info: "gpu_process.GPUProcessInfo"
+    ) -> None:
         """发送GPU零占用率报警（已废弃，请使用综合报警）"""
         logger.warning(
             "send_zero_gpu_usage_alert is deprecated, use send_combined_zero_usage_alert instead"
         )
 
     def _should_send_gpu_alert_dummy_check(
-        self, process_info: "GPUProcessInfo"
+        self, process_info: "gpu_process.GPUProcessInfo"
     ) -> bool:
         """
         GPU报警发送前的dummy检测逻辑（已废弃）
@@ -380,7 +366,7 @@ class NvidiaMonitor(Monitor):
         return self._should_send_combined_alert_dummy_check(process_info)
 
     def _should_send_cpu_alert_dummy_check(
-        self, process_info: "GPUProcessInfo"
+        self, process_info: "gpu_process.GPUProcessInfo"
     ) -> bool:
         """
         CPU报警发送前的dummy检测逻辑（已废弃）
@@ -393,26 +379,26 @@ class NvidiaMonitor(Monitor):
             return False
         else:
             self.monitor_launch_flag = False
-        return WEBHOOK_SEND_LAUNCH_MESSAGE and self.total_num_task > 0
+        return settings.WEBHOOK_SEND_LAUNCH_MESSAGE and self.total_num_task > 0
 
     def send_gpu_monitor_launch_msg(self) -> None:
         launch_msg_text = []
 
-        for gpu in self.gpu_obj_dict.values():
-            gpu.get_all_tasks_msg_body()
+        for _gpu in self.gpu_obj_dict.values():
+            _gpu.get_all_tasks_msg_body()
             launch_msg_text.append(
                 "\n"
-                + gpu.gpu_tasks_num_msg_header
-                + gpu.all_tasks_msg_body
-                + gpu.gpu_status_msg
+                + _gpu.gpu_tasks_num_msg_header
+                + _gpu.all_tasks_msg_body
+                + _gpu.gpu_status_msg
             )
 
         if len(launch_msg_text) > 0:
-            msg = MessageHandler.handle_normal_text(
+            msg = msg_handler.MessageHandler.handle_normal_text(
                 "GPU监控启动" + "".join(launch_msg_text)
             )
-            Webhook.enqueue_msg_to_webhook(
-                msg, MsgType.NORMAL, enable_webhook_name=AllWebhookName.ALL
+            webhook.Webhook.enqueue_msg_to_webhook(
+                msg, enum.MsgType.NORMAL, enable_webhook_name=enum.AllWebhookName.ALL
             )
 
 
@@ -430,23 +416,27 @@ def init_global_gpu_var() -> None:
         "gpuTemperature": "0",
     }
 
-    DataManager().gpu_info.extend(default_gpu_info_dict.copy() for _ in range(NUM_GPU))
-    DataManager().gpu_usage.extend(
-        default_gpu_usage_dict.copy() for _ in range(NUM_GPU)
+    data_manager_ins.gpu_info.extend(
+        default_gpu_info_dict.copy() for _ in range(settings.NUM_GPU)
     )
-    DataManager().gpu_task.extend([].copy() for _ in range(NUM_GPU))
+    data_manager_ins.gpu_usage.extend(
+        default_gpu_usage_dict.copy() for _ in range(settings.NUM_GPU)
+    )
+    data_manager_ins.gpu_task.extend(
+        [].copy() for _ in range(settings.NUM_GPU)
+    )
 
-    DataManager().gpu_updated()
+    data_manager_ins.gpu_updated()
 
 
 def start_gpu_monitor_all() -> None:
     init_global_gpu_var()
 
-    if NUM_GPU == 0:
+    if settings.NUM_GPU == 0:
         logger.warning("No GPU detected, GPU monitor will not start.")
         return
 
-    nvidia_monitor = NvidiaMonitor(NUM_GPU)
+    nvidia_monitor = NvidiaMonitor(settings.NUM_GPU)
     nvidia_monitor.start_monitor(nvidia_monitor.gpu_monitor_thread)
 
 

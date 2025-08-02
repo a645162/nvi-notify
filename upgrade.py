@@ -1,7 +1,7 @@
 import os
 
 
-def get_upgrade_command(package_name: str):
+def get_upgrade_command(package_name: str) -> str:
     return f"pip install --upgrade {package_name}"
 
 

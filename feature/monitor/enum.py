@@ -2,11 +2,11 @@ from enum import Enum
 
 
 class MonitorEnum(Enum):
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.value)
 
     @classmethod
-    def check_value_valid(cls, value) -> bool:
+    def check_value_valid(cls, value) -> bool:  # noqa: ANN001
         return value in cls._value2member_map_
 
 
@@ -26,7 +26,7 @@ class TaskState(MonitorEnum):
     }
 
     @classmethod
-    def check_valid_transition(cls, state, new_state) -> bool:
+    def check_valid_transition(cls, state: "TaskState", new_state: "TaskState") -> bool:
         return (state.value, new_state.value) in cls._allowed_transitions.value
 
 

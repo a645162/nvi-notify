@@ -5,31 +5,28 @@ import os
 import threading
 import time
 from queue import Queue
-from typing import Union
 
-from config.config_utils import get_seconds_to_sleep_until_end, is_webhook_sleep_time
-from config.settings import WEBHOOK_NAME
-from config.user_info import UserInfo
-from feature.monitor.monitor_enum import AllWebhookName, MsgType, WebhookState
-from feature.utils.logs import get_logger
+from feature.config import config_utils, settings, user_info
+from feature.monitor import enum
+from feature.utils import logs
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
 class Webhook:
     def __init__(self, webhook_name: str, webhook_url_header: str) -> None:
         self.webhook_name = webhook_name.lower()
-        if not AllWebhookName.check_value_valid(self.webhook_name):
+        if not enum.AllWebhookName.check_value_valid(self.webhook_name):
             logger.error(f"{webhook_name}'s webhook is not supported!")
             raise ValueError(f"{webhook_name}'s webhook is not supported!")
 
         self.webhook_url_header = webhook_url_header.lower().strip()
 
         self._webhook_url_main = self.get_webhook_url(
-            os.getenv(f"WEBHOOK_{webhook_name.upper()}_DEPLOY")
+            os.getenv(f"WEBHOOK_{webhook_name.upper()}_DEPLOY")  # type: ignore
         )
         self._webhook_url_warning = self.get_webhook_url(
-            os.getenv(f"WEBHOOK_{webhook_name.upper()}_DEV")
+            os.getenv(f"WEBHOOK_{webhook_name.upper()}_DEV")  # type: ignore
         )
 
         self._webhook_secret_main = os.getenv(
@@ -39,7 +36,7 @@ class Webhook:
             f"WEBHOOK_{webhook_name.upper()}_DEV_SECRET", ""
         )
 
-        self._webhook_state = WebhookState.WORKING
+        self._webhook_state = enum.WebhookState.WORKING
 
         self.msg_queue = Queue()
         self.warning_msg_queue = Queue()
@@ -81,7 +78,7 @@ class Webhook:
         if value:
             self._webhook_secret_warning = value.strip()
 
-    def get_webhook_url(self, webhook_api: str):
+    def get_webhook_url(self, webhook_api: str) -> str:
         webhook_api = webhook_api.strip()
         if len(webhook_api) == 0:
             logger.warning(f"Illegal {self.webhook_name} Webhook!")
@@ -107,21 +104,21 @@ class Webhook:
     def send_message(
         self,
         msg: str,
-        msg_type: MsgType = MsgType.NORMAL,
-        user: UserInfo | None = None,
+        msg_type: enum.MsgType = enum.MsgType.NORMAL,
+        user: user_info.UserInfo | None = None,
         mention_everyone: bool = False,
     ):
         raise NotImplementedError(f"{self.webhook_name} should implement this method.")
 
     def check_webhook_state(self) -> None:
-        while is_webhook_sleep_time():
-            sleep_seconds = get_seconds_to_sleep_until_end()
+        while config_utils.is_webhook_sleep_time():
+            sleep_seconds = config_utils.get_seconds_to_sleep_until_end()
             logger.info(f"[{self.webhook_name}] Sleep seconds: {sleep_seconds}")
-            if self._webhook_state != WebhookState.SLEEPING:
-                self.webhook_state = WebhookState.SLEEPING
+            if self._webhook_state != enum.WebhookState.SLEEPING:
+                self.webhook_state = enum.WebhookState.SLEEPING
             time.sleep(sleep_seconds)
-        if self._webhook_state != WebhookState.WORKING:
-            self.webhook_state = WebhookState.WORKING
+        if self._webhook_state != enum.WebhookState.WORKING:
+            self.webhook_state = enum.WebhookState.WORKING
 
     def webhook_main_thread(self) -> None:
         logger.info(f"{self.webhook_name}消息线程启动。")
@@ -154,11 +151,11 @@ class Webhook:
                 time.sleep(5)
 
     @property
-    def webhook_state(self) -> WebhookState:
+    def webhook_state(self) -> enum.WebhookState:
         return self._webhook_state
 
     @webhook_state.setter
-    def webhook_state(self, cur_webhook_state) -> None:
+    def webhook_state(self, cur_webhook_state: enum.WebhookState) -> None:
         if self._webhook_state != cur_webhook_state:
             logger.debug(f"[{self.webhook_name}]webhook状态切换为{cur_webhook_state}。")
             self._webhook_state = cur_webhook_state
@@ -166,18 +163,17 @@ class Webhook:
     @staticmethod
     def enqueue_msg_to_webhook(
         msg: str,
-        msg_type: MsgType = MsgType.NORMAL,
-        user: UserInfo | None = None,
+        msg_type: enum.MsgType = enum.MsgType.NORMAL,
+        user: user_info.UserInfo | None = None,
         mention_everyone: bool = False,
-        enable_webhook_name: Union[
-            list[AllWebhookName], AllWebhookName
-        ] = AllWebhookName.ALL,
-    ):
-        assert msg_type == MsgType.NORMAL, logger.error(
-            "msg_type must be in MsgType.NORMAL"
+        enable_webhook_name: list[enum.AllWebhookName]
+        | enum.AllWebhookName = enum.AllWebhookName.ALL,
+    ) -> None:
+        assert msg_type == enum.MsgType.NORMAL, logger.error(
+            "msg_type must be in enum.MsgType.NORMAL"
         )
-        assert isinstance(enable_webhook_name, AllWebhookName), logger.error(
-            "enable_webhook_name must be in WEBHOOK_NAME env, or 'AllWebhookName.ALL'"
+        assert isinstance(enable_webhook_name, enum.AllWebhookName), logger.error(
+            "enable_webhook_name must be in settings.WEBHOOK_NAME env, or 'enum.AllWebhookName.ALL'"
         )
         if user is not None:  # when mention everyone, user is None
             mention_everyone = False
@@ -194,7 +190,7 @@ class Webhook:
             return
 
         for webhook_name in enable_webhook_name_list:
-            if webhook_name.upper() not in WEBHOOK_NAME:
+            if webhook_name.upper() not in settings.WEBHOOK_NAME:
                 continue
             webhook_thread[webhook_name].msg_queue.put_nowait(
                 (msg, msg_type, user, mention_everyone)
@@ -204,12 +200,12 @@ class Webhook:
     @staticmethod
     def send_warning_msg_to_webhook_all_time(
         msg: str,
-        msg_type: MsgType,
-        user: UserInfo | None = None,
+        msg_type: enum.MsgType,
+        user: user_info.UserInfo | None = None,
         mention_everyone: bool = False,
-    ):
-        if msg_type != MsgType.WARNING:
-            raise ValueError("msg_type must be 'MsgType.WARNING'")
+    ) -> None:
+        if msg_type != enum.MsgType.WARNING:
+            raise ValueError("msg_type must be 'enum.MsgType.WARNING'")
 
         if user is not None and mention_everyone:
             raise ValueError("when mention everyone, user is None")
@@ -219,26 +215,26 @@ class Webhook:
             logger.warning("Message is empty!")
             return
 
-        for webhook_name in WEBHOOK_NAME:
-            webhook_name = webhook_name.lower()
-            if webhook_name not in webhook_thread.keys():
+        for webhook_name in settings.WEBHOOK_NAME:
+            _webhook_name = webhook_name.lower()
+            if _webhook_name not in webhook_thread.keys():
                 continue
-            webhook_thread[webhook_name].warning_msg_queue.put(
+            webhook_thread[_webhook_name].warning_msg_queue.put(
                 (msg, msg_type, user, mention_everyone)
             )
-            logger.info(f"[{webhook_name}]警告消息队列添加一条消息。")
+            logger.info(f"[{_webhook_name}]警告消息队列添加一条消息。")
 
     @staticmethod
     def enqueue_warning_msg_for_user_to_webhook(
-        msg: str, user: UserInfo, mention_everyone: bool = False
-    ):
+        msg: str, user: user_info.UserInfo, mention_everyone: bool = False
+    ) -> None:
         msg = msg.strip()
         if len(msg) == 0:
             logger.warning("Message is empty!")
             return
 
         webhook_thread["lark"].msg_queue.put(
-            (msg, MsgType.DISK_WARNING_TO_USER, user, mention_everyone)
+            (msg, enum.MsgType.DISK_WARNING_TO_USER, user, mention_everyone)
         )
         logger.info(
             f"[LarkApp]消息队列添加一条发送至用户[{user.name_cn}]目录大小报警消息。"
@@ -246,7 +242,7 @@ class Webhook:
 
     @staticmethod
     def gen_sign(timestamp: int, secret: str) -> str:
-        string_to_sign = "{}\n{}".format(timestamp, secret)
+        string_to_sign = f"{timestamp}\n{secret}"
         hmac_code = hmac.new(
             string_to_sign.encode("utf-8"), digestmod=hashlib.sha256
         ).digest()
@@ -254,20 +250,19 @@ class Webhook:
         return sign
 
 
-def init_webhook():
-    from feature.webhook.lark import LarkWebhook
-    from feature.webhook.wework import WeworkWebhook
+def init_webhook() -> None:
+    from feature.webhook import lark, wework  # noqa: PLC0415
 
     webhook_classes = {
-        AllWebhookName.WEWORK.value: WeworkWebhook,
-        AllWebhookName.LARK.value: LarkWebhook,
+        enum.AllWebhookName.WEWORK.value: wework.WeworkWebhook,
+        enum.AllWebhookName.LARK.value: lark.LarkWebhook,
     }
 
-    global webhook_thread
+    global webhook_thread  # noqa: PLW0603
     webhook_thread = {}
 
-    for webhook_name in AllWebhookName.ALL.value:  # 实例化所有webhook
-        webhook_name = webhook_name.lower()
+    for _webhook_name in enum.AllWebhookName.ALL.value:  # 实例化所有webhook
+        webhook_name = _webhook_name.lower()
         webhook_thread[webhook_name] = webhook_classes[webhook_name](webhook_name)
         threading.Thread(
             target=webhook_thread[webhook_name].webhook_main_thread

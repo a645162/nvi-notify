@@ -2,8 +2,8 @@ from collections import deque
 
 import psutil
 
-from config.settings import CPU_HIGH_TEMPERATURE_THRESHOLD
-from feature.utils.common_utils import do_command
+from feature.config import settings
+from feature.utils import common_utils
 
 
 class CPU:
@@ -39,9 +39,9 @@ class CPU:
         return self._average_temperature
 
     @average_temperature.setter
-    def average_temperature(self, new_aver_temperature) -> None:
+    def average_temperature(self, new_aver_temperature: float) -> None:
         self.high_aver_temperature_trigger = (
-            new_aver_temperature > CPU_HIGH_TEMPERATURE_THRESHOLD
+            new_aver_temperature > settings.CPU_HIGH_TEMPERATURE_THRESHOLD
         )
         self._average_temperature = new_aver_temperature
 
@@ -64,10 +64,10 @@ class CPU:
     @staticmethod
     def get_cpu_num() -> int:
         command = "cat /proc/cpuinfo | grep 'physical id' | sort -u | wc -l"
-        result_code, result, result_err = do_command(command)
+        code, ret, err = common_utils.do_command(command)
 
-        if result_code == 0:
-            return int(result.strip())
+        if code == 0:
+            return int(ret.strip())
         else:
             return 0
 
@@ -82,7 +82,7 @@ class CPU:
         return ret if ret else -1
 
     @staticmethod
-    def get_cpu_percent(interval=0) -> float:
+    def get_cpu_percent(interval: int = 0) -> float:
         if interval == 0:
             return psutil.cpu_percent()
         return psutil.cpu_percent(interval=interval)

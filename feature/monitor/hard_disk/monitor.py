@@ -1,30 +1,21 @@
-# -*- coding: utf-8 -*-
 import time
 from pathlib import Path
 
 import humanfriendly
 
-from config.config_utils import is_webhook_sleep_time
-from config.settings import (
-    HARD_DISK_MONITOR_PASS_ROOT_CHECK,
-    HARD_DISK_MONITOR_SAMPLING_INTERVAL,
-    HARD_DISK_MOUNT_POINT,
-    USERS,
-)
-from config.user_info import UserInfo
-from feature.group_center.data_manager import DataManager
-from feature.monitor.hard_disk.hard_disk import DiskPurpose, HardDisk
-from feature.monitor.monitor import Monitor
-from feature.utils.common_utils import cat_info, do_command
-from feature.utils.logs import get_logger
-from feature.utils.system import check_is_linux, check_is_root
-from feature.webhook.msg_handler import MessageHandler
+from feature.config import config_utils, settings, user_info
+from feature.group_center import data_manager
+from feature.monitor import base
+from feature.monitor.hard_disk import hard_disk
+from feature.utils import common_utils, logs, system
+from feature.webhook import msg_handler
 
-logger = get_logger()
+logger = logs.get_logger()
+data_manager_ins = data_manager.get_data_manager()
 
 
-class HardDiskMonitor(Monitor):
-    def __init__(self, mount_points: set):
+class HardDiskMonitor(base.MonitorBase):
+    def __init__(self, mount_points: set) -> None:
         """
         Initialize the HardDiskMonitor with the specified mount points.
 
@@ -33,9 +24,9 @@ class HardDiskMonitor(Monitor):
         """
         super().__init__("HardDisk")
         self.mount_points: set = mount_points
-        self.hard_disk_dict: dict[str, HardDisk] = self.get_hard_disk_obj()
+        self.hard_disk_dict: dict[str, hard_disk.HardDisk] = self.get_hard_disk_obj()
 
-    def get_hard_disk_obj(self) -> dict[str, HardDisk]:
+    def get_hard_disk_obj(self) -> dict[str, hard_disk.HardDisk]:
         """
         Create HardDisk objects for each mount point and return them in a dictionary.
 
@@ -48,18 +39,18 @@ class HardDiskMonitor(Monitor):
         for mount_point in self.mount_points:
             if mount_point not in machine_hard_disk_dict:
                 raise Exception(f"{mount_point} is not a valid mount point")
-            hard_disk_dict[mount_point] = HardDisk(
+            hard_disk_dict[mount_point] = hard_disk.HardDisk(
                 machine_hard_disk_dict[mount_point], mount_point
             )
 
         return hard_disk_dict
 
-    def update_disk_detail_info(self):
+    def update_disk_detail_info(self) -> None:
         """
         Update the detailed information of each hard disk by running the `df -h` command.
         """
         command = "df -lh"
-        _, results, _ = do_command(command)
+        _, results, _ = common_utils.do_command(command)
         detail_infos = results.split("\n")
 
         for i, line in enumerate(detail_infos):
@@ -89,8 +80,8 @@ class HardDiskMonitor(Monitor):
                 "type": disk_obj.type.name,
                 "purpose": disk_obj.purpose_cn.value,
             }
-        DataManager().disk_info_response_dict.clear()
-        DataManager().disk_info_response_dict.update(disk_info_dict)
+        data_manager_ins.disk_info_response_dict.clear()
+        data_manager_ins.disk_info_response_dict.update(disk_info_dict)
 
     def hard_disk_monitor_thread(self) -> None:
         """
@@ -99,36 +90,36 @@ class HardDiskMonitor(Monitor):
         disk_warning_cnt = {}
         while self.monitor_thread_work:
             self.update_disk_detail_info()
-            for mount_point, hard_disk in self.hard_disk_dict.items():
-                if not hard_disk.size_warning_trigger:
+            for mount_point, disk in self.hard_disk_dict.items():
+                if not disk.size_warning_trigger:
                     continue
                 logger.warning(f"[硬盘{mount_point}]容量不足！")
 
-                if not is_webhook_sleep_time():
+                if not config_utils.is_webhook_sleep_time():
                     disk_warning_cnt[mount_point] = (
                         disk_warning_cnt.get(mount_point, 0) + 1
                     )
                     if disk_warning_cnt[mount_point] % 4 == 2:
                         logger.warning(f"[硬盘{mount_point}]开始扫描目录占用容量...")
-                        self.get_user_dir_size_info(hard_disk)
+                        self.get_user_dir_size_info(disk)
                         disk_warning_cnt[mount_point] = 0
 
-                    MessageHandler.enqueue_hard_disk_warning_msg(hard_disk.disk_info)
+                    msg_handler.MessageHandler.enqueue_hard_disk_warning_msg(disk.disk_info)
 
-            time.sleep(HARD_DISK_MONITOR_SAMPLING_INTERVAL)
+            time.sleep(settings.HARD_DISK_MONITOR_SAMPLING_INTERVAL)
 
-    def get_user_dir_size_info(self, hard_disk: HardDisk) -> None:
+    def get_user_dir_size_info(self, disk: hard_disk.HardDisk) -> None:
         """
         Get the size information of user directories if the hard disk is for data storage.
 
         Parameters:
-        hard_disk (HardDisk): The HardDisk object representing the hard disk to be checked.
+        disk (hard_disk.HardDisk): The HardDisk object representing the hard disk to be checked.
         """
-        if hard_disk.purpose != DiskPurpose.DATA:
+        if disk.purpose != hard_disk.DiskPurpose.DATA:
             return
 
         scan_path = ""
-        hd_mp = hard_disk.mount_point.strip()
+        hd_mp = disk.mount_point.strip()
 
         if hd_mp == "/" or len(hd_mp) == 0:
             # root path is not allowed to scan
@@ -152,7 +143,7 @@ class HardDiskMonitor(Monitor):
         results = ""
         while retry_count < 5:
             try:
-                result_code, results, _ = do_command(command_args)
+                result_code, results, _ = common_utils.do_command(command_args)
                 if result_code == 0:
                     break  # 命令执行成功，退出循环
             except Exception as e:
@@ -166,7 +157,7 @@ class HardDiskMonitor(Monitor):
             logger.warning(f"Retry {retry_count}-th in progress...")
 
         detail_dirs_info = results.strip().split("\n")
-        self.parse_dir_size_info(detail_dirs_info, hard_disk)
+        self.parse_dir_size_info(detail_dirs_info, disk)
 
     def get_machine_hard_disk_dict(self) -> dict[str, str]:
         """
@@ -177,7 +168,7 @@ class HardDiskMonitor(Monitor):
             and `disk name` as values.
         """
         machine_all_hard_disk_dict = {}
-        results = cat_info(Path("/proc/mounts"))
+        results = common_utils.cat_info(Path("/proc/mounts"))
         for line in results.strip().split("\n"):
             mount_device = line.split(" ")
 
@@ -197,13 +188,13 @@ class HardDiskMonitor(Monitor):
         return machine_all_hard_disk_dict
 
     @staticmethod
-    def parse_dir_size_info(detail_dirs_info: list[str], hard_disk: HardDisk) -> None:
+    def parse_dir_size_info(detail_dirs_info: list[str], disk: hard_disk.HardDisk) -> None:
         """
         Parse the directory size information and send warnings if necessary.
 
         Parameters:
         detail_dirs_info (list[str]): A list of directory size information strings.
-        hard_disk (HardDisk): The HardDisk object representing the hard disk to be checked.
+        disk (HardDisk): The HardDisk object representing the hard disk to be checked.
         """
         for lines in detail_dirs_info:
             if len(lines) == 0:
@@ -215,17 +206,17 @@ class HardDiskMonitor(Monitor):
             ) < humanfriendly.parse_size("10GB", binary=True):
                 continue
 
-            user = UserInfo.find_user_by_path(USERS, dir_path)
+            user = user_info.UserInfo.find_user_by_path(settings.USERS, dir_path)
             if user is None:
                 continue
-            user_dir = hard_disk.handle_disk_info_mountpoint(hard_disk.mount_point)
+            user_dir = disk.handle_disk_info_mountpoint(disk.mount_point)
 
             logger.warning(
-                f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}的个人目录'{user_dir}'占用{dir_size}"
+                f"[硬盘\"{disk.mount_point}\"]{user.name_cn}的个人目录'{user_dir}'占用{dir_size}"
             )
 
-            MessageHandler.enqueue_hard_disk_warning_msg_to_user(
-                hard_disk.disk_info, (user_dir, dir_size), user
+            msg_handler.MessageHandler.enqueue_hard_disk_warning_msg_to_user(
+                disk.disk_info, (user_dir, dir_size), user
             )
 
 
@@ -233,19 +224,19 @@ def start_resource_monitor_all() -> None:
     """
     Start monitoring all resources, specifically the hard disk.
     """
-    if HARD_DISK_MOUNT_POINT is None:
+    if settings.HARD_DISK_MOUNT_POINT is None:
         logger.warning("Cannot get the mountpoint of hard disk.")
         return
 
-    if not check_is_linux():
+    if not system.check_is_linux():
         logger.warning("Resource monitor only support Linux system.")
         return
 
-    if not HARD_DISK_MONITOR_PASS_ROOT_CHECK and not check_is_root():
+    if not settings.HARD_DISK_MONITOR_PASS_ROOT_CHECK and not system.check_is_root():
         logger.warning("Resource monitor only support root user.")
         return
 
-    hard_disk_monitor = HardDiskMonitor(HARD_DISK_MOUNT_POINT)
+    hard_disk_monitor = HardDiskMonitor(settings.HARD_DISK_MOUNT_POINT)
     hard_disk_monitor.start_monitor(hard_disk_monitor.hard_disk_monitor_thread)
 
 

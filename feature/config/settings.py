@@ -1,24 +1,22 @@
-# -*- coding: utf-8 -*-
 import datetime
 import os
 import platform
 import socket
 from pathlib import Path
 
+import dotenv
+import nvitop
 import psutil
-from dotenv import dotenv_values, load_dotenv
 from group_center.core import group_center_machine
-from group_center.utils.log import logger as group_center_logger_utils
-from group_center.utils.process.process_env import is_debug_mode
-from nvitop import Device
+from group_center.utils.log import logger as gc_logger
+from group_center.utils.process import process_env
 from packaging import version
 
-from config.config_utils import get_users, set_iptables
-from config.user_info import UserInfo
-from feature.monitor.monitor_enum import AllWebhookName
-from feature.utils.logs import get_logger
+from feature.config import config_utils, user_info
+from feature.monitor import enum
+from feature.utils import logs
 
-logger = get_logger()
+logger = logs.get_logger()
 path_base = Path(__file__).parent.parent
 
 
@@ -31,18 +29,18 @@ class EnvironmentManager:
     ) -> dict[str, str | None]:
         """Load environment variables from a file."""
         if env_file.exists():
-            load_dotenv(env_file, verbose=verbose, override=override)
-            return dotenv_values(env_file)
+            dotenv.load_dotenv(env_file, verbose=verbose, override=override)
+            return dotenv.dotenv_values(env_file)
         logger.error(f"Env file not found: {env_file}")
         return {}
 
     @classmethod
-    def load_env(cls):
+    def load_env(cls) -> None:
         """Load environment variables from default and extended env files."""
         default_env_file = Path(path_base / ".env")
         env_vars = cls.load_env_file(default_env_file)
 
-        debug_mode = is_debug_mode()
+        debug_mode = process_env.is_debug_mode()
         if debug_mode:
             logger.info("!!!Debug mode is enabled!!!")
         else:
@@ -72,7 +70,7 @@ class EnvironmentManager:
         logger.info("=" * 40)
 
     @classmethod
-    def get(cls, key: str, default=None) -> str:
+    def get(cls, key: str, default=None) -> str:  # noqa: ANN001
         if key in cls.all_env_dict:
             return str(cls.all_env_dict[key]).strip()
 
@@ -160,7 +158,7 @@ class EnvironmentManager:
                         if addr.address == local_ip:
                             interface_ip_dict[interface_name] = addr.address
                         break
-                except socket.error:
+                except OSError:
                     pass
         return interface_ip_dict
 
@@ -183,7 +181,7 @@ class EnvironmentManager:
 
         assert version.parse(current_version) >= version.parse(min_required_version), (
             logger.error(
-                "Python version must be greater than or equal to {}".format(
+                "Python version must be greater than or equal to {}".format(  # noqa: UP032
                     min_required_version
                 )
             )
@@ -216,7 +214,7 @@ NUM_GPU = 0
 
 try:
     if not NO_NVIDIA_GPU:
-        NUM_GPU = Device.count()
+        NUM_GPU = nvitop.Device.count()
 except Exception:
     pass
 
@@ -234,8 +232,8 @@ group_center_machine.set_group_center_host_url(GROUP_CENTER_URL)
 group_center_machine.set_machine_name_full(SERVER_NAME)
 group_center_machine.set_machine_name_short(SERVER_NAME_SHORT)
 group_center_machine.set_machine_password(GROUP_CENTER_PASSWORD)
-group_center_logger_utils.set_print_mode(enabled=False)
-group_center_logger_utils.set_default_logger(logger)
+gc_logger.set_print_mode(enabled=False)
+gc_logger.set_default_logger(logger)
 
 ENV_FROM_GROUP_CENTER = EnvironmentManager.get_bool("ENV_FROM_GROUP_CENTER", False)
 if USE_GROUP_CENTER and ENV_FROM_GROUP_CENTER:
@@ -319,7 +317,7 @@ WEBHOOK_SLEEP_TIME_END = EnvironmentManager.get_time(
 
 WEBHOOK_NAME = set(
     m.strip().upper()
-    for m in EnvironmentManager.get("WEBHOOK_NAME", AllWebhookName.WEWORK.value).split(
+    for m in EnvironmentManager.get("WEBHOOK_NAME", enum.AllWebhookName.WEWORK.value).split(
         ","
     )
 )
@@ -329,9 +327,9 @@ WEBHOOK_LARK_DEPLOY = EnvironmentManager.get("WEBHOOK_LARK_DEPLOY", "")
 WEBHOOK_LARK_DEV = EnvironmentManager.get("WEBHOOK_LARK_DEV", "")
 
 # User
-USERS: dict[str, UserInfo] = get_users()
+USERS: dict[str, user_info.UserInfo] = config_utils.get_users()
 if SUDO_PERMISSION:
-    set_iptables(FLASK_SERVER_PORT)
+    config_utils.set_iptables(FLASK_SERVER_PORT)
 
 # Fix URLs
 GROUP_CENTER_URL = EnvironmentManager.fix_url(GROUP_CENTER_URL)

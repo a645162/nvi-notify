@@ -2,19 +2,14 @@ from pathlib import Path
 
 import humanfriendly
 
-from config.settings import (
-    HARD_DISK_HIGH_PERCENTAGE_THRESHOLD,
-    HARD_DISK_LOW_FREE_GB_THRESHOLD,
-    SUDO_PERMISSION,
-)
-from feature.monitor.monitor_enum import MonitorEnum
-from feature.utils.common_utils import cat_info, do_command
-from feature.utils.logs import get_logger
+from feature.config import settings
+from feature.monitor import enum
+from feature.utils import common_utils, logs
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
-class DiskPurpose(MonitorEnum):
+class DiskPurpose(enum.MonitorEnum):
     UNKNOWN = "unknown"
     SYSTEM = "system"
     DATA = "data"
@@ -22,7 +17,7 @@ class DiskPurpose(MonitorEnum):
     DATA_CN = "数据盘"
 
 
-class DiskType(MonitorEnum):
+class DiskType(enum.MonitorEnum):
     UNKNOWN = "unknown"
     SSD = "ssd"
     HDD = "hdd"
@@ -61,7 +56,7 @@ class HardDisk:
         self._name: str = name
         self._mount_point: str = mount_point
 
-    def update_info(self, info: list):
+    def update_info(self, info: list) -> None:
         self._total_str = info[1]
         self._used_str = info[2]
         self._free_str = info[3]
@@ -75,7 +70,7 @@ class HardDisk:
     def name(self, value: str) -> None:
         rotational = "0"
         if "nvme" not in value:
-            rotational = cat_info(Path(f"/sys/block/{value}/queue/rotational")).strip()
+            rotational = common_utils.cat_info(Path(f"/sys/block/{value}/queue/rotational")).strip()
 
         self.type = DiskType.HDD if rotational == "1" else DiskType.SSD
         self._name = value
@@ -154,9 +149,11 @@ class HardDisk:
         else:
             self.purpose = DiskPurpose.DATA
             self.purpose_cn = DiskPurpose.DATA_CN
-            self.high_percentage_used_threshold = HARD_DISK_HIGH_PERCENTAGE_THRESHOLD
+            self.high_percentage_used_threshold = (
+                settings.HARD_DISK_HIGH_PERCENTAGE_THRESHOLD
+            )
             self.low_free_bytes_threshold = humanfriendly.parse_size(
-                f"{HARD_DISK_LOW_FREE_GB_THRESHOLD}GB", binary=True
+                f"{settings.HARD_DISK_LOW_FREE_GB_THRESHOLD}GB", binary=True
             )
         self._mount_point = value
 
@@ -234,7 +231,7 @@ class HardDisk:
             f"占用率为{self.percentage_used_str}\n"
         )
 
-    def handle_disk_info_mountpoint(self, mount_point: str):
+    def handle_disk_info_mountpoint(self, mount_point: str) -> str:
         linked_dict = {
             "/": "/",
             "/home": "/home",
@@ -247,12 +244,12 @@ class HardDisk:
         return linked_dict[mount_point]
 
     def get_smart_info(self) -> str:
-        if not SUDO_PERMISSION:
+        if not settings.SUDO_PERMISSION:
             return ""
 
         command = f"sudo smartctl -H {self.name}"
         try:
-            result_code, output_stdout, output_stderr = do_command(command)
+            result_code, output_stdout, output_stderr = common_utils.do_command(command)
 
             if result_code != 0:
                 logger.warning(f"Error running smartctl: {output_stderr}")

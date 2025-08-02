@@ -3,15 +3,13 @@ import threading
 from enum import Enum
 from pathlib import Path
 from queue import Empty, Queue
-from typing import Self
 
-from config.settings import NUM_GPU, SERVER_NAME
-from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
-from feature.monitor.monitor_enum import TaskState
-from feature.utils.common_utils import check_permission
-from feature.utils.logs import get_logger
+from feature.config import settings
+from feature.monitor import enum
+from feature.monitor.gpu.task import for_sql
+from feature.utils import common_utils, logs
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
 class SQLAction(Enum):
@@ -23,19 +21,10 @@ class SQLAction(Enum):
 
 
 class SQLite:
-    _instance = None
-    _lock = threading.Lock()
     _queue = Queue()
     _thread = None
 
-    def __new__(cls, db_file_path: Path = Path("task_info.db")) -> Self:
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = super(SQLite, cls).__new__(cls)
-                cls._instance.init(db_file_path)
-            return cls._instance
-
-    def init(self, db_file_path: Path) -> None:
+    def __init__(self, db_file_path: Path) -> None:
         self.table_name_header = "gpu_"
         self.db_file_path: Path = db_file_path
         self._start_worker_thread()
@@ -73,27 +62,27 @@ class SQLite:
             """
             self.cur.execute(sql_text.format(table_name))
 
-    def insert_task_data(self, task_info: TaskInfoForSQL) -> None:
+    def insert_task_data(self, task_info: for_sql.TaskInfoForSQL) -> None:
         self._queue.put((SQLAction.INSERT, task_info))
 
-    def update_task_data(self, task_info: TaskInfoForSQL) -> None:
+    def update_task_data(self, task_info: for_sql.TaskInfoForSQL) -> None:
         self._queue.put((SQLAction.UPDATE, task_info))
 
-    def update_finish_task_data(self, task_info: TaskInfoForSQL) -> None:
+    def update_finish_task_data(self, task_info: for_sql.TaskInfoForSQL) -> None:
         self._queue.put((SQLAction.UPDATE_FINISH, task_info))
 
-    def get_running_task_data(self, gpu_id):
+    def get_running_task_data(self, gpu_id: int) -> list:
         try:
             self.cur.execute(
                 f"SELECT * FROM {self.table_name_header + str(gpu_id)} "
-                f"WHERE finish_timestamp = 0 AND task_state != '{TaskState.DEATH}'"
+                f"WHERE finish_timestamp = 0 AND task_state != '{enum.TaskState.DEATH}'"
             )
             return self.cur.fetchall()
         except Exception as e:
             logger.error(e)
             raise RuntimeError(e)
 
-    def check_finish_task(self, all_task_info: dict, gpu_id: int):
+    def check_finish_task(self, all_task_info: dict, gpu_id: int) -> None:
         self._queue.put((SQLAction.CHECK_FINISH, (all_task_info, gpu_id)))
 
     def select_data(self) -> None:
@@ -108,7 +97,7 @@ class SQLite:
 
     def _worker(self) -> None:
         self.connect()
-        for gpu_id in range(NUM_GPU):
+        for gpu_id in range(settings.NUM_GPU):
             self.create_table(gpu_id)
         while True:
             try:
@@ -128,7 +117,7 @@ class SQLite:
             finally:
                 self._queue.task_done()
 
-    def _insert_task_data(self, task_info: TaskInfoForSQL) -> None:
+    def _insert_task_data(self, task_info: for_sql.TaskInfoForSQL) -> None:
         table_name = self.table_name_header + str(task_info.gpu_id)
         self.cur.execute(
             f"SELECT * FROM {table_name} WHERE task_id = ?", (task_info.task_idx,)
@@ -177,7 +166,7 @@ class SQLite:
         )
         self.conn.commit()
 
-    def _update_task_data(self, task_info: TaskInfoForSQL) -> None:
+    def _update_task_data(self, task_info: for_sql.TaskInfoForSQL) -> None:
         update_sql_text = (
             "UPDATE {} "
             "SET task_state = ?, "
@@ -196,7 +185,7 @@ class SQLite:
         )
         self.conn.commit()
 
-    def _update_finish_task_data(self, task_info: TaskInfoForSQL) -> None:
+    def _update_finish_task_data(self, task_info: for_sql.TaskInfoForSQL) -> None:
         update_sql_text = (
             "UPDATE {} "
             "SET task_state = ?, "
@@ -233,7 +222,7 @@ class SQLite:
                 )
                 self.cur.execute(
                     update_sql_text.format(
-                        self.table_name_header + str(gpu_id), TaskState.DEATH.value
+                        self.table_name_header + str(gpu_id), enum.TaskState.DEATH.value
                     ),
                     (unfinished_task_data[1], gpu_id),
                 )
@@ -244,11 +233,15 @@ class SQLite:
         self._thread.start()
 
 
-task_sql_dir = Path.resolve(Path("./sqlite_data"))
-check_permission(task_sql_dir)
-
-task_sql = SQLite(Path(task_sql_dir / f"{SERVER_NAME}_task_info.db"))
+def setup_sqlit() -> SQLite:
+    task_sql_dir = Path.resolve(Path("./sqlite_data"))
+    common_utils.check_permission(task_sql_dir)
+    task_sql = SQLite(Path(task_sql_dir / f"{settings.SERVER_NAME}_task_info.db"))
+    return task_sql
 
 
 def get_sql() -> SQLite:
-    return task_sql
+    return sqlite
+
+
+sqlite = setup_sqlit()

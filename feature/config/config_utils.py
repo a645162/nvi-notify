@@ -1,11 +1,10 @@
 import datetime
 from pathlib import Path
 
-from config.user_info import UserConfigParser, UserInfo
-from feature.utils.common_utils import do_command
-from feature.utils.logs import get_logger
+from feature.config import user_info
+from feature.utils import common_utils, logs
 
-logger = get_logger()
+logger = logs.get_logger()
 default_datetime_time = object()
 
 
@@ -14,10 +13,10 @@ def is_webhook_sleep_time(
     end_time: datetime.time | object = default_datetime_time,
 ) -> bool:
     if isinstance(start_time, object) or isinstance(end_time, object):
-        from config.settings import WEBHOOK_SLEEP_TIME_END, WEBHOOK_SLEEP_TIME_START
+        from feature.config import settings  # noqa: PLC0415
 
-        start_time = WEBHOOK_SLEEP_TIME_START
-        end_time = WEBHOOK_SLEEP_TIME_END
+        start_time = settings.WEBHOOK_SLEEP_TIME_START
+        end_time = settings.WEBHOOK_SLEEP_TIME_END
 
     if is_within_time_range(start_time, end_time):
         return True
@@ -26,7 +25,8 @@ def is_webhook_sleep_time(
 
 
 def is_within_time_range(
-    start_time=datetime.time(11, 0), end_time=datetime.time(7, 30)
+    start_time: datetime.time = datetime.time(11, 0),
+    end_time: datetime.time = datetime.time(7, 30),
 ) -> bool:
     current_time = datetime.datetime.now().time()
 
@@ -36,11 +36,13 @@ def is_within_time_range(
         return start_time <= current_time or current_time <= end_time
 
 
-def get_seconds_to_sleep_until_end(end_time=None) -> float:
-    if end_time is None:
-        from config.settings import WEBHOOK_SLEEP_TIME_END
+def get_seconds_to_sleep_until_end(
+    end_time: datetime.time | object = default_datetime_time,
+) -> float:
+    if isinstance(end_time, object):
+        from feature.config import settings  # noqa: PLC0415
 
-        end_time = WEBHOOK_SLEEP_TIME_END
+        end_time = settings.WEBHOOK_SLEEP_TIME_END
 
     current_datetime = datetime.datetime.now()
     current_time = current_datetime.time()
@@ -54,15 +56,18 @@ def get_seconds_to_sleep_until_end(end_time=None) -> float:
     return time_to_sleep  # 返回整数秒数
 
 
-def get_users() -> dict[str, UserInfo]:
-    users_obj_dict: dict[str, UserInfo] = {}
-    user_config_parser = UserConfigParser()
-    from config.settings import USE_GROUP_CENTER, EnvironmentManager
+def get_users() -> dict[str, user_info.UserInfo]:
+    from feature.config import settings  # noqa: PLC0415
 
-    user_from_group_center = USE_GROUP_CENTER and EnvironmentManager.get_bool(
-        "USER_FROM_GROUP_CENTER", False
+    users_obj_dict: dict[str, user_info.UserInfo] = {}
+    user_config_parser = user_info.UserConfigParser()
+    user_from_group_center = (
+        settings.USE_GROUP_CENTER
+        and settings.EnvironmentManager.get_bool("USER_FROM_GROUP_CENTER", False)
     )
-    user_from_local_files = EnvironmentManager.get_bool("USER_FROM_LOCAL_FILES", True)
+    user_from_local_files = settings.EnvironmentManager.get_bool(
+        "USER_FROM_LOCAL_FILES", True
+    )
 
     if user_from_local_files:
         user_list_from_files = user_config_parser.get_user_info_by_yaml_from_directory(
@@ -90,7 +95,7 @@ def set_iptables(port: int) -> None:
     ]
     for cmd in cmd_list:
         try:
-            do_command(cmd)
+            common_utils.do_command(cmd)
         except Exception as e:
             logger.warning(f"Set iptables error: {e} when executing {cmd}")
 

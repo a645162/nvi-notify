@@ -2,28 +2,30 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from group_center.core.feature.machine_message import new_message_enqueue
+from group_center.core.feature import machine_message
 
-from config.settings import SERVER_NAME, SERVER_NAME_SHORT, USE_GROUP_CENTER
-from feature.group_center.datatype.task_info import TaskInfoForGroupCenter
-from feature.monitor.monitor_enum import TaskEvent
-from feature.utils.logs import get_logger
+from feature.config import settings
+from feature.group_center.datatype import task_info
+from feature.monitor import enum
+from feature.utils import logs
 
 if TYPE_CHECKING:
-    from feature.monitor.gpu.gpu_process import GPUProcessInfo
+    from feature.monitor.gpu import gpu_process
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
 def gpu_monitor_start(gpu_id: int) -> None:
-    if not USE_GROUP_CENTER:
+    if not settings.USE_GROUP_CENTER:
         return
 
     logger.info(f"[Group Center] Gpu{gpu_id} Monitor Start")
 
 
-def gpu_task_message(process_obj: GPUProcessInfo, task_event: TaskEvent) -> None:
-    if not USE_GROUP_CENTER:
+def gpu_task_message(
+    process_obj: gpu_process.GPUProcessInfo, task_event: enum.TaskEvent
+) -> None:
+    if not settings.USE_GROUP_CENTER:
         return
 
     user_name_cn = getattr(process_obj.user, "name_cn", "Unknown")
@@ -37,12 +39,12 @@ def gpu_task_message(process_obj: GPUProcessInfo, task_event: TaskEvent) -> None
 
     data_dict = {
         "messageType": task_event.value,
-        "serverName": SERVER_NAME,
-        "serverNameEng": SERVER_NAME_SHORT,
+        "serverName": settings.SERVER_NAME,
+        "serverNameEng": settings.SERVER_NAME_SHORT,
     }
 
-    task_info_obj = TaskInfoForGroupCenter(process_obj)
+    task_info_obj = task_info.TaskInfoForGroupCenter(process_obj)
 
     data_dict.update(task_info_obj.__dict__)
 
-    new_message_enqueue(data_dict, "/api/client/gpu_task/info")
+    machine_message.new_message_enqueue(data_dict, "/api/client/gpu_task/info")

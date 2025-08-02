@@ -1,17 +1,16 @@
 import subprocess
 from pathlib import Path
-from typing import Tuple
 
 
 def cat_info(path: Path) -> str:
     try:
         with Path.open(path, "r") as f:
             return f.read()
-    except (IOError, FileNotFoundError) as e:
+    except (OSError, FileNotFoundError) as e:
         return f"Error reading file: {e}"
 
 
-def do_command(cmd: str, text: bool = True) -> Tuple[int, str, str]:
+def do_command(cmd: str, text: bool = True) -> tuple[int, str, str]:
     """
     执行命令行，返回执行状态和输出信息。
 
@@ -26,7 +25,7 @@ def do_command(cmd: str, text: bool = True) -> Tuple[int, str, str]:
     try:
         # 执行命令行，并捕获输出和错误输出
         process = subprocess.run(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=text
+            cmd, check=False, shell=True, capture_output=True, text=text
         )
         output_stdout = process.stdout
         output_stderr = process.stderr

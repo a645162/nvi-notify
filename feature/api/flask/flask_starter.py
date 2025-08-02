@@ -1,20 +1,22 @@
 import threading
 
-from config.settings import FLASK_SERVER_HOST, FLASK_SERVER_PORT
-from feature.api.flask.flask_main import app
-from feature.utils.logs import get_logger
+from feature.api.flask import flask_main
+from feature.config import settings
+from feature.utils import logs
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
 def start_flask_server_ipv4() -> None:
     logger.info("Starting Flask server(IPV4)...")
-    app.run(host=FLASK_SERVER_HOST, port=FLASK_SERVER_PORT, debug=False)
+    flask_main.app.run(
+        host=settings.FLASK_SERVER_HOST, port=settings.FLASK_SERVER_PORT, debug=False
+    )
 
 
 def start_flask_server_both() -> None:
     logger.info("Starting Flask server(Both IPV4 and IPV6)...")
-    app.run(host="::", port=FLASK_SERVER_PORT, threaded=True)
+    flask_main.app.run(host="::", port=settings.FLASK_SERVER_PORT, threaded=True)
 
 
 def start_flask_server_both_background() -> None:

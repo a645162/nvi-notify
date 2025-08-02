@@ -1,21 +1,18 @@
-from typing import Optional, Union
-
-from config.settings import NUM_GPU
-from config.user_info import UserInfo
-from feature.monitor.monitor_enum import TaskEvent
+from feature.config import settings, user_info
+from feature.monitor import enum
 
 
 class TaskInfoForWebHook:
-    def __init__(self, info: dict, task_event: TaskEvent) -> None:
-        self._task_event: TaskEvent = task_event
+    def __init__(self, info: dict, task_event: enum.TaskEvent) -> None:
+        self._task_event: enum.TaskEvent = task_event
         self._pid: int = info.get("pid", 0)
         self._gpu_id: int = info.get("gpu_id", 0)
-        self._gpu_name: str = f"[GPU:{self._gpu_id}]" if NUM_GPU > 1 else "GPU"
+        self._gpu_name: str = f"[GPU:{self._gpu_id}]" if settings.NUM_GPU > 1 else "GPU"
         self._gpu_status_msg: str = info.get("gpu_status_msg", "")
 
-        self._user: UserInfo = info.get("user")
+        self._user: user_info.UserInfo | None = info.get("user")
 
-        self._running_time_human: Optional[str] = info.get("running_time_human")
+        self._running_time_human: str = info.get("running_time_human", "Unknown")
         self._task_gpu_memory_max_human: str = info.get(
             "task_gpu_memory_max_human", "0MiB"
         )
@@ -37,19 +34,19 @@ class TaskInfoForWebHook:
 
     @property
     def num_task(self) -> int:
-        if self.task_event == TaskEvent.CREATE:
+        if self.task_event == enum.TaskEvent.CREATE:
             return self._num_task
-        elif self.task_event == TaskEvent.FINISH:
+        elif self.task_event == enum.TaskEvent.FINISH:
             return max(0, self._num_task - 1)
 
         return self._num_task
 
     @num_task.setter
-    def num_task(self, value):
+    def num_task(self, value: int) -> None:
         self._num_task = value
 
     @property
-    def task_event(self) -> str:
+    def task_event(self) -> enum.TaskEvent:
         return self._task_event
 
     @property
@@ -61,7 +58,7 @@ class TaskInfoForWebHook:
         return self._gpu_name
 
     @property
-    def user(self) -> UserInfo:
+    def user(self) -> user_info.UserInfo | None:
         return self._user
 
     @property
@@ -114,9 +111,9 @@ class TaskInfoForWebHook:
 
     @property
     def task_msg_body(self) -> str:
-        if self.task_event == TaskEvent.CREATE:
+        if self.task_event == enum.TaskEvent.CREATE:
             return self.task_msg_body_for_create
-        elif self.task_event == TaskEvent.FINISH:
+        elif self.task_event == enum.TaskEvent.FINISH:
             return self.task_msg_body_for_finish
         else:
             return ""
@@ -124,7 +121,7 @@ class TaskInfoForWebHook:
     @property
     def task_msg_body_for_create(self) -> str:
         return (
-            f"🚀{self.user.name_cn}的"
+            f"🚀{self.user.name_cn}的"  # type: ignore
             f"({self.screen_name}{self.project_name}-{self.python_file})启动"
             "\n"
         )
@@ -132,7 +129,7 @@ class TaskInfoForWebHook:
     @property
     def task_msg_body_for_finish(self) -> str:
         return (
-            f"☑️{self.user.name_cn}的"
+            f"☑️{self.user.name_cn}的"  # type: ignore
             f"({self.screen_name}{self.project_name}-{self.python_file})完成，"
             f"用时{self.running_time_human}，"
             f"最大显存{self.task_gpu_memory_max_human}"
@@ -140,8 +137,8 @@ class TaskInfoForWebHook:
         )
 
     @staticmethod
-    def get_emoji(key: Union[int, str]) -> str:
-        EMOJI_DICT = {
+    def get_emoji(key: int | str) -> str:
+        EMOJI_DICT = {  # noqa: N806
             0: "0️⃣",
             1: "1️⃣",
             2: "2️⃣",

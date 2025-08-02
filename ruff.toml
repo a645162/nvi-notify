@@ -4,13 +4,14 @@ line-length = 88
 indent-width = 4
 
 # Enable PyFlakes (`F`) and a subset of the pycodestyle (`E`) codes by default.
-select = ["E4", "E7", "E9", "F"]
-extend-select = [
-    "I",     # isort
-    # "N",     # pep8-naming
-    # "UP",    # pyupgrade
+select = [
+    "I",  # isort
+    "N",  # pep8-naming
+    "UP", # pyupgrade
+    "F",  # PyFlakes
+    "PL", # Pylint
     # "YTT",   # flake8-2020
-    # "ANN",   # flake8-annotations
+    "ANN", # flake8-annotations
     # "S",     # flake8-bandit
     # "BLE",   # flake8-blind-except
     # "FBT",   # flake8-boolean-trap
@@ -29,25 +30,24 @@ extend-select = [
     # "T20",   # flake8-print
     # "PYI",   # flake8-pyi
     # "PT",    # flake8-pytest-style
-    "Q",     # flake8-quotes
+    "Q", # flake8-quotes
     # "RUF",   # Ruff-specific rules
-    "SLF",   # flake8-self
+    "SLF", # flake8-self
     # "SIM",   # flake8-simplify
-    "TID",   # flake8-tidy-imports
+    "TID", # flake8-tidy-imports
     # "ARG",   # flake8-unused-arguments
-    "PTH",   # flake8-use-pathlib
+    "PTH", # flake8-use-pathlib
     # "ERA",   # eradicate
     # "PD",    # pandas-vet
     # "PGH",   # pygrep-hooks
-    # "PL",    # Pylint
     # "TRY",   # tryceratops
     # "FLY",   # flynt
     # "NPY",   # NumPy-specific rules
     # "AIR",   # Airflow
     # "PERF",  # Perflint
 ]
-extend-ignore = [
-    "PLR",   # Design related pylint codes
+ignore = [
+    "PLR", # Design related pylint codes
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
@@ -57,15 +57,15 @@ unfixable = []
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
+[lint.per-file-ignores]
+"feature/group_center/datatype/task_info.py" = ["N815"]
+
 [format]
 # Like Black, use double quotes for strings.
 quote-style = "double"
 
 # Like Black, indent with spaces, rather than tabs.
 indent-style = "space"
-
-# Like Black, respect magic trailing commas.
-skip-magic-trailing-comma = false
 
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"

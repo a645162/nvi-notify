@@ -2,20 +2,20 @@ import copy
 
 from nvitop import Device
 from nvitop.api.process import GpuProcess
-from nvitop.api.utils import NaType
 
-from config.settings import WEBHOOK_DELAY_SEND_SECONDS
-from feature.database.sqlite import get_sql
-from feature.group_center.data_manager import DataManager
-from feature.monitor.gpu.gpu_process import GPUProcessInfo
-from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
-from feature.monitor.monitor_enum import TaskState
+from feature.config import settings
+from feature.database import sqlite
+from feature.group_center import data_manager
+from feature.monitor import enum
+from feature.monitor.gpu import gpu_process
+from feature.monitor.gpu.task import for_webhook
 from feature.monitor.utils import Converter
-from feature.utils.logs import get_logger
-from feature.webhook.msg_handler import MessageHandler
+from feature.utils import logs
+from feature.webhook import msg_handler
 
-logger = get_logger()
-sql = get_sql()
+data_manager_ins = data_manager.get_data_manager()
+logger = logs.get_logger()
+sql = sqlite.get_sql()
 
 
 class GPU:
@@ -50,7 +50,7 @@ class GPU:
             self.processes[pid].set_finish_time()
             self.get_all_tasks_msg_body_for_task_finish(pid)
             self.num_task -= 1
-            self.processes[pid].state = TaskState.DEATH
+            self.processes[pid].state = enum.TaskState.DEATH
             del self.processes[pid]
         del tmp_process
 
@@ -61,18 +61,23 @@ class GPU:
             self._num_task: int = 0
             return
 
-        for pid, gpu_process in self.all_processes.items():
+        for pid, _gpu_process in self.all_processes.items():
             if pid in self.processes:
                 continue
 
-            new_process = GPUProcessInfo(pid, self.gpu_id, gpu_process)
+            new_process = _gpu_process.GPUProcessInfo(
+                pid, self.gpu_id, self, _gpu_process
+            )
             if not new_process.is_python:
                 continue
 
-            if new_process.running_time_in_seconds > WEBHOOK_DELAY_SEND_SECONDS:
-                new_process.state = TaskState.WORKING
+            if (
+                new_process.running_time_in_seconds
+                > settings.WEBHOOK_DELAY_SEND_SECONDS
+            ):
+                new_process.state = enum.TaskState.WORKING
             else:
-                new_process.state = TaskState.NEWBORN
+                new_process.state = enum.TaskState.NEWBORN
 
             new_process.gpu = self
             self.processes[pid] = new_process
@@ -85,7 +90,7 @@ class GPU:
             return self.nvidia_i.processes()
         except Exception as e:
             logger.error(e)
-            MessageHandler.enqueue_except_warning_msg("process")
+            msg_handler.MessageHandler.enqueue_except_warning_msg("process")
 
     @property
     def name(self) -> str:
@@ -132,19 +137,19 @@ class GPU:
         return self._num_task
 
     @num_task.setter
-    def num_task(self, value) -> None:
+    def num_task(self, value: int) -> None:
         self._num_task = value
         self.get_gpu_tasks_num_msg_header()
 
     @property
-    def gpu_utilization(self) -> int | NaType:
+    def gpu_utilization(self) -> int:
         ret = self.nvidia_i.gpu_utilization()
         if isinstance(ret, int):
             return ret
         return -1
 
     @property
-    def memory_utilization(self) -> int | NaType:
+    def memory_utilization(self) -> int:
         ret = self.nvidia_i.memory_utilization()
         if isinstance(ret, int):
             return ret
@@ -191,7 +196,7 @@ class GPU:
         return int(round(self.nvidia_i.power_usage() / 1000, 0))
 
     @property
-    def TDP(self) -> int:
+    def TDP(self) -> int:  # noqa: N802
         return int(round(self.nvidia_i.power_limit() / 1000, 0))
 
     @property
@@ -206,7 +211,7 @@ class GPU:
             self.gpu_tasks_num_msg_header = f"{self.name_for_msg}当前无任务\n"
         else:
             self.gpu_tasks_num_msg_header = (
-                f"{TaskInfoForWebHook.get_emoji('呲牙') * self.num_task}"
+                f"{for_webhook.TaskInfoForWebHook.get_emoji('呲牙') * self.num_task}"
                 f"{self.name_for_msg}上正在运行{self.num_task}个任务：\n"
             )
 
@@ -222,7 +227,7 @@ class GPU:
         """all tasks msg"""
         self.get_all_tasks_msg_body_for_task_finish(-1)
 
-    def get_all_tasks_msg_body_for_task_finish(self, finished_pid: int):
+    def get_all_tasks_msg_body_for_task_finish(self, finished_pid: int) -> None:
         """all tasks that exclude finished msg"""
         all_tasks_msg_list = []
         task_idx = 0
@@ -235,12 +240,12 @@ class GPU:
         self.all_tasks_msg_body = "".join(all_tasks_msg_list)
 
     @staticmethod
-    def gen_task_msg_lite(task_idx: int, process: GPUProcessInfo) -> str:
-        idx_emoji = TaskInfoForWebHook.get_emoji((task_idx))
+    def gen_task_msg_lite(task_idx: int, process: gpu_process.GPUProcessInfo) -> str:
+        idx_emoji = for_webhook.TaskInfoForWebHook.get_emoji(task_idx)
         debug_emoji = "🐞" if process.is_debug else ""
         task_msg = (
             f"{idx_emoji}{debug_emoji}"
-            f"用户: {process.user.name_cn}  "
+            f"用户: {process.user.name_cn}  "  # type: ignore
             f"最大显存: {process.task_gpu_memory_max_human}  "
             f"运行时长: {process.running_time_human}\n"
         )
@@ -249,17 +254,17 @@ class GPU:
 
     def get_gpu_info(self) -> None:
         try:
-            if self.gpu_id not in DataManager().gpu_info:
-                DataManager().gpu_info[self.gpu_id] = {}
+            if self.gpu_id not in data_manager_ins.gpu_info:
+                data_manager_ins.gpu_info[self.gpu_id] = {}
 
-            DataManager().gpu_info[self.gpu_id].update(
+            data_manager_ins.gpu_info[self.gpu_id].update(
                 {
                     "gpuName": self.name_short,
                     "gpuTDP": self.TDP,
                 }
             )
 
-            DataManager().gpu_updated()
+            data_manager_ins.gpu_updated()
         except AttributeError as e:
             print(f"Error updating GPU info: Missing attribute {e}")
         except Exception as e:
@@ -268,11 +273,11 @@ class GPU:
     def update_datamanager_gpu_status(self) -> None:
         try:
             # 确保gpu_id对应的字典项存在
-            if self.gpu_id not in DataManager().gpu_usage:
-                DataManager().gpu_usage[self.gpu_id] = {}
+            if self.gpu_id not in data_manager_ins.gpu_usage:
+                data_manager_ins.gpu_usage[self.gpu_id] = {}
 
             # 直接使用字典的update方法更新信息，同时添加异常处理
-            DataManager().gpu_usage[self.gpu_id].update(
+            data_manager_ins.gpu_usage[self.gpu_id].update(
                 {
                     "coreUsage": self.gpu_utilization,
                     "memoryUsage": self.memory_percent,
@@ -286,7 +291,7 @@ class GPU:
                 }
             )
 
-            DataManager().gpu_updated()
+            data_manager_ins.gpu_updated()
         except AttributeError as e:
             print(f"Error updating GPU status: Missing attribute {e}")
         except Exception as e:
@@ -297,6 +302,6 @@ class GPU:
         current_gpu_tasks_list = list(self.processes.values()).copy()
         current_gpu_tasks_list.sort(key=lambda x: x.pid)
 
-        DataManager().gpu_task[self.gpu_id].clear()
-        DataManager().gpu_task[self.gpu_id].extend(current_gpu_tasks_list)
-        DataManager().gpu_updated()
+        data_manager_ins.gpu_task[self.gpu_id].clear()
+        data_manager_ins.gpu_task[self.gpu_id].extend(current_gpu_tasks_list)
+        data_manager_ins.gpu_updated()

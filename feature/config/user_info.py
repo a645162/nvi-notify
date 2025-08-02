@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import json
 from pathlib import Path
 
@@ -22,7 +21,9 @@ class UserInfo:
         )
 
     @staticmethod
-    def find_user_by_path(users: dict, path: str, is_project_path: bool = False):
+    def find_user_by_path(
+        users: dict[str, "UserInfo"], path: str, is_project_path: bool = False
+    ) -> "UserInfo | None":
         if is_project_path:
             path = path.split("data")[1]
         for path_unit in reversed(path.split("/")):
@@ -67,11 +68,9 @@ class UserConfigParser:
         pass
 
     def get_json_user_config_from_group_center(self) -> dict[str, UserInfo]:
-        from group_center.core.feature.remote_config import (
-            get_user_config_json_str,
-        )
+        from group_center.core.feature import remote_config  # noqa: PLC0415
 
-        json_str = get_user_config_json_str()
+        json_str = remote_config.get_user_config_json_str()
 
         if len(json_str) == 0:
             return {}
@@ -111,7 +110,7 @@ class UserConfigParser:
         return user_info_obj_dict
 
     @staticmethod
-    def get_user_info_obj_dict(dict_list) -> dict[str, UserInfo]:
+    def get_user_info_obj_dict(dict_list: list) -> dict[str, UserInfo]:
         user_info_obj_dict: dict[str, UserInfo] = {}
 
         for user_dict in dict_list:
@@ -132,10 +131,8 @@ class UserConfigParser:
             print("Default User Dir:", directory)
 
         recursive = True
-        if recursive:
-            files_path_list = [p for p in directory.rglob(f"**/*.{extension}")]
-        else:
-            files_path_list = [p for p in directory.glob(f"*.{extension}")]
+        glob_func = directory.rglob if recursive else directory.glob
+        files_path_list = [p for p in glob_func(f"*.{extension}")]
 
         return files_path_list
 

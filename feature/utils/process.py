@@ -1,7 +1,6 @@
 import os
 import sys
 from pathlib import Path
-from typing import List
 
 import psutil
 
@@ -51,14 +50,14 @@ def get_process_name(pid: int) -> str:
     return process.name()
 
 
-def get_process_name_list(pid: List[int]) -> List[str]:
+def get_process_name_list(pid: list[int]) -> list[str]:
     """
     Get the process name of the given process ID list.
     """
     return [get_process_name(pid) for pid in pid]
 
 
-def get_chain_of_process(pid: int) -> List[int]:
+def get_chain_of_process(pid: int) -> list[int]:
     """
     Get the chain of process of the given process ID.
     """
@@ -112,7 +111,7 @@ def get_top_python_process_pid(pid: int) -> int:
     return -1
 
 
-def check_parent_process_name_keywords(keywords: List[str]) -> bool:
+def check_parent_process_name_keywords(keywords: list[str]) -> bool:
     pid_list = get_chain_of_process(get_parent_process_pid(-1))
     p_name_list = get_process_name_list(pid_list)
 
@@ -152,7 +151,7 @@ def check_process_exists(pid: int) -> bool:
     """
     try:
         process = psutil.Process(pid)
-        return process.is_running() # 检查进程是否真的存在并且正在运行
+        return process.is_running()  # 检查进程是否真的存在并且正在运行
     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
         return False
     except Exception:

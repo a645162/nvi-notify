@@ -1,15 +1,14 @@
-# -*- coding: utf-8 -*-
 import time
 
-from config.settings import WAIT_TIME_BEFORE_START
 from feature.api.feature_api import start_api_server
+from feature.config.settings import WAIT_TIME_BEFORE_START
 from feature.monitor.cpu.monitor import start_cpu_monitor_all
 from feature.monitor.gpu.monitor import start_gpu_monitor_all
 from feature.monitor.hard_disk.monitor import start_resource_monitor_all
-from feature.utils.logs import get_logger
+from feature.utils import logs
 from feature.webhook.webhook import init_webhook
 
-logger = get_logger()
+logger = logs.get_logger()
 
 if __name__ == "__main__":
     logger.info("Main program is starting...")

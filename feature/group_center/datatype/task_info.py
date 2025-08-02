@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from feature.monitor.gpu.gpu import GPU
-    from feature.monitor.gpu.gpu_process import GPUProcessInfo
+    from feature.monitor.gpu import gpu, gpu_process
 
 
 class TaskInfoForGroupCenter:
@@ -62,7 +61,7 @@ class TaskInfoForGroupCenter:
     commandLine: str = ""
     condaEnvName: str = ""
 
-    def __init__(self, gpu_process_obj: GPUProcessInfo) -> None:
+    def __init__(self, gpu_process_obj: gpu_process.GPUProcessInfo) -> None:
         self.update(gpu_process_obj=gpu_process_obj)
 
     @staticmethod
@@ -80,7 +79,7 @@ class TaskInfoForGroupCenter:
 
         return new_size_str
 
-    def update(self, gpu_process_obj: GPUProcessInfo) -> None:
+    def update(self, gpu_process_obj: gpu_process.GPUProcessInfo) -> None:
         # 任务唯一标识符
         self.taskId = gpu_process_obj.task_id
 
@@ -90,14 +89,14 @@ class TaskInfoForGroupCenter:
         self.taskStatus = gpu_process_obj.state.value
 
         # 用户
-        self.taskUser = gpu_process_obj.user.name_cn
+        self.taskUser = gpu_process_obj.user.name_cn # type: ignore
 
         # 进程信息
         self.taskPid = gpu_process_obj.pid
         self.taskMainMemory = gpu_process_obj.task_main_memory_mb
 
         # GPU 信息
-        gpu: GPU = gpu_process_obj.gpu
+        gpu: gpu.GPU = gpu_process_obj.gpu
         self.gpuUsagePercent = gpu.gpu_utilization
         self.gpuMemoryUsageString = self.__fix_data_size_str(gpu.memory_used_human)
         self.gpuMemoryFreeString = self.__fix_data_size_str(gpu.memory_free_human)

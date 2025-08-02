@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-
 import argparse
 import os
 import time
 
-from config.settings import check_sudo_permission
-from feature.utils.common_utils import do_command
+from feature.config import settings
+from feature.utils import common_utils
 
 path_current_py = os.path.realpath(__file__)
 path_base = os.path.dirname(path_current_py)
@@ -51,15 +49,15 @@ cd "{}" || exit
 )
 
 
-def install(auto_start: bool = False):
+def install(auto_start: bool = False) -> None:
     # Check
 
-    ret = do_command("which nvifan")
+    ret = common_utils.do_command("which nvifan")
     if ret[0] != 0:
         print('"nvifan" is not available')
         exit(1)
 
-    ret = do_command("which python")
+    ret = common_utils.do_command("which python")
     if ret[0] != 0:
         print('"python" is not available???')
         print("R u kidding me?")
@@ -105,7 +103,7 @@ def install(auto_start: bool = False):
         os.system(command)
 
 
-def uninstall():
+def uninstall() -> None:
     if not os.path.exists(target_service_path):
         print("Service file not found.")
         exit(1)
@@ -175,7 +173,7 @@ def main():
 
 if __name__ == "__main__":
     print_info()
-    if not check_sudo_permission():
+    if not settings.EnvironmentManager.check_sudo_permission():
         print("Please run this program as root(Using 'sudo').")
         exit(-1)
 

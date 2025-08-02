@@ -2,15 +2,15 @@ import json
 
 import requests
 
-from config.user_info import UserInfo
-from feature.monitor.monitor_enum import MsgType
-from feature.utils.logs import get_logger
-from feature.webhook.webhook import Webhook
+from feature.config import user_info
+from feature.monitor import enum
+from feature.utils import logs
+from feature.webhook import webhook
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
-class WeworkWebhook(Webhook):
+class WeworkWebhook(webhook.Webhook):
     def __init__(self, webhook_name: str) -> None:
         webhook_url_header = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
         super().__init__(webhook_name, webhook_url_header)
@@ -18,11 +18,11 @@ class WeworkWebhook(Webhook):
     def send_message(
         self,
         msg: str,
-        msg_type: MsgType = MsgType.NORMAL,
-        user: UserInfo | None = None,
+        msg_type: enum.MsgType = enum.MsgType.NORMAL,
+        user: user_info.UserInfo | None = None,
         mention_everyone: bool = False,
-    ):
-        keyword = "main" if msg_type == MsgType.NORMAL else "warning"
+    ) -> None:
+        keyword = "main" if msg_type == enum.MsgType.NORMAL else "warning"
         webhook_url = getattr(self, f"webhook_url_{keyword}")
         if len(webhook_url) == 0:
             return

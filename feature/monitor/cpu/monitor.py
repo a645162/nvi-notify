@@ -1,63 +1,62 @@
-# -*- coding: utf-8 -*-
 import time
 
 import psutil
 
-from config.settings import TEMPERATURE_MONITOR_SAMPLING_INTERVAL
-from feature.monitor.cpu.cpu import CPU
-from feature.monitor.memory.memory import MemoryInfo
-from feature.monitor.monitor import Monitor
-from feature.utils.logs import get_logger
-from feature.webhook.msg_handler import MessageHandler
+from feature.config import settings
+from feature.monitor import base
+from feature.monitor.cpu import cpu
+from feature.monitor.memory import memory
+from feature.utils import logs
+from feature.webhook import msg_handler
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
-class CPUMonitor(Monitor):
-    def __init__(self, num_cpu: int):
+class CPUMonitor(base.MonitorBase):
+    def __init__(self, num_cpu: int) -> None:
         monitor_name = "CPU"
         super().__init__(monitor_name)
         self.num_cpu: int = num_cpu
-        self.cpu_dict: dict[int, CPU] = self.get_cpu_obj()
+        self.cpu_dict: dict[int, cpu.CPU] = self.get_cpu_obj()
 
-    def get_cpu_obj(self) -> dict[int, CPU]:
-        cpu_dict: dict[int, CPU] = {}
+    def get_cpu_obj(self) -> dict[int, cpu.CPU]:
+        cpu_dict: dict[int, cpu.CPU] = {}
         for idx in range(self.num_cpu):
-            cpu_dict[idx] = CPU(idx)
+            cpu_dict[idx] = cpu.CPU(idx)
 
         return cpu_dict
 
-    def cpu_monitor_thread(self):
-        memory = MemoryInfo()
+    def cpu_monitor_thread(self) -> None:
+        _memory = memory.MemoryInfo()
         while self.monitor_thread_work:
-            memory.update()
+            _memory.update()
 
             temperature_info = self.get_cpu_temperature()
             # 检查是否有有效的温度数据
             if not temperature_info or -1.0 in temperature_info.values():
-                MessageHandler.enqueue_except_warning_msg("cpu")
+                msg_handler.MessageHandler.enqueue_except_warning_msg("cpu")
                 time.sleep(10)
                 continue
 
-            for cpu in self.cpu_dict.values():
-                if cpu.idx not in temperature_info:
-                    logger.warning(f"No temperature data available for CPU {cpu.idx}")
+            for _cpu in self.cpu_dict.values():
+                if _cpu.idx not in temperature_info:
+                    logger.warning(f"No temperature data available for CPU {_cpu.idx}")
                     continue
 
-                cpu.temperature = temperature_info[cpu.idx]
-                cpu.average_temperature = sum(cpu.temperature_samples) / len(
-                    cpu.temperature_samples
+                _cpu.temperature = temperature_info[_cpu.idx]
+                _cpu.average_temperature = sum(_cpu.temperature_samples) / len(
+                    _cpu.temperature_samples
                 )
-                if cpu.high_temperature_trigger:
-                    MessageHandler.enqueue_cpu_temperature_warning_msg(
-                        cpu.idx, cpu.temperature
+                if _cpu.high_temperature_trigger:
+                    msg_handler.MessageHandler.enqueue_cpu_temperature_warning_msg(
+                        _cpu.idx, _cpu.temperature
                     )
-                if cpu.high_aver_temperature_trigger:
-                    MessageHandler.enqueue_cpu_aver_temperature_warning_msg(
-                        cpu.idx, cpu.average_temperature
+                if _cpu.high_aver_temperature_trigger:
+                    msg_handler.MessageHandler.enqueue_cpu_aver_temperature_warning_msg(
+                        _cpu.idx, _cpu.average_temperature
                     )
 
-            time.sleep(TEMPERATURE_MONITOR_SAMPLING_INTERVAL)
+            time.sleep(settings.TEMPERATURE_MONITOR_SAMPLING_INTERVAL)
 
     @staticmethod
     def get_cpu_temperature() -> dict[int, float]:
@@ -90,8 +89,8 @@ class CPUMonitor(Monitor):
         return cpu_temperature_info
 
 
-def start_cpu_monitor_all():
-    NUM_CPU = CPU.get_cpu_num()
+def start_cpu_monitor_all() -> None:
+    NUM_CPU = cpu.CPU.get_cpu_num()  # noqa: N806
     if NUM_CPU is None:
         logger.error("Cannot get the number of CPU.")
         return

@@ -1,17 +1,17 @@
-from group_center.tools.dl.ddp_port import check_port
+from group_center.tools.dl import ddp_port
 
-from config.settings import FLASK_SERVER_PORT
-from feature.api.flask.flask_starter import start_flask_server_both_background
-from feature.utils.logs import get_logger
+from feature.api.flask import flask_starter
+from feature.config import settings
+from feature.utils import logs
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
-def start_api_server():
-    if not check_port(FLASK_SERVER_PORT):
+def start_api_server() -> None:
+    if not ddp_port.check_port(settings.FLASK_SERVER_PORT):
         logger.error("Port is already used!")
         logger.info("Flask Server start is canceled!")
         return
 
     logger.info("Flask Server is starting...")
-    start_flask_server_both_background()
+    flask_starter.start_flask_server_both_background()

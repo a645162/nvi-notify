@@ -4,15 +4,15 @@ import os
 
 import requests
 
-from config.user_info import UserInfo
-from feature.monitor.monitor_enum import MsgType
-from feature.utils.logs import get_logger
-from feature.webhook.webhook import Webhook
+from feature.config import user_info
+from feature.monitor import enum
+from feature.utils import logs
+from feature.webhook import webhook
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
-class LarkWebhook(Webhook):
+class LarkWebhook(webhook.Webhook):
     MentionAll = '<at user_id="all">所有人</at>'
 
     def __init__(self, webhook_name: str) -> None:
@@ -25,38 +25,38 @@ class LarkWebhook(Webhook):
         self._lark_app_secret = os.getenv("LARK_APP_SECRET", "")
 
     @property
-    def lark_app_id(self):
+    def lark_app_id(self) -> str:
         return self._lark_app_id
 
     @lark_app_id.setter
-    def lark_app_id(self, value):
+    def lark_app_id(self, value: str) -> None:
         if value:
             self._lark_app_id = value.strip()
 
     @property
-    def lark_app_secret(self):
+    def lark_app_secret(self) -> str:
         return self._lark_app_secret
 
     @lark_app_secret.setter
-    def lark_app_secret(self, value):
+    def lark_app_secret(self, value: str) -> None:
         if value:
             self._lark_app_secret = value.strip()
 
     def send_message(
         self,
         msg: str,
-        msg_type: MsgType = MsgType.NORMAL,
-        user: UserInfo | None = None,
+        msg_type: enum.MsgType = enum.MsgType.NORMAL,
+        user: user_info.UserInfo | None = None,
         mention_everyone: bool = False,
-    ):
-        if msg_type != MsgType.WARNING:
+    ) -> None:
+        if msg_type != enum.MsgType.WARNING:
             # send msg to user by lark app
             self.send_lark_message_by_app(msg, msg_type, user)
-            if msg_type == MsgType.DISK_WARNING_TO_USER:
+            if msg_type == enum.MsgType.DISK_WARNING_TO_USER:
                 # only send dir size warning msg to user
                 return
 
-        keyword = "main" if msg_type == MsgType.NORMAL else "warning"
+        keyword = "main" if msg_type == enum.MsgType.NORMAL else "warning"
         webhook_url = getattr(self, f"webhook_url_{keyword}")
         if len(webhook_url) == 0:
             return
@@ -70,9 +70,9 @@ class LarkWebhook(Webhook):
         msg: str,
         webhook_url: str,
         webhook_secret: str,
-        user: UserInfo | None = None,
+        user: user_info.UserInfo | None = None,
         mention_everyone: bool = False,
-    ):
+    ) -> None:
         headers = {"Content-Type": "application/json"}
         msg = msg.replace("/::D", "[呲牙]")
 
@@ -80,7 +80,7 @@ class LarkWebhook(Webhook):
             mention_header = self.get_group_msg_mention_header(user)
             if len(mention_header) > 0:
                 mention_header += " "
-                msg = msg.replace(user.name_cn, mention_header, 1)
+                msg = msg.replace(user.name_cn, mention_header, 1) # type: ignore
         else:
             msg += self.MentionAll
 
@@ -97,7 +97,7 @@ class LarkWebhook(Webhook):
         r = requests.post(webhook_url, headers=headers, data=json.dumps(data))
         logger.info(f"Lark[text]{r.text}")
 
-    def get_group_msg_mention_header(self, user: UserInfo | None = None) -> str:
+    def get_group_msg_mention_header(self, user: user_info.UserInfo | None = None) -> str:
         if user is None:
             return ""
 
@@ -112,15 +112,15 @@ class LarkWebhook(Webhook):
         return mention_header
 
     def send_lark_message_by_app(
-        self, msg: str, msg_type: MsgType, user: UserInfo | None = None
-    ):
+        self, msg: str, msg_type: enum.MsgType, user: user_info.UserInfo | None = None
+    ) -> None:
         tenant_access_token = self.get_lark_app_tenant_access_token()
         if (
             len(self.lark_app_id) == 0
             or len(self.lark_app_secret) == 0
             or len(tenant_access_token) == 0
             or user is None
-            or msg_type == MsgType.WARNING
+            or msg_type == enum.MsgType.WARNING
         ):
             return
 

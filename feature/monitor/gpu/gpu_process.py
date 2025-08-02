@@ -1,34 +1,25 @@
-# -*- coding: utf-8 -*-
 import re
+import typing
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
+import nvitop
 import psutil
-from group_center.tools.user_env.realtime import show_realtime_str
-from nvitop import GpuProcess
+from group_center.tools.user_env import realtime
 
-from config.settings import (
-    MAX_CONSECUTIVE_ZERO_COUNT,
-    USERS,
-    WEBHOOK_DELAY_SEND_SECONDS,
-    EnvironmentManager,
-)
-from config.user_info import UserInfo
-from feature.database.sqlite import get_sql
+from feature.config import settings, user_info
+from feature.database import sqlite
 from feature.group_center import message
-from feature.monitor.gpu.task.for_sql import TaskInfoForSQL
-from feature.monitor.gpu.task.for_webhook import TaskInfoForWebHook
-from feature.monitor.monitor_enum import AllWebhookName, MsgType, TaskEvent, TaskState
-from feature.utils.common_utils import do_command
-from feature.utils.logs import get_logger
-from feature.utils.process import get_top_python_process_pid
-from feature.utils.spawn import is_multiprocessing_spawn
-from feature.webhook.msg_handler import MessageHandler
-from feature.webhook.webhook import Webhook
+from feature.monitor import enum
+from feature.monitor.gpu.task import for_sql, for_webhook
+from feature.utils import common_utils, logs, process, spawn
+from feature.webhook import msg_handler, webhook
 
-logger = get_logger()
-sql = get_sql()
+if typing.TYPE_CHECKING:
+    from feature.monitor.gpu import gpu
+
+logger = logs.get_logger()
+sql = sqlite.get_sql()
 
 
 def check_process_env(pid: int, env_name: str, check_parent: bool = False) -> bool:
@@ -42,7 +33,7 @@ def check_process_env(pid: int, env_name: str, check_parent: bool = False) -> bo
             parent = process.parent()
             if parent is None:
                 return False
-            
+
             ppid = parent.pid
 
             # Stop when the parent process is the init process
@@ -60,29 +51,32 @@ def check_process_env(pid: int, env_name: str, check_parent: bool = False) -> bo
 
 
 class GPUProcessInfo:
-    def __init__(self, pid: int, gpu_id: int, gpu_process: GpuProcess) -> None:
+    def __init__(
+        self, pid: int, gpu_id: int, cur_gpu: gpu.GPU, gpu_process: nvitop.GpuProcess
+    ) -> None:
         self.task_id: str = datetime.now().strftime("%Y%m") + str(gpu_id) + str(pid)
 
         self.pid: int = pid
         self.process_name: str = gpu_process.name()
 
         # Current GPU
+        self.gpu: gpu.GPU = cur_gpu
         self.gpu_id: int = gpu_id
-        self.gpu_process: GpuProcess = gpu_process
+        self.gpu_process: nvitop.GpuProcess = gpu_process
 
         # 缓存psutil.Process对象，避免重复实例化
-        self._process: Optional[psutil.Process] = None
+        self._process: psutil.Process | None = None
         self._init_process()
 
         self.num_task: int = 0
-        self.process_environ: Optional[dict[str, str]] = None
+        self.process_environ: dict[str, str] | None = None
 
         # 静态信息 - 初始化时获取，不会变化
         self.cwd: str = ""
         self.command: str = ""
         self.cmdline: list[str] = [""]
-        self.is_debug: Optional[bool] = None
-        self.user: Optional[UserInfo] = None
+        self.is_debug: bool = False
+        self.user: user_info.UserInfo | None = None
         self.conda_env: str = ""
         self.project_name: str = ""
         self.python_file: str = ""
@@ -118,7 +112,7 @@ class GPUProcessInfo:
 
         # GPU占用率监控相关
         self.consecutive_zero_gpu_count: int = 0
-        self.max_consecutive_zero_count: int = MAX_CONSECUTIVE_ZERO_COUNT
+        self.max_consecutive_zero_count: int = settings.MAX_CONSECUTIVE_ZERO_COUNT
         self.should_send_gpu_alert: bool = False
         self.already_has_alerted_zero_gpu_usage: bool = False
         self.total_gpu_zero_alert_count: int = 0
@@ -129,9 +123,8 @@ class GPUProcessInfo:
         self.already_has_alerted_zero_cpu_usage: bool = False
         self.total_cpu_zero_alert_count: int = 0
 
-        self._gpu = None
-        self._state: TaskState = TaskState.DEFAULT
-        self._running_time_in_seconds: int = 0
+        self._state: enum.TaskState = enum.TaskState.DEFAULT
+        self._running_time_in_seconds: float = 0.0
 
         # 初始化静态信息
         self._init_static_info()
@@ -152,7 +145,7 @@ class GPUProcessInfo:
             self._get_basic_process_info()
             self._get_environment_info()
             self._judge_is_python()
-            self.is_multiprocessing_spawn = is_multiprocessing_spawn(self.cmdline)
+            self.is_multiprocessing_spawn = spawn.is_multiprocessing_spawn(self.cmdline)
 
             if self.is_python:
                 self._get_python_info()
@@ -167,7 +160,7 @@ class GPUProcessInfo:
                 self._update_ignore_mode()
 
                 # 插入数据库
-                sql.insert_task_data(TaskInfoForSQL(self.__dict__))
+                sql.insert_task_data(for_sql.TaskInfoForSQL(self.__dict__))
             else:
                 self.ignore_task = True
         except Exception as e:
@@ -209,7 +202,7 @@ class GPUProcessInfo:
 
         if self.is_multi_gpu:
             try:
-                self.top_python_pid = get_top_python_process_pid(self.pid)
+                self.top_python_pid = process.get_top_python_process_pid(self.pid)
             except Exception:
                 self.top_python_pid = -1
 
@@ -218,17 +211,22 @@ class GPUProcessInfo:
         cuda_home = self._get_env_value("CUDA_HOME", "").strip()
         if cuda_home and (Path(cuda_home) / "bin" / "nvcc").exists():
             self.cuda_root = cuda_home
-            self.cuda_nvcc_bin = (Path(cuda_home) / "bin" / "nvcc")
+            self.cuda_nvcc_bin = Path(cuda_home) / "bin" / "nvcc"
         else:
             cuda_toolkit_root = self._get_env_value("CUDAToolkit_ROOT", "").strip()
-            if cuda_toolkit_root and (Path(cuda_toolkit_root) / "bin" / "nvcc").exists():
+            if (
+                cuda_toolkit_root
+                and (Path(cuda_toolkit_root) / "bin" / "nvcc").exists()
+            ):
                 self.cuda_root = cuda_toolkit_root
-                self.cuda_nvcc_bin = (Path(cuda_toolkit_root) / "bin" / "nvcc")
+                self.cuda_nvcc_bin = Path(cuda_toolkit_root) / "bin" / "nvcc"
 
         # 获取CUDA版本
         if self.cuda_nvcc_bin and Path(self.cuda_nvcc_bin).exists():
             try:
-                _, result, _ = do_command(f"{self.cuda_nvcc_bin} --version")
+                _, result, _ = common_utils.do_command(
+                    f"{self.cuda_nvcc_bin} --version"
+                )
                 if "release" in result:
                     for line in result.split("\n"):
                         if "release" in line:
@@ -244,7 +242,7 @@ class GPUProcessInfo:
             try:
                 binary_path = self._process.exe()
                 if "python" in binary_path:
-                    _, result, _ = do_command(f"'{binary_path}' --version")
+                    _, result, _ = common_utils.do_command(f"'{binary_path}' --version")
                     if "Python" in result:
                         self.python_version = result.replace("Python", "").strip()
             except Exception:
@@ -260,10 +258,12 @@ class GPUProcessInfo:
 
     def _get_user_info(self) -> None:
         """获取用户信息"""
-        self.user = USERS.get(self.gpu_process.username(), None)
+        self.user = settings.USERS.get(self.gpu_process.username(), None)
         if self.user is None and self.cwd:
             cwd = self.cwd + "/"
-            self.user = UserInfo.find_user_by_path(USERS, cwd, is_project_path=True)
+            self.user = user_info.UserInfo.find_user_by_path(
+                settings.USERS, cwd, is_project_path=True
+            )
 
     def _get_project_info(self) -> None:
         """获取项目信息"""
@@ -301,18 +301,21 @@ class GPUProcessInfo:
 
             self.task_gpu_memory_human = self.gpu_process.gpu_memory_human()
             task_gpu_memory = self.gpu_process.gpu_memory()
-            self.task_gpu_memory = task_gpu_memory
+            if isinstance(task_gpu_memory, int):
+                self.task_gpu_memory = task_gpu_memory
 
-            if self.task_gpu_memory_max < task_gpu_memory:
-                self.task_gpu_memory_max = task_gpu_memory
-                self.task_gpu_memory_max_human = self.task_gpu_memory_human
+                if self.task_gpu_memory_max < task_gpu_memory:
+                    self.task_gpu_memory_max = task_gpu_memory
+                    self.task_gpu_memory_max_human = self.task_gpu_memory_human
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
 
-    def _update_runtime_info(self):
+    def _update_runtime_info(self) -> None:
         """更新运行时间信息"""
         try:
-            self.running_time_in_seconds = self.gpu_process.running_time_in_seconds()
+            tmp = self.gpu_process.running_time_in_seconds()
+            if isinstance(tmp, float):
+                self.running_time_in_seconds = tmp
             self.running_time_human = self.gpu_process.running_time_human()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -340,7 +343,8 @@ class GPUProcessInfo:
         try:
             if hasattr(self.gpu_process, "gpu_sm_utilization"):
                 util = self.gpu_process.gpu_sm_utilization
-                self.gpu_utilization = util() if callable(util) else util
+                if isinstance(util, int):
+                    self.gpu_utilization = util() if callable(util) else util
             else:
                 self.gpu_utilization = 0.0
         except Exception as e:
@@ -350,7 +354,7 @@ class GPUProcessInfo:
     def _update_user_env(self) -> None:
         """更新用户环境信息"""
         try:
-            self.group_center_user_realtime_str = show_realtime_str(self.pid)
+            self.group_center_user_realtime_str = realtime.show_realtime_str(self.pid)
         except Exception as e:
             logger.error(f"Error updating user env for PID {self.pid}: {e}")
 
@@ -369,7 +373,7 @@ class GPUProcessInfo:
             )
         except Exception as e:
             if "process no longer exists" not in str(e):
-                logger.warn(e)
+                logger.warning(e)
             self.is_python = False
 
     def _get_conda_env_name(self) -> None:
@@ -382,7 +386,7 @@ class GPUProcessInfo:
             env_str = self._get_env_value("CONDA_DEFAULT_ENV", "").strip()
             self.conda_env = env_str if env_str else "base"
 
-    def _get_screen_session_name(self):
+    def _get_screen_session_name(self) -> None:
         """获取screen会话名"""
         self.screen_session_name = self._get_env_value("STY", "").strip()
         if self.screen_session_name and "." in self.screen_session_name:
@@ -403,7 +407,7 @@ class GPUProcessInfo:
             pass
         return ""
 
-    def _update_ignore_mode(self):
+    def _update_ignore_mode(self) -> None:
         """更新忽略模式"""
         try:
             self.ignore_task = check_process_env(
@@ -412,39 +416,30 @@ class GPUProcessInfo:
         except Exception as e:
             logger.error(e)
 
-    # 属性和状态管理
     @property
-    def gpu(self):
-        return self._gpu
-
-    @gpu.setter
-    def gpu(self, value):
-        self._gpu = value
-
-    @property
-    def running_time_in_seconds(self):
+    def running_time_in_seconds(self) -> float:
         return self._running_time_in_seconds
 
     @running_time_in_seconds.setter
-    def running_time_in_seconds(self, new_running_time_in_seconds):
+    def running_time_in_seconds(self, new_running_time_in_seconds: float) -> None:
         if (
             new_running_time_in_seconds
-            > WEBHOOK_DELAY_SEND_SECONDS
+            > settings.WEBHOOK_DELAY_SEND_SECONDS
             > self._running_time_in_seconds
         ):
-            self.state = TaskState.WORKING
+            self.state = enum.TaskState.WORKING
         self._running_time_in_seconds = new_running_time_in_seconds
 
     @property
-    def state(self) -> TaskState:
+    def state(self) -> enum.TaskState:
         return self._state
 
     @state.setter
-    def state(self, new_state: TaskState) -> None:
+    def state(self, new_state: enum.TaskState) -> None:
         if self._state == new_state:
             return
 
-        if not TaskState.check_valid_transition(self._state, new_state):
+        if not enum.TaskState.check_valid_transition(self._state, new_state):
             raise ValueError(
                 f"Invalid state transition from {self._state} to {new_state}"
             )
@@ -457,7 +452,7 @@ class GPUProcessInfo:
 
         self._state = new_state
 
-    def set_finish_time(self):
+    def set_finish_time(self) -> None:
         """设置结束时间"""
         self.finish_time = datetime.timestamp(datetime.now())
 
@@ -513,7 +508,7 @@ class GPUProcessInfo:
             "should_send_cpu_alert": self.check_consecutive_zero_cpu_usage(),
         }
 
-    def reset_zero_usage_alert(self):
+    def reset_zero_usage_alert(self) -> None:
         """重置零占用率报警状态"""
         self.consecutive_zero_gpu_count = 0
         self.should_send_gpu_alert = False
@@ -521,50 +516,66 @@ class GPUProcessInfo:
         self.should_send_cpu_alert = False
 
     # 状态转换处理
-    def _handle_state_change(self, new_state):
-        if new_state == TaskState.NEWBORN and self._state is TaskState.DEFAULT:
+    def _handle_state_change(self, new_state: enum.TaskState) -> None:
+        if (
+            new_state == enum.TaskState.NEWBORN
+            and self._state is enum.TaskState.DEFAULT
+        ):
             self._transition_to_newborn()
-        elif new_state == TaskState.WORKING and self._state == TaskState.NEWBORN:
+        elif (
+            new_state == enum.TaskState.WORKING
+            and self._state == enum.TaskState.NEWBORN
+        ):
             self._transition_newborn_to_working()
-        elif new_state == TaskState.DEATH and self._state == TaskState.WORKING:
+        elif (
+            new_state == enum.TaskState.DEATH and self._state == enum.TaskState.WORKING
+        ):
             self._transition_working_to_death()
-        elif new_state == TaskState.DEATH and self._state == TaskState.NEWBORN:
+        elif (
+            new_state == enum.TaskState.DEATH and self._state == enum.TaskState.NEWBORN
+        ):
             self._transition_newborn_to_death()
 
-    def _transition_to_newborn(self):
+    def _transition_to_newborn(self) -> None:
         logger.info(f"Task {self.pid} is created.")
         if self.ignore_task:
             logger.info(f"[Create] Task {self.pid} is ignored.")
-        log_task_info(self.__dict__, TaskEvent.CREATE)
+        log_task_info(self.__dict__, enum.TaskEvent.CREATE)
 
-    def _transition_newborn_to_working(self):
-        sql.update_task_data(TaskInfoForSQL(self.__dict__, TaskState.WORKING))
+    def _transition_newborn_to_working(self) -> None:
+        sql.update_task_data(
+            for_sql.TaskInfoForSQL(self.__dict__, enum.TaskState.WORKING)
+        )
         if self.ignore_task:
             logger.info(f"[Start] Task {self.pid} is ignored.")
             return
-        message.gpu_task_message(self, TaskEvent.CREATE)
-        self._send_gpu_task_message(TaskEvent.CREATE)
+        message.gpu_task_message(self, enum.TaskEvent.CREATE)
+        self._send_gpu_task_message(enum.TaskEvent.CREATE)
 
-    def _transition_working_to_death(self):
-        log_task_info(self.__dict__, TaskEvent.FINISH)
-        sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, TaskState.DEATH))
+    def _transition_working_to_death(self) -> None:
+        log_task_info(self.__dict__, enum.TaskEvent.FINISH)
+        sql.update_finish_task_data(
+            for_sql.TaskInfoForSQL(self.__dict__, enum.TaskState.DEATH)
+        )
         if self.ignore_task:
             logger.info(f"[Finish] Task {self.pid} is ignored.")
             return
-        message.gpu_task_message(self, TaskEvent.FINISH)
-        self._send_gpu_task_message(TaskEvent.FINISH)
+        message.gpu_task_message(self, enum.TaskEvent.FINISH)
+        self._send_gpu_task_message(enum.TaskEvent.FINISH)
 
-    def _transition_newborn_to_death(self):
-        log_task_info(self.__dict__, TaskEvent.FINISH)
-        sql.update_finish_task_data(TaskInfoForSQL(self.__dict__, TaskState.DEATH))
+    def _transition_newborn_to_death(self) -> None:
+        log_task_info(self.__dict__, enum.TaskEvent.FINISH)
+        sql.update_finish_task_data(
+            for_sql.TaskInfoForSQL(self.__dict__, enum.TaskState.DEATH)
+        )
 
-    def _send_gpu_task_message(self, task_event: TaskEvent):
+    def _send_gpu_task_message(self, task_event: enum.TaskEvent) -> None:
         """发送GPU任务消息函数"""
-        task = TaskInfoForWebHook(self.__dict__, task_event)
+        task = for_webhook.TaskInfoForWebHook(self.__dict__, task_event)
         if task.is_debug:
             return
 
-        msg = MessageHandler.handle_normal_text(
+        msg = msg_handler.MessageHandler.handle_normal_text(
             self.gpu.name_for_msg_header
             + "\n"
             + task.task_msg_body
@@ -573,11 +584,11 @@ class GPUProcessInfo:
             + self.gpu.gpu_tasks_num_msg_header
             + self.gpu.all_tasks_msg_body,
         )
-        Webhook.enqueue_msg_to_webhook(
+        webhook.Webhook.enqueue_msg_to_webhook(
             msg,
-            MsgType.NORMAL,
-            task.user if task_event == TaskEvent.FINISH else None,
-            enable_webhook_name=AllWebhookName.ALL,
+            enum.MsgType.NORMAL,
+            task.user if task_event == enum.TaskEvent.FINISH else None,
+            enable_webhook_name=enum.AllWebhookName.ALL,
         )
 
     @staticmethod
@@ -609,7 +620,7 @@ class GPUProcessInfo:
         return f"{days}天{remaining_hours}小时" if remaining_hours > 0 else f"{days}天"
 
 
-def log_task_info(process_info: dict, task_event: TaskEvent):
+def log_task_info(process_info: dict, task_event: enum.TaskEvent) -> None:
     """任务日志函数"""
     if task_event is None:
         raise ValueError("task_event is None")
@@ -618,21 +629,23 @@ def log_task_info(process_info: dict, task_event: TaskEvent):
     if not logfile_dir_path.exists():
         Path.mkdir(logfile_dir_path)
 
-    task = TaskInfoForWebHook(process_info, task_event)
+    task = for_webhook.TaskInfoForWebHook(process_info, task_event)
 
     with Path.open(logfile_dir_path / "user_task.log", "a") as log_writer:
-        if task_event == TaskEvent.CREATE:
+        if task_event == enum.TaskEvent.CREATE:
             output_log = (
                 f"{task.gpu_name}"
-                f" {task.user.name_cn} "
+                f" {task.user.name_cn} "  # type: ignore
                 f"create new {'debug ' if task.is_debug else ''}"
                 f"task: {task.pid}"
             )
-        elif task_event == TaskEvent.FINISH:
+        elif task_event == enum.TaskEvent.FINISH:
             output_log = (
                 f"{task.gpu_name}"
-                f" finish {task.user.name_cn}'s {'debug ' if task.is_debug else ''}"
+                f" finish {task.user.name_cn}'s {'debug ' if task.is_debug else ''}"  # type: ignore
                 f"task: {task.pid}，用时{task.running_time_human}"
             )
-        log_writer.write(f"[{EnvironmentManager.now_time_str()}]+{output_log} + \n")
+        log_writer.write(
+            f"[{settings.EnvironmentManager.now_time_str()}]+{output_log} + \n"
+        )
         logger.info(output_log)

@@ -1,16 +1,16 @@
 import json
 
-from group_center.core.feature.remote_config import get_env_json_str
+from group_center.core.feature import remote_config
 
-from feature.utils.logs import get_logger
+from feature.utils import logs
 
-logger = get_logger()
+logger = logs.get_logger()
 
 
 def init_remote_env_list() -> None:
-    from config.settings import EnvironmentManager
+    from feature.config import settings  # noqa: PLC0415
 
-    json_str = get_env_json_str()
+    json_str = remote_config.get_env_json_str()
 
     env_dict = json.loads(json_str)
     if isinstance(env_dict, dict):
@@ -21,11 +21,11 @@ def init_remote_env_list() -> None:
             logger.info(f"{key}: {env_dict[key]}")
         logger.info("-" * 20)
 
-        EnvironmentManager.all_env_dict.update(env_dict)
+        settings.EnvironmentManager.all_env_dict.update(env_dict)
 
 
 if __name__ == "__main__":
-    json_text = get_env_json_str()
+    json_text = remote_config.get_env_json_str()
     print(json_text)
 
     print()

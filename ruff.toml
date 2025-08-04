@@ -1,9 +1,15 @@
 # Ruff configuration for nvi-notify project
-
 line-length = 88
 indent-width = 4
+target-version = "py312"
 
-# Enable PyFlakes (`F`) and a subset of the pycodestyle (`E`) codes by default.
+# 格式化配置
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[lint]
 select = [
     "I",  # isort
     "N",  # pep8-naming
@@ -54,18 +60,10 @@ ignore = [
 fixable = ["ALL"]
 unfixable = []
 
-# Allow unused variables when underscore-prefixed.
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+[lint.isort]
+# known-first-party = ["src"]
+combine-as-imports = true
+force-wrap-aliases = true
 
 [lint.per-file-ignores]
-"feature/group_center/datatype/task_info.py" = ["N815"]
-
-[format]
-# Like Black, use double quotes for strings.
-quote-style = "double"
-
-# Like Black, indent with spaces, rather than tabs.
-indent-style = "space"
-
-# Like Black, automatically detect the appropriate line ending.
-line-ending = "auto"
+"src/entity/task_info.py" = ["N815"]

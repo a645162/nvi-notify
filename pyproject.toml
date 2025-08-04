@@ -8,7 +8,6 @@ dependencies = [
     "chardet>=5.2.0",
     "flask>=3.1.1",
     "flask-cors>=6.0.1",
-    "flask-socketio>=5.5.1",
     "humanfriendly>=10.0",
     "li-group-center>=2.2.2",
     "loguru>=0.7.3",
@@ -20,14 +19,21 @@ dependencies = [
     "urllib3>=2.4.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "ruff>=0.12.4",
+    "pre-commit>=4.2.0",
     "pyright>=1.1.403",
+    "pytest>=8.4.1",
+    "coverage>=7.10.1",
 ]
+
+
+[tool.pyright]
+# Configuration will be loaded from pyrightconfig.json
 
 [tool.ruff]
 # Configuration will be loaded from ruff.toml
 
-[tool.pyright]
-# Configuration will be loaded from pyrightconfig.json
+[tool.uv]
+# environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]

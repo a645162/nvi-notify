@@ -1,8 +1,6 @@
 {
     "include": [
-        "feature",
-        "config",
-        "toolkit"
+        "src",
     ],
     "exclude": [
         "**/__pycache__",

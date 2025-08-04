@@ -66,4 +66,4 @@ combine-as-imports = true
 force-wrap-aliases = true
 
 [lint.per-file-ignores]
-"src/entity/task_info.py" = ["N815"]
+"src/nvi_notify/entity/task_info.py" = ["N815"]

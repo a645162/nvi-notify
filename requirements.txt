@@ -19,6 +19,7 @@ humanfriendly
 
 loguru
 
-li-group-center>=2.1.0
+# pip install "li-group-center>=2.4.0" -i https://pypi.python.org/simple
+li-group-center>=2.4.0
 
 ruff

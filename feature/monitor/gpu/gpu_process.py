@@ -6,6 +6,7 @@ from typing import Optional
 
 import psutil
 from group_center.tools.user_env.realtime import show_realtime_str
+from group_center.utils.anaconda.run_torch_info import run_torch_info
 from nvitop import GpuProcess
 
 from config.settings import (
@@ -42,7 +43,7 @@ def check_process_env(pid: int, env_name: str, check_parent: bool = False) -> bo
             parent = process.parent()
             if parent is None:
                 return False
-            
+
             ppid = parent.pid
 
             # Stop when the parent process is the init process
@@ -86,7 +87,10 @@ class GPUProcessInfo:
         self.conda_env: str = ""
         self.project_name: str = ""
         self.python_file: str = ""
+        self.python_bin_path: str = ""
         self.python_version: str = ""
+        self.torch_version: str = ""
+        self.torch_cuda_version: str = ""
         self.start_time: float = 0.0
         self.is_python: bool = False
         self.is_multiprocessing_spawn: bool = False
@@ -159,6 +163,7 @@ class GPUProcessInfo:
                 self._get_user_info()
                 self._get_project_info()
                 self._get_nvidia_driver_version()
+                self._get_torch_info()
 
                 # 更新动态信息（首次）
                 self.update()
@@ -173,6 +178,18 @@ class GPUProcessInfo:
         except Exception as e:
             logger.error(f"Error initializing static info for PID {self.pid}: {e}")
             self.ignore_task = True
+
+    def _get_torch_info(self) -> None:
+        try:
+            python_executable = self.python_bin_path
+            self.torch_version = (
+                run_torch_info(python_executable, "get_torch_version") or ""
+            )
+            self.torch_cuda_version = (
+                run_torch_info(python_executable, "get_cuda_version") or ""
+            )
+        except Exception:
+            pass
 
     def _get_basic_process_info(self) -> None:
         """获取基础进程信息"""
@@ -218,12 +235,15 @@ class GPUProcessInfo:
         cuda_home = self._get_env_value("CUDA_HOME", "").strip()
         if cuda_home and (Path(cuda_home) / "bin" / "nvcc").exists():
             self.cuda_root = cuda_home
-            self.cuda_nvcc_bin = (Path(cuda_home) / "bin" / "nvcc")
+            self.cuda_nvcc_bin = Path(cuda_home) / "bin" / "nvcc"
         else:
             cuda_toolkit_root = self._get_env_value("CUDAToolkit_ROOT", "").strip()
-            if cuda_toolkit_root and (Path(cuda_toolkit_root) / "bin" / "nvcc").exists():
+            if (
+                cuda_toolkit_root
+                and (Path(cuda_toolkit_root) / "bin" / "nvcc").exists()
+            ):
                 self.cuda_root = cuda_toolkit_root
-                self.cuda_nvcc_bin = (Path(cuda_toolkit_root) / "bin" / "nvcc")
+                self.cuda_nvcc_bin = Path(cuda_toolkit_root) / "bin" / "nvcc"
 
         # 获取CUDA版本
         if self.cuda_nvcc_bin and Path(self.cuda_nvcc_bin).exists():
@@ -243,6 +263,8 @@ class GPUProcessInfo:
         if self._process:
             try:
                 binary_path = self._process.exe()
+                self.python_bin_path = binary_path
+
                 if "python" in binary_path:
                     _, result, _ = do_command(f"'{binary_path}' --version")
                     if "Python" in result:
@@ -301,6 +323,9 @@ class GPUProcessInfo:
 
             self.task_gpu_memory_human = self.gpu_process.gpu_memory_human()
             task_gpu_memory = self.gpu_process.gpu_memory()
+            if not isinstance(task_gpu_memory, int):
+                task_gpu_memory = 0
+
             self.task_gpu_memory = task_gpu_memory
 
             if self.task_gpu_memory_max < task_gpu_memory:
@@ -340,7 +365,12 @@ class GPUProcessInfo:
         try:
             if hasattr(self.gpu_process, "gpu_sm_utilization"):
                 util = self.gpu_process.gpu_sm_utilization
-                self.gpu_utilization = util() if callable(util) else util
+
+                gpu_utilization = util() if callable(util) else util
+                if not isinstance(gpu_utilization, (int, float)):
+                    gpu_utilization = 0.0
+
+                self.gpu_utilization = gpu_utilization
             else:
                 self.gpu_utilization = 0.0
         except Exception as e:

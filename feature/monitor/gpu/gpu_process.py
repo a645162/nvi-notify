@@ -89,11 +89,14 @@ class GPUProcessInfo:
         self.python_file: str = ""
         self.python_bin_path: str = ""
         self.python_version: str = ""
-        self.torch_version: str = ""
-        self.torch_cuda_version: str = ""
         self.start_time: float = 0.0
         self.is_python: bool = False
         self.is_multiprocessing_spawn: bool = False
+
+        # 懒加载
+        self._lazy_loaded: bool = False  # 懒加载标记
+        self._torch_version: str = ""
+        self._torch_cuda_version: str = ""
 
         # 环境变量相关静态信息
         self.is_multi_gpu: bool = False
@@ -163,7 +166,6 @@ class GPUProcessInfo:
                 self._get_user_info()
                 self._get_project_info()
                 self._get_nvidia_driver_version()
-                self._get_torch_info()
 
                 # 更新动态信息（首次）
                 self.update()
@@ -179,13 +181,41 @@ class GPUProcessInfo:
             logger.error(f"Error initializing static info for PID {self.pid}: {e}")
             self.ignore_task = True
 
+    def lazy_init_info(self) -> None:
+        """懒加载 torch 相关信息"""
+        if self._lazy_loaded or not self.is_python:
+            return
+
+        try:
+            self._get_torch_info()
+
+            self._lazy_loaded = True
+        except Exception as e:
+            logger.error(f"Error loading torch info for PID {self.pid}: {e}")
+            self._lazy_loaded = True  # 即使失败也标记为已尝试加载
+
+    @property
+    def torch_version(self) -> str:
+        """torch 版本 - 懒加载属性"""
+        self.lazy_init_info()
+
+        return self._torch_version
+
+    @property
+    def torch_cuda_version(self) -> str:
+        """torch CUDA 版本 - 懒加载属性"""
+        self.lazy_init_info()
+
+        return self._torch_cuda_version
+
     def _get_torch_info(self) -> None:
+        """获取 torch 相关信息"""
         try:
             python_executable = self.python_bin_path
-            self.torch_version = (
+            self._torch_version = (
                 run_torch_info(python_executable, "get_torch_version") or ""
             )
-            self.torch_cuda_version = (
+            self._torch_cuda_version = (
                 run_torch_info(python_executable, "get_cuda_version") or ""
             )
         except Exception:

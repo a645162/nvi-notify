@@ -27,6 +27,7 @@ class GPU:
         self.nvidia_i: Device = Device(self.gpu_id)
 
         self._num_task: int = 0
+        self.gpu_tasks_num_msg_header = ""  # 初始化，防止属性不存在
 
         self.get_gpu_info()
 
@@ -240,7 +241,7 @@ class GPU:
         debug_emoji = "🐞" if process.is_debug else ""
         task_msg = (
             f"{idx_emoji}{debug_emoji}"
-            f"用户: {process.user.name_cn}  "
+            f"用户: {process.user.name_cn if process.user else 'Unknown'}  "
             f"最大显存: {process.task_gpu_memory_max_human}  "
             f"运行时长: {process.running_time_human}\n"
         )

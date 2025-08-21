@@ -53,7 +53,13 @@ class NvidiaMonitor(Monitor):
 
         return gpu_dict
 
+    def lazy_init_all_process(self) -> None:
+        for process_info in self.all_processes.values():
+            process_info.lazy_init_info()
+
     def gpu_monitor_thread(self) -> None:
+        first_run = True
+
         while self.monitor_thread_work:
             self.total_num_task = 0
             current_all_processes = {}
@@ -78,12 +84,20 @@ class NvidiaMonitor(Monitor):
             self.all_processes = current_all_processes
 
             if self.should_send_monitor_launch_msg:
+                # 第一次运行
                 self.send_gpu_monitor_launch_msg()
 
             # Cleanup
             cleanup_unused_rt_files()
 
-            time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
+            if first_run:
+                # 如果是第一个周期
+                # 使用懒加载代替延时
+                self.lazy_init_all_process()
+
+                first_run = False
+            else:
+                time.sleep(GPU_MONITOR_SAMPLING_INTERVAL)
 
     def monitor_gpu_usage_for_processes(
         self, current_processes: dict[int, GPUProcessInfo]
@@ -400,6 +414,8 @@ class NvidiaMonitor(Monitor):
 
         for gpu in self.gpu_obj_dict.values():
             gpu.get_all_tasks_msg_body()
+            gpu.get_gpu_tasks_num_msg_header()  # 确保初始化gpu_tasks_num_msg_header
+
             launch_msg_text.append(
                 "\n"
                 + gpu.gpu_tasks_num_msg_header

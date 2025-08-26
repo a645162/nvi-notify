@@ -1,9 +1,11 @@
+import datetime
 from typing import List
 
 from group_center.core.feature.custom_client_message import (
     machine_user_message_directly,
 )
 
+from config.settings import SERVER_NAME
 from feature.group_center.data_manager import DataManager
 from feature.utils.common_utils import do_command
 from feature.utils.logs import get_logger
@@ -143,5 +145,20 @@ def get_disk_usage_user_dict_list() -> List[dict]:
 
 
 def machine_user_message_backend(user_name: str, content: str):
+    content = content.strip()
+
     logger.info(f"[Machine User Message]userName: {user_name}, content: {content}")
+
+    extra_list = []
+
+    if SERVER_NAME and SERVER_NAME != "None":
+        extra_list.append(f"From: {SERVER_NAME}")
+
+    now_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    extra_list.append(f"{now_time}")
+
+    extra_str = "\n".join(extra_list)
+
+    content = content + "\n\n" + extra_str
+
     machine_user_message_directly(user_name=user_name, content=content)

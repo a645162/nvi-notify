@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from group_center.core.feature.machine_message import new_message_enqueue
 
 from config.settings import SERVER_NAME, SERVER_NAME_SHORT, USE_GROUP_CENTER
+from feature.api.api_data_common import get_gpu_count_backend
 from feature.group_center.datatype.task_info import TaskInfoForGroupCenter
 from feature.monitor.monitor_enum import TaskEvent
 from feature.utils.logs import get_logger
@@ -44,5 +45,12 @@ def gpu_task_message(process_obj: GPUProcessInfo, task_event: TaskEvent) -> None
     task_info_obj = TaskInfoForGroupCenter(process_obj)
 
     data_dict.update(task_info_obj.__dict__)
+
+    # Extra Data
+    extra_data: dict = {
+        "totalGpuCount": get_gpu_count_backend(),
+    }
+
+    data_dict.update(extra_data)
 
     new_message_enqueue(data_dict, "/api/client/gpu_task/info")

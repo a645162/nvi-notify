@@ -3,12 +3,15 @@
 import argparse
 import os
 import time
+from pathlib import Path
 
-from config.settings import check_sudo_permission
+from config.settings import EnvironmentManager
 from feature.utils.common_utils import do_command
 
+check_sudo_permission = EnvironmentManager.check_sudo_permission
+
 path_current_py = os.path.realpath(__file__)
-path_base = os.path.dirname(path_current_py)
+path_base = Path(path_current_py).parent
 
 service_name = "nvinotify"
 
@@ -73,19 +76,19 @@ def install(auto_start: bool = False):
     service_file_content = systemd_template
 
     # Modify ExecStart Path
-    exec_start_path = os.path.join(path_base, "main.py")
+    exec_start_path = path_base / "main.py"
 
-    script_path = os.path.join(path_base, "systemd.sh")
+    script_path = path_base / "systemd.sh"
     script_content = bash_template.format(
         spilt_line, path_base, path_python, exec_start_path
     )
-    with open(script_path, "w", encoding="utf-8") as f:
+    with Path(script_path).open("w", encoding="utf-8") as f:
         f.write(script_content)
 
     service_file_content = service_file_content.format('bash "{}"'.format(script_path))
 
     # Write To Service
-    with open(target_service_path, "w") as f:
+    with Path(target_service_path).open("w") as f:
         f.write(service_file_content)
 
     if auto_start:
@@ -106,7 +109,7 @@ def install(auto_start: bool = False):
 
 
 def uninstall():
-    if not os.path.exists(target_service_path):
+    if not Path(target_service_path).exists():
         print("Service file not found.")
         exit(1)
 
@@ -129,7 +132,7 @@ def uninstall():
 
     print("Target path:", target_service_path)
     # Remove
-    if os.path.exists(target_service_path):
+    if Path(target_service_path).exists():
         command = "sudo rm -f " + target_service_path
         print("Command:", command)
         os.system(command)

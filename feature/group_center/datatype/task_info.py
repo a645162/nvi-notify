@@ -81,6 +81,9 @@ class TaskInfoForGroupCenter:
         return new_size_str
 
     def update(self, gpu_process_obj: GPUProcessInfo) -> None:
+        if gpu_process_obj.gpu is None:
+            return
+        
         # 任务唯一标识符
         self.taskId = gpu_process_obj.task_id
 
@@ -90,7 +93,10 @@ class TaskInfoForGroupCenter:
         self.taskStatus = gpu_process_obj.state.value
 
         # 用户
-        self.taskUser = gpu_process_obj.user.name_cn
+        if gpu_process_obj.user is not None:
+            self.taskUser = gpu_process_obj.user.name_cn
+        else:
+            self.taskUser = "Unknown"
 
         # 进程信息
         self.taskPid = gpu_process_obj.pid
@@ -98,7 +104,7 @@ class TaskInfoForGroupCenter:
 
         # GPU 信息
         gpu: GPU = gpu_process_obj.gpu
-        self.gpuUsagePercent = gpu.gpu_utilization
+        self.gpuUsagePercent = float(gpu.gpu_utilization) if gpu.gpu_utilization else 0
         self.gpuMemoryUsageString = self.__fix_data_size_str(gpu.memory_used_human)
         self.gpuMemoryFreeString = self.__fix_data_size_str(gpu.memory_free_human)
         self.gpuMemoryTotalString = self.__fix_data_size_str(gpu.memory_total_human)
@@ -128,7 +134,7 @@ class TaskInfoForGroupCenter:
         self.cudaRoot = gpu_process_obj.cuda_root
         self.cudaVersion = gpu_process_obj.cuda_version
 
-        self.isDebugMode = gpu_process_obj.is_debug
+        self.isDebugMode = gpu_process_obj.is_debug if gpu_process_obj.is_debug else False
 
         # 运行时间
         self.taskStartTime = int(gpu_process_obj.start_time)

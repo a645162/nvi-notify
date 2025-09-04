@@ -28,11 +28,6 @@ from feature.utils.spawn import is_multiprocessing_spawn
 from feature.webhook.msg_handler import MessageHandler
 from feature.webhook.webhook import Webhook
 
-try:
-    from feature.monitor.gpu.gpu import GPU
-except ImportError:
-    pass
-
 logger = get_logger()
 sql = get_sql()
 
@@ -479,11 +474,11 @@ class GPUProcessInfo:
 
     # 属性和状态管理
     @property
-    def gpu(self) -> Optional[GPU]:
+    def gpu(self):
         return self._gpu
 
     @gpu.setter
-    def gpu(self, value: Optional[GPU]):
+    def gpu(self, value):
         self._gpu = value
 
     @property
@@ -628,9 +623,11 @@ class GPUProcessInfo:
         task = TaskInfoForWebHook(self.__dict__, task_event)
         if task.is_debug:
             return
-        
+
         if self.gpu is None:
-            logger.error(f"GPU attribute is None for PID {self.pid}, cannot send message.")
+            logger.error(
+                f"GPU attribute is None for PID {self.pid}, cannot send message."
+            )
             return
 
         msg = MessageHandler.handle_normal_text(

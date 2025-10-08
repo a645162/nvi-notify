@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+import time
 from typing import TYPE_CHECKING
 
 from group_center.core.feature.machine_message import new_message_enqueue
@@ -47,7 +49,7 @@ def gpu_task_message(process_obj: "GPUProcessInfo", task_event: TaskEvent) -> No
 
     # Extra Data
     from feature.api.api_data_common import get_gpu_count_backend
-    
+
     extra_data: dict = {
         "totalGpuCount": get_gpu_count_backend(),
     }
@@ -55,3 +57,26 @@ def gpu_task_message(process_obj: "GPUProcessInfo", task_event: TaskEvent) -> No
     data_dict.update(extra_data)
 
     new_message_enqueue(data_dict, "/api/client/gpu_task/info")
+
+
+def send_heartbeat_periodically():
+    if not USE_GROUP_CENTER:
+        return
+
+    def heartbeat_task():
+        while True:
+            data_dict = {
+                "timestamp": int(
+                    time.time() * 1000
+                ),  # Java-compatible timestamp in milliseconds
+                "serverNameEng": SERVER_NAME_SHORT,
+            }
+            new_message_enqueue(data_dict, "/api/client/heartbeat")
+            time.sleep(600)  # Send heartbeat every 600 seconds
+
+    heartbeat_thread = threading.Thread(target=heartbeat_task, daemon=True)
+    heartbeat_thread.start()
+
+
+# Start the periodic heartbeat when the module is loaded
+send_heartbeat_periodically()

@@ -82,7 +82,7 @@ def get_gpu_task_dict_list(gpu_index: int) -> List[dict]:
 
         task_list.append(
             {
-                "id": process_obj.pid,
+                "id": process_obj.task_id,
                 "pid": process_obj.pid,
                 "name": process_obj.user.name_cn if process_obj.user else "",
                 "debugMode": process_obj.is_debug,

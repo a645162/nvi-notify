@@ -71,8 +71,8 @@ def send_heartbeat_periodically():
                 ),  # Java-compatible timestamp in milliseconds
                 "serverNameEng": SERVER_NAME_SHORT,
             }
-            new_message_enqueue(data_dict, "/api/client/heartbeat")
-            time.sleep(600)  # Send heartbeat every 600 seconds
+            new_message_enqueue(data_dict, "/api/client/heartbeat", enable_retry=False)
+            time.sleep(30 * 60)  # Send heartbeat every 30 minutes
 
     heartbeat_thread = threading.Thread(target=heartbeat_task, daemon=True)
     heartbeat_thread.start()

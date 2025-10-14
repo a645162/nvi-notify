@@ -189,13 +189,13 @@ def update_program():
         if not os.path.exists(git_dir):
             return Response(
                 response=json.dumps(
-                    {"success": False, "message": "当前目录不是Git项目，无法执行更新"}
+                    {"success": False, "message": "Current directory is not a Git project, cannot perform update"}
                 ),
                 status=400,
                 mimetype="application/json",
             )
 
-        logger.info("检测到Git项目，开始执行git pull...")
+        logger.info("Git project detected, starting git pull...")
 
         # 执行git pull命令
         result = subprocess.run(
@@ -203,20 +203,20 @@ def update_program():
         )
 
         if result.returncode != 0:
-            logger.error(f"git pull执行失败: {result.stderr}")
+            logger.error(f"git pull failed: {result.stderr}")
             return Response(
                 response=json.dumps(
-                    {"success": False, "message": f"git pull执行失败: {result.stderr}"}
+                    {"success": False, "message": f"git pull failed: {result.stderr}"}
                 ),
                 status=500,
                 mimetype="application/json",
             )
 
-        logger.info(f"git pull执行成功: {result.stdout}")
+        logger.info(f"git pull successful: {result.stdout}")
 
         # 获取当前进程PID
         current_pid = os.getpid()
-        logger.info(f"当前进程PID: {current_pid}")
+        logger.info(f"Current process PID: {current_pid}")
 
         # 使用当前Python解释器重新启动程序
         python_executable = sys.executable
@@ -228,7 +228,7 @@ def update_program():
             response=json.dumps(
                 {
                     "success": True,
-                    "message": "更新成功，程序正在重启",
+                    "message": "Update successful, program is restarting",
                     "current_pid": current_pid,
                     "git_output": result.stdout,
                 }
@@ -238,7 +238,7 @@ def update_program():
         )
 
         # 在返回响应后启动重启脚本
-        logger.info("git pull成功，准备重启程序...")
+        logger.info("git pull successful, preparing to restart program...")
         subprocess.Popen(
             [
                 python_executable,
@@ -250,15 +250,15 @@ def update_program():
             ],
             cwd=current_dir,
         )
-        logger.info("程序重启中...")
+        logger.info("Program restarting...")
 
         return response
 
     except Exception as e:
-        logger.error(f"更新过程中发生错误: {e}")
+        logger.error(f"Error during update process: {e}")
         return Response(
             response=json.dumps(
-                {"success": False, "message": f"更新过程中发生错误: {str(e)}"}
+                {"success": False, "message": f"Error during update process: {str(e)}"}
             ),
             status=500,
             mimetype="application/json",

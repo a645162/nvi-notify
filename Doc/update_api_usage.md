@@ -38,9 +38,9 @@ print(response.json())
 ```json
 {
   "success": true,
-  "message": "更新成功，程序正在重启",
+  "message": "Update successful, program is restarting",
   "current_pid": 12345,
-  "git_output": "git pull的输出内容"
+  "git_output": "git pull output content"
 }
 ```
 
@@ -51,7 +51,7 @@ print(response.json())
 ```json
 {
   "success": false,
-  "message": "当前目录不是Git项目，无法执行更新"
+  "message": "Current directory is not a Git project, cannot perform update"
 }
 ```
 
@@ -60,7 +60,7 @@ print(response.json())
 ```json
 {
   "success": false,
-  "message": "git pull执行失败: 错误信息"
+  "message": "git pull failed: error message"
 }
 ```
 
@@ -69,7 +69,7 @@ print(response.json())
 ```json
 {
   "success": false,
-  "message": "更新过程中发生错误: 错误信息"
+  "message": "Error during update process: error message"
 }
 ```
 

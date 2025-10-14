@@ -4,7 +4,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 from html import escape
 
 import requests
@@ -175,7 +174,8 @@ def get_disk_usage_user():
         mimetype="application/json",
     )
 
-@app.route("/update", methods=["POST"])
+
+@app.route("/update", methods=["POST", "GET"])
 def update_program():
     """
     更新程序接口
@@ -185,82 +185,81 @@ def update_program():
         # 检查当前目录是否为Git项目
         current_dir = os.getcwd()
         git_dir = os.path.join(current_dir, ".git")
-        
+
         if not os.path.exists(git_dir):
             return Response(
-                response=json.dumps({
-                    "success": False,
-                    "message": "当前目录不是Git项目，无法执行更新"
-                }),
+                response=json.dumps(
+                    {"success": False, "message": "当前目录不是Git项目，无法执行更新"}
+                ),
                 status=400,
                 mimetype="application/json",
             )
-        
+
         logger.info("检测到Git项目，开始执行git pull...")
-        
+
         # 执行git pull命令
         result = subprocess.run(
-            ["git", "pull"],
-            capture_output=True,
-            text=True,
-            cwd=current_dir
+            ["git", "pull"], capture_output=True, text=True, cwd=current_dir
         )
-        
+
         if result.returncode != 0:
             logger.error(f"git pull执行失败: {result.stderr}")
             return Response(
-                response=json.dumps({
-                    "success": False,
-                    "message": f"git pull执行失败: {result.stderr}"
-                }),
+                response=json.dumps(
+                    {"success": False, "message": f"git pull执行失败: {result.stderr}"}
+                ),
                 status=500,
                 mimetype="application/json",
             )
-        
+
         logger.info(f"git pull执行成功: {result.stdout}")
-        
+
         # 获取当前进程PID
         current_pid = os.getpid()
         logger.info(f"当前进程PID: {current_pid}")
-        
+
         # 使用当前Python解释器重新启动程序
         python_executable = sys.executable
         script_path = os.path.join(current_dir, "main.py")
         restart_script_path = os.path.join(current_dir, "restart_program.py")
-        
+
         # 先返回响应
         response = Response(
-            response=json.dumps({
-                "success": True,
-                "message": "更新成功，程序正在重启",
-                "current_pid": current_pid,
-                "git_output": result.stdout
-            }),
+            response=json.dumps(
+                {
+                    "success": True,
+                    "message": "更新成功，程序正在重启",
+                    "current_pid": current_pid,
+                    "git_output": result.stdout,
+                }
+            ),
             status=200,
             mimetype="application/json",
         )
-        
+
         # 在返回响应后启动重启脚本
         logger.info("git pull成功，准备重启程序...")
-        subprocess.Popen([
-            python_executable,
-            restart_script_path,
-            str(current_pid),
-            python_executable,
-            script_path,
-            current_dir
-        ], cwd=current_dir)
+        subprocess.Popen(
+            [
+                python_executable,
+                restart_script_path,
+                str(current_pid),
+                python_executable,
+                script_path,
+                current_dir,
+            ],
+            cwd=current_dir,
+        )
         logger.info("程序重启中...")
-        
+
         return response
-        
+
     except Exception as e:
         logger.error(f"更新过程中发生错误: {e}")
         return Response(
-            response=json.dumps({
-                "success": False,
-                "message": f"更新过程中发生错误: {str(e)}"
-            }),
+            response=json.dumps(
+                {"success": False, "message": f"更新过程中发生错误: {str(e)}"}
+            ),
             status=500,
             mimetype="application/json",
         )

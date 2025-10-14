@@ -230,8 +230,8 @@ def update_program():
                 {
                     "success": True,
                     "message": "Update successful, program is restarting",
-                    "current_pid": current_pid,
-                    "git_output": result.stdout,
+                    "currentPid": current_pid,
+                    "gitOutput": result.stdout,
                 }
             ),
             status=200,

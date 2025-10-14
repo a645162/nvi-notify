@@ -175,7 +175,7 @@ def get_disk_usage_user():
     )
 
 
-@app.route("/update", methods=["POST", "GET"])
+@app.route("/update_nvi_notify", methods=["GET"])
 def update_program():
     """
     更新程序接口

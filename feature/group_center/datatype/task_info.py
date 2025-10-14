@@ -83,7 +83,7 @@ class TaskInfoForGroupCenter:
     def update(self, gpu_process_obj: GPUProcessInfo) -> None:
         if gpu_process_obj.gpu is None:
             return
-        
+
         # 任务唯一标识符
         self.taskId = gpu_process_obj.task_id
 
@@ -132,9 +132,15 @@ class TaskInfoForGroupCenter:
 
         # CUDA 信息
         self.cudaRoot = gpu_process_obj.cuda_root
-        self.cudaVersion = gpu_process_obj.cuda_version
+        self.cudaVersion = (
+            gpu_process_obj.torch_cuda_version
+            if gpu_process_obj.torch_cuda_version
+            else gpu_process_obj.cuda_version
+        )
 
-        self.isDebugMode = gpu_process_obj.is_debug if gpu_process_obj.is_debug else False
+        self.isDebugMode = (
+            gpu_process_obj.is_debug if gpu_process_obj.is_debug else False
+        )
 
         # 运行时间
         self.taskStartTime = int(gpu_process_obj.start_time)

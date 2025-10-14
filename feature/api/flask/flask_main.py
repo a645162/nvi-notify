@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 from html import escape
+from pathlib import Path
 
 import requests
 from flask import Flask, Response, redirect, render_template, request
@@ -183,10 +184,10 @@ def update_program():
     """
     try:
         # 检查当前目录是否为Git项目
-        current_dir = os.getcwd()
-        git_dir = os.path.join(current_dir, ".git")
+        current_dir = Path.cwd()
+        git_dir = current_dir / ".git"
 
-        if not os.path.exists(git_dir):
+        if not git_dir.exists():
             return Response(
                 response=json.dumps(
                     {"success": False, "message": "Current directory is not a Git project, cannot perform update"}
@@ -220,8 +221,8 @@ def update_program():
 
         # 使用当前Python解释器重新启动程序
         python_executable = sys.executable
-        script_path = os.path.join(current_dir, "main.py")
-        restart_script_path = os.path.join(current_dir, "restart_program.py")
+        script_path = str(current_dir / "main.py")
+        restart_script_path = str(current_dir / "restart_program.py")
 
         # 先返回响应
         response = Response(

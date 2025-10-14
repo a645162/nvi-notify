@@ -80,9 +80,12 @@ print(response.json())
 1. **先返回响应**: 确保HTTP响应已发送给客户端
 2. **调用重启脚本**: 启动独立的Python重启脚本 [`restart_program.py`](restart_program.py)
 3. **延迟重启**: 等待2秒确保响应完全发送
-4. **启动新进程**: 使用相同的Python解释器启动新的程序实例
-5. **等待启动**: 等待5秒确保新进程完全启动
-6. **杀死旧进程**: 使用SIGTERM信号终止当前进程
+4. **更新依赖包**: 执行以下pip安装命令：
+   - `pip install -U "li-group-center>=2.5.0" -i https://pypi.python.org/simple`
+   - `pip install -U -r requirements.txt`
+5. **启动新进程**: 使用相同的Python解释器启动新的程序实例
+6. **等待启动**: 等待5秒确保新进程完全启动
+7. **杀死旧进程**: 使用SIGTERM信号终止当前进程
 
 重启脚本 [`restart_program.py`](restart_program.py) 是一个独立的Python脚本，接收以下参数：
 - `current_pid`: 当前进程PID

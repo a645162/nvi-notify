@@ -59,7 +59,8 @@ class HardDisk:
         self._percentage_used_str: str = ""
 
         self._name: str = name
-        self._mount_point: str = mount_point
+        # 使用 setter 来设置 mount_point，确保阈值正确设置
+        self.mount_point = mount_point
 
     def update_info(self, info: list):
         self._total_str = info[1]
@@ -111,7 +112,12 @@ class HardDisk:
 
     @free_bytes.setter
     def free_bytes(self, value: int) -> None:
-        self.low_free_bytes_trigger = value < self.low_free_bytes_threshold
+        # 只有在阈值正确设置后才计算触发条件
+        if self.low_free_bytes_threshold > 0:
+            self.low_free_bytes_trigger = value < self.low_free_bytes_threshold
+        else:
+            # 如果阈值未正确设置，默认不触发
+            self.low_free_bytes_trigger = False
         # self.low_free_bytes_trigger = (
         #     value < self.low_free_bytes_threshold
         # ) and (value < self._free_bytes)
@@ -132,9 +138,14 @@ class HardDisk:
 
     @percentage_used_int.setter
     def percentage_used_int(self, cur_percentage_used: int) -> None:
-        self.high_percentage_used_trigger = (
-            cur_percentage_used > self.high_percentage_used_threshold
-        )
+        # 只有在阈值正确设置后才计算触发条件
+        if self.high_percentage_used_threshold > 0:
+            self.high_percentage_used_trigger = (
+                cur_percentage_used > self.high_percentage_used_threshold
+            )
+        else:
+            # 如果阈值未正确设置，默认不触发
+            self.high_percentage_used_trigger = False
 
         self._percentage_used_int = cur_percentage_used
 

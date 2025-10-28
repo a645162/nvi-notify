@@ -47,7 +47,9 @@ class HardDiskMonitor(Monitor):
         machine_hard_disk_dict = self.get_machine_hard_disk_dict()
         for mount_point in self.mount_points:
             if mount_point not in machine_hard_disk_dict:
-                raise Exception(f"{mount_point} is not a valid mount point")
+                logger.warning(f"{mount_point} is not a valid mount point")
+                continue
+
             hard_disk_dict[mount_point] = HardDisk(
                 machine_hard_disk_dict[mount_point], mount_point
             )

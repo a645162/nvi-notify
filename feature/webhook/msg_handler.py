@@ -91,11 +91,13 @@ class MessageHandler:
         Webhook.send_warning_msg_to_webhook_all_time(msg, MsgType.WARNING)
 
     @classmethod
-    def enqueue_hard_disk_warning_msg(cls, disk_info: str):
+    def enqueue_hard_disk_warning_msg(cls, disk_info: str, rank_message: str = ""):
         """
         向群聊中发送硬盘高占用警告消息
         """
         warning_message = f"⚠️【硬盘可用空间不足】⚠️\n{disk_info}"
+        if rank_message:
+            warning_message += f"\n{rank_message}"
         msg = cls.handle_normal_text(warning_message)
 
         # Send to wework directly

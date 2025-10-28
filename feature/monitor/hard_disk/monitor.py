@@ -198,8 +198,7 @@ class HardDiskMonitor(Monitor):
 
         return machine_all_hard_disk_dict
 
-    @staticmethod
-    def parse_dir_size_info(detail_dirs_info: list[str], hard_disk: HardDisk) -> None:
+    def parse_dir_size_info(self, detail_dirs_info: list[str], hard_disk: HardDisk) -> None:
         """
         Parse the directory size information and send warnings if necessary.
 
@@ -207,14 +206,17 @@ class HardDiskMonitor(Monitor):
         detail_dirs_info (list[str]): A list of directory size information strings.
         hard_disk (HardDisk): The HardDisk object representing the hard disk to be checked.
         """
+        user_size_list = []
+        
         for lines in detail_dirs_info:
             if len(lines) == 0:
                 continue
 
             dir_size, dir_path = lines.split()
-            if humanfriendly.parse_size(
-                dir_size, binary=True
-            ) < humanfriendly.parse_size("10GB", binary=True):
+            dir_size_bytes = humanfriendly.parse_size(dir_size, binary=True)
+            
+            # 只处理大于1GB的目录
+            if dir_size_bytes < humanfriendly.parse_size("1GB", binary=True):
                 continue
 
             user = UserInfo.find_user_by_path(USERS, dir_path)
@@ -222,12 +224,40 @@ class HardDiskMonitor(Monitor):
                 continue
             user_dir = hard_disk.handle_disk_info_mountpoint(hard_disk.mount_point)
 
-            logger.warning(
-                f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}的个人目录'{user_dir}'占用{dir_size}"
-            )
+            # 记录用户和目录大小信息
+            user_size_list.append({
+                "user": user,
+                "dir_name": user_dir,
+                "dir_size": dir_size,
+                "dir_size_bytes": dir_size_bytes
+            })
 
-            MessageHandler.enqueue_hard_disk_warning_msg_to_user(
-                hard_disk.disk_info, (user_dir, dir_size), user
+            # 如果目录大于10GB，发送个人警告
+            if dir_size_bytes >= humanfriendly.parse_size("10GB", binary=True):
+                logger.warning(
+                    f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}的个人目录'{user_dir}'占用{dir_size}"
+                )
+
+                MessageHandler.enqueue_hard_disk_warning_msg_to_user(
+                    hard_disk.disk_info, (user_dir, dir_size), user
+                )
+
+        # 如果有用户数据，发送群组消息（包含前5名）
+        if user_size_list:
+            # 按目录大小排序
+            user_size_list.sort(key=lambda x: x["dir_size_bytes"], reverse=True)
+            
+            # 构建前5名用户排名信息
+            rank_message = "📊【硬盘使用情况排名】\n"
+            for i, user_info in enumerate(user_size_list[:5], 1):
+                user = user_info["user"]
+                dir_name = user_info["dir_name"]
+                dir_size = user_info["dir_size"]
+                rank_message += f"{i}. {user.name_cn} - {dir_size} ({dir_name})\n"
+
+            # 发送群组消息，包含前5名用户排名
+            MessageHandler.enqueue_hard_disk_warning_msg(
+                hard_disk.disk_info, rank_message
             )
 
 

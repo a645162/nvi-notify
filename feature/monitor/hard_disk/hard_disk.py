@@ -45,8 +45,7 @@ class HardDisk:
 
         self._high_percentage_used_threshold: int = 0
         self._low_free_bytes_threshold: int = 0
-        self._high_percentage_used_trigger: bool = False
-        self._low_free_bytes_trigger: bool = False
+        # trigger 不再作为独立可写字段存储，由 getter 实时计算
 
         self._total_str: str = ""
         self._used_str: str = ""
@@ -63,9 +62,9 @@ class HardDisk:
         self.mount_point = mount_point
 
     def update_info(self, info: list):
-        self._total_str = info[1]
-        self._used_str = info[2]
-        self._free_str = info[3]
+        self.total_str = info[1]
+        self.used_str = info[2]
+        self.free_str = info[3]  # 调用setter来更新free_bytes和trigger
         self.percentage_used_str = info[4]
 
     @property
@@ -112,15 +111,7 @@ class HardDisk:
 
     @free_bytes.setter
     def free_bytes(self, value: int) -> None:
-        # 只有在阈值正确设置后才计算触发条件
-        if self.low_free_bytes_threshold > 0:
-            self.low_free_bytes_trigger = value < self.low_free_bytes_threshold
-        else:
-            # 如果阈值未正确设置，默认不触发
-            self.low_free_bytes_trigger = False
-        # self.low_free_bytes_trigger = (
-        #     value < self.low_free_bytes_threshold
-        # ) and (value < self._free_bytes)
+        # 仅更新内部值，trigger 在 getter 中实时计算
         self._free_bytes = value
 
     @property
@@ -138,15 +129,7 @@ class HardDisk:
 
     @percentage_used_int.setter
     def percentage_used_int(self, cur_percentage_used: int) -> None:
-        # 只有在阈值正确设置后才计算触发条件
-        if self.high_percentage_used_threshold > 0:
-            self.high_percentage_used_trigger = (
-                cur_percentage_used > self.high_percentage_used_threshold
-            )
-        else:
-            # 如果阈值未正确设置，默认不触发
-            self.high_percentage_used_trigger = False
-
+        # 仅更新内部值，trigger 在 getter 中实时计算
         self._percentage_used_int = cur_percentage_used
 
     @property
@@ -215,26 +198,27 @@ class HardDisk:
 
     @property
     def high_percentage_used_trigger(self) -> bool:
-        return self._high_percentage_used_trigger
-
-    @high_percentage_used_trigger.setter
-    def high_percentage_used_trigger(self, value: bool) -> None:
-        self._high_percentage_used_trigger = value
+        # 运行时根据阈值和当前占用率计算，避免在多个位置维护状态
+        if self.high_percentage_used_threshold > 0:
+            return self.percentage_used_int > self.high_percentage_used_threshold
+        return False
 
     @property
     def low_free_bytes_trigger(self) -> bool:
-        return self._low_free_bytes_trigger
-
-    @low_free_bytes_trigger.setter
-    def low_free_bytes_trigger(self, value: bool) -> None:
-        self._low_free_bytes_trigger = value
+        # 运行时根据阈值和当前剩余容量计算
+        if self.low_free_bytes_threshold > 0:
+            return self.free_bytes < self.low_free_bytes_threshold
+        return False
 
     @property
     def size_warning_trigger(self) -> bool:
+        # return self.low_free_bytes_trigger and self.high_percentage_used_trigger
+    
         if self.purpose == DiskPurpose.SYSTEM:
             return self.low_free_bytes_trigger
         elif self.purpose == DiskPurpose.DATA:
             return self.low_free_bytes_trigger and self.high_percentage_used_trigger
+    
         return False
 
     @property

@@ -70,13 +70,25 @@ class UserConfigParser:
         from group_center.core.feature.remote_config import (
             get_user_config_json_str,
         )
+        from feature.utils.logs import get_logger
 
-        json_str = get_user_config_json_str()
+        logger = get_logger()
 
-        if len(json_str) == 0:
+        try:
+            json_str = get_user_config_json_str()
+
+            if len(json_str) == 0:
+                logger.warning("Remote user config returned empty string, using local user configuration")
+                return {}
+
+            return self.get_user_info_by_json(json_str)
+            
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse remote user config JSON: {e}. Using local user configuration.")
             return {}
-
-        return self.get_user_info_by_json(json_str)
+        except Exception as e:
+            logger.warning(f"Failed to get remote user configuration: {e}. Using local user configuration.")
+            return {}
 
     def get_user_info_by_json(self, json_str: str) -> dict[str, UserInfo]:
         dict_list = json.loads(json_str)

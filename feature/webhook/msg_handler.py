@@ -132,7 +132,7 @@ class MessageHandler:
                 "title": f"⚠️ 硬盘容量报警 - {SERVER_NAME}",
                 "content": f"{disk_info}\n{rank_message}" if rank_message else disk_info,
                 "source": SERVER_NAME,
-                "urgent": True,
+                "urgent": False,
                 "timestamp": int(time.time() * 1000),  # Java兼容的时间戳（毫秒）
             }
             new_message_enqueue(alarm_data, "/api/client/alarm")
@@ -179,17 +179,7 @@ class MessageHandler:
 
         msg = cls.handle_normal_text(warning_message)
 
-        # 发送到GroupCenter报警接口
-        if USE_GROUP_CENTER:
-            alarm_data = {
-                "title": f"⚠️ 用户硬盘容量报警 - {SERVER_NAME}",
-                "content": f"{disk_info}\n用户 {user.name_cn} 的目录 {dir_name} 占用 {dir_size}，请及时清理！",
-                "source": SERVER_NAME,
-                "urgent": True,
-                "timestamp": int(time.time() * 1000),  # Java兼容的时间戳（毫秒）
-            }
-            new_message_enqueue(alarm_data, "/api/client/alarm")
-
+        # 不再发送到GroupCenter报警接口，只发送总的报警
         # Send to lark app directly
         # Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
 

@@ -107,7 +107,10 @@ class HardDiskMonitor(Monitor):
                     continue
                 logger.warning(f"[硬盘{mount_point}]容量不足！")
 
-                if not is_webhook_sleep_time():
+                # DEBUG模式下忽略夜间休息静默模式
+                should_send_notification = DEBUG_MODE or not is_webhook_sleep_time()
+                
+                if should_send_notification:
                     disk_warning_cnt[mount_point] = (
                         disk_warning_cnt.get(mount_point, 0) + 1
                     )

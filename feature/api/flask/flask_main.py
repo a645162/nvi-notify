@@ -112,7 +112,7 @@ def get_gpu_usage_info():
     if gpu_index is None:
         gpu_index = request.args.get("gpuIndex", default=None, type=int)
 
-    if gpu_index is None or gpu_index > get_gpu_count_backend():
+    if gpu_index is None or gpu_index >= get_gpu_count_backend():
         return Response(
             response=json.dumps({"result": "Invalid GPU Index(gpu_index)."}),
             status=400,
@@ -134,7 +134,7 @@ def get_gpu_task_info():
     if gpu_index is None:
         gpu_index = request.args.get("gpuIndex", default=None, type=int)
 
-    if gpu_index is None or gpu_index > get_gpu_count_backend():
+    if gpu_index is None or gpu_index >= get_gpu_count_backend():
         return Response(
             response=json.dumps({"result": "Invalid GPU Index(gpu_index)."}),
             status=400,

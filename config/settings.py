@@ -200,6 +200,8 @@ class EnvironmentManager:
 # Load environment variables
 EnvironmentManager.load_env()
 
+DEBUG_MODE = EnvironmentManager.get_bool("DEBUG_MODE", False)
+
 # Init
 WAIT_TIME_BEFORE_START = EnvironmentManager.get_int("WAIT_TIME_BEFORE_START", 10)
 SUDO_PERMISSION = EnvironmentManager.check_sudo_permission()

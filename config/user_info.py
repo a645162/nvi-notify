@@ -70,6 +70,7 @@ class UserConfigParser:
         from group_center.core.feature.remote_config import (
             get_user_config_json_str,
         )
+
         from feature.utils.logs import get_logger
 
         logger = get_logger()

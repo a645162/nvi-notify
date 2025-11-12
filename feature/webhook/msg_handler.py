@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
+import time
+
 from group_center.core.feature.custom_client_message import (
     machine_message_directly,
     machine_user_message_directly,
 )
+from group_center.core.feature.machine_message import new_message_enqueue
 
 from config.settings import (
     SERVER_DOMAIN,
     SERVER_NAME,
     SERVER_NAME_SHORT,
+    USE_GROUP_CENTER,
     EnvironmentManager,
     IPv4,
     IPv6,
@@ -76,6 +80,17 @@ class MessageHandler:
         )
         msg = cls.handle_warning_text(warning_message)
 
+        # 发送到GroupCenter报警接口
+        if USE_GROUP_CENTER:
+            alarm_data = {
+                "title": f"🤒 CPU温度报警 - {SERVER_NAME}",
+                "content": f"CPU {cpu_id} 温度已达到 {cpu_temperature}°C，请及时处理！",
+                "source": SERVER_NAME,
+                "urgent": True,
+                "timestamp": int(time.time() * 1000),  # Java兼容的时间戳（毫秒）
+            }
+            new_message_enqueue(alarm_data, "/api/client/alarm")
+
         Webhook.send_warning_msg_to_webhook_all_time(msg, MsgType.WARNING)
 
     @classmethod
@@ -88,6 +103,17 @@ class MessageHandler:
         warning_message = f"🤒🤒{SERVER_NAME}的CPU:{cpu_id}近5分钟平均温度已达{cpu_aver_temperature:.1f}°C\n"
         msg = cls.handle_warning_text(warning_message)
 
+        # 发送到GroupCenter报警接口
+        if USE_GROUP_CENTER:
+            alarm_data = {
+                "title": f"🤒 CPU平均温度报警 - {SERVER_NAME}",
+                "content": f"CPU {cpu_id} 近5分钟平均温度已达到 {cpu_aver_temperature:.1f}°C，请及时处理！",
+                "source": SERVER_NAME,
+                "urgent": True,
+                "timestamp": int(time.time() * 1000),  # Java兼容的时间戳（毫秒）
+            }
+            new_message_enqueue(alarm_data, "/api/client/alarm")
+
         Webhook.send_warning_msg_to_webhook_all_time(msg, MsgType.WARNING)
 
     @classmethod
@@ -99,6 +125,17 @@ class MessageHandler:
         if rank_message:
             warning_message += f"\n{rank_message}"
         msg = cls.handle_normal_text(warning_message)
+
+        # 发送到GroupCenter报警接口
+        if USE_GROUP_CENTER:
+            alarm_data = {
+                "title": f"⚠️ 硬盘容量报警 - {SERVER_NAME}",
+                "content": f"{disk_info}\n{rank_message}" if rank_message else disk_info,
+                "source": SERVER_NAME,
+                "urgent": True,
+                "timestamp": int(time.time() * 1000),  # Java兼容的时间戳（毫秒）
+            }
+            new_message_enqueue(alarm_data, "/api/client/alarm")
 
         # Send to wework directly
         Webhook.enqueue_msg_to_webhook(
@@ -141,6 +178,17 @@ class MessageHandler:
         )
 
         msg = cls.handle_normal_text(warning_message)
+
+        # 发送到GroupCenter报警接口
+        if USE_GROUP_CENTER:
+            alarm_data = {
+                "title": f"⚠️ 用户硬盘容量报警 - {SERVER_NAME}",
+                "content": f"{disk_info}\n用户 {user.name_cn} 的目录 {dir_name} 占用 {dir_size}，请及时清理！",
+                "source": SERVER_NAME,
+                "urgent": True,
+                "timestamp": int(time.time() * 1000),  # Java兼容的时间戳（毫秒）
+            }
+            new_message_enqueue(alarm_data, "/api/client/alarm")
 
         # Send to lark app directly
         # Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)

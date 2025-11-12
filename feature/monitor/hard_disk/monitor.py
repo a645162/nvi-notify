@@ -170,11 +170,11 @@ class HardDiskMonitor(Monitor):
         logger.info(f"[硬盘{hd_mp}]开始扫描路径: {scan_path}")
         
         # 检查扫描路径是否存在
-        import os
-        if not os.path.exists(scan_path):
+        scan_path_obj = Path(scan_path)
+        if not scan_path_obj.exists():
             logger.warning(f"[硬盘{hd_mp}]扫描路径不存在: {scan_path}")
             return
-        if not os.path.isdir(scan_path):
+        if not scan_path_obj.is_dir():
             logger.warning(f"[硬盘{hd_mp}]扫描路径不是目录: {scan_path}")
             return
 

@@ -130,12 +130,22 @@ class MessageHandler:
         if USE_GROUP_CENTER:
             alarm_data = {
                 "title": f"⚠️ 硬盘容量报警 - {SERVER_NAME}",
-                "content": f"{disk_info}\n{rank_message}" if rank_message else disk_info,
+                "content": f"{disk_info}\n{rank_message}"
+                if rank_message
+                else disk_info,
                 "source": SERVER_NAME,
                 "urgent": False,
                 "timestamp": int(time.time() * 1000),  # Java兼容的时间戳（毫秒）
             }
             new_message_enqueue(alarm_data, "/api/client/alarm")
+
+            # Send to lark by Group Center
+            machine_message_directly(
+                server_name=SERVER_NAME,
+                server_name_eng=SERVER_NAME_SHORT,
+                content=msg,
+                at="",
+            )
 
         # Send to wework directly
         Webhook.enqueue_msg_to_webhook(
@@ -143,14 +153,6 @@ class MessageHandler:
             MsgType.NORMAL,
             mention_everyone=True,
             enable_webhook_name=AllWebhookName.WEWORK,
-        )
-
-        # Send to lark by Group Center
-        machine_message_directly(
-            server_name=SERVER_NAME,
-            server_name_eng=SERVER_NAME_SHORT,
-            content=msg,
-            at="all",
         )
 
     @classmethod
@@ -166,9 +168,11 @@ class MessageHandler:
 
         dir_name, dir_size = dir_info
         if dir_name == "/home":
-            last_str = ("可能是 Conda 环境较多，请及时清理不需要使用的 Conda 环境。\n"
-                        "查看当前用户下所有环境的命令： conda env list \n"
-                        "删除某个 Conda 环境的命令： conda env remove -n 环境名 --all \n")
+            last_str = (
+                "可能是 Conda 环境较多，请及时清理不需要使用的 Conda 环境。\n"
+                "查看当前用户下所有环境的命令： conda env list \n"
+                "删除某个 Conda 环境的命令： conda env remove -n 环境名 --all \n"
+            )
         else:
             last_str = "请及时清理不需要的文件。\n"
         warning_message = (
@@ -179,9 +183,10 @@ class MessageHandler:
 
         msg = cls.handle_normal_text(warning_message)
 
-        # 不再发送到GroupCenter报警接口，只发送总的报警
-        # Send to lark app directly
-        # Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
+        if USE_GROUP_CENTER:
+            # 不再发送到GroupCenter报警接口，只发送总的报警
+            # Send to lark app directly
+            # Webhook.enqueue_warning_msg_for_user_to_webhook(msg, user)
 
-        # Send to lark app by Group Center
-        machine_user_message_directly(user_name=user.name_cn, content=msg)
+            # Send to lark app by Group Center
+            machine_user_message_directly(user_name=user.name_cn, content=msg)

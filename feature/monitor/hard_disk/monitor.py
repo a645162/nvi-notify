@@ -115,11 +115,11 @@ class HardDiskMonitor(Monitor):
                         disk_warning_cnt.get(mount_point, 0) + 1
                     )
                     
-                    # 在DEBUG_MODE下每次检测到硬盘爆满就扫描用户目录
-                    # 非DEBUG_MODE下每4次警告中的第2次扫描
+                    # 第一次直接扫盘，然后间隔8次扫一次盘
                     should_scan_dirs = (
                         DEBUG_MODE or
-                        disk_warning_cnt[mount_point] % 4 == 2
+                        disk_warning_cnt[mount_point] == 1 or
+                        disk_warning_cnt[mount_point] % 8 == 0
                     )
                     
                     if should_scan_dirs:
@@ -131,6 +131,7 @@ class HardDiskMonitor(Monitor):
                             # DEBUG_MODE下不清零计数器，保持每次扫描
                             pass
                         else:
+                            # 非DEBUG模式下，扫描后重置计数器
                             disk_warning_cnt[mount_point] = 0
 
                     MessageHandler.enqueue_hard_disk_warning_msg(hard_disk.disk_info)

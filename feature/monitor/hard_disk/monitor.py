@@ -115,7 +115,13 @@ class HardDiskMonitor(Monitor):
                         disk_warning_cnt.get(mount_point, 0) + 1
                     )
                     
-                    # 第一次直接扫盘，然后间隔8次扫一次盘
+                    # 如果连续警告超过24次，清理用户缓存
+                    if disk_warning_cnt[mount_point] >= 24:
+                        logger.warning(f"[硬盘{mount_point}]连续警告超过24次，开始清理用户缓存...")
+                        self.clean_user_cache(hard_disk)
+                        disk_warning_cnt[mount_point] = 0
+                    
+                    # 扫描目录（不清零，等达到24次再清零）
                     should_scan_dirs = (
                         DEBUG_MODE or
                         disk_warning_cnt[mount_point] == 1 or
@@ -124,19 +130,74 @@ class HardDiskMonitor(Monitor):
                     
                     if should_scan_dirs:
                         logger.warning(f"[硬盘{mount_point}]开始扫描目录占用容量...")
-                        
                         self.get_user_dir_size_info(hard_disk)
-                        
-                        if DEBUG_MODE:
-                            # DEBUG_MODE下不清零计数器，保持每次扫描
-                            pass
-                        else:
-                            # 非DEBUG模式下，扫描后重置计数器
-                            disk_warning_cnt[mount_point] = 0
 
                     MessageHandler.enqueue_hard_disk_warning_msg(hard_disk.disk_info)
 
             time.sleep(HARD_DISK_MONITOR_SAMPLING_INTERVAL)
+
+    def clean_user_cache(self, hard_disk: HardDisk) -> None:
+        """
+        Clean user cache when the monitored disk is full.
+        - If monitoring /home: clean /home user cache
+        - If monitoring / (no /home exists): clean /home user cache
+
+        Parameters:
+        hard_disk (HardDisk): The HardDisk object representing the hard disk to be cleaned.
+        """
+        # 根据当前监控的挂载点决定清理目标
+        mount_point = hard_disk.mount_point.strip()
+        
+        # 检查是否存在 /home 挂载点（配置中）
+        home_in_config = "/home" in HARD_DISK_MOUNT_POINT
+        
+        if home_in_config and "/home" in mount_point:
+            # 有 /home 配置且监控的是 /home，清理 /home 用户缓存
+            clean_path = "/home"
+        elif not home_in_config and mount_point == "/":
+            # 无 /home 配置，监控的是 /，清理 /home 用户缓存
+            clean_path = "/home"
+        else:
+            # 其他情况不清理
+            return
+
+        if not Path(clean_path).exists():
+            logger.warning(f"[清理] {clean_path} 不存在，跳过清理")
+            return
+
+        # 清理所有用户的 .vscode-server 和 .cache
+        for user_name, user_info in USERS.items():
+            user_home = user_info.home
+
+            # 确保用户目录在清理路径下
+            if not user_home.startswith(clean_path):
+                continue
+
+            # 清理 .vscode-server
+            vscode_server_path = f"{user_home}/.vscode-server"
+            if Path(vscode_server_path).exists():
+                try:
+                    result_code, _, _ = do_command(f"rm -rf {vscode_server_path}")
+                    if result_code == 0:
+                        logger.info(f"[清理] 已删除 {user_name} 的 .vscode-server")
+                        MessageHandler.enqueue_hard_disk_warning_msg(
+                            f"[系统自动清理] 已删除用户 {user_name} 的 .vscode-server 缓存"
+                        )
+                except Exception as e:
+                    logger.warning(f"[清理] 删除 {user_name} 的 .vscode-server 失败: {e}")
+
+            # 清理 .cache
+            cache_path = f"{user_home}/.cache"
+            if Path(cache_path).exists():
+                try:
+                    result_code, _, _ = do_command(f"rm -rf {cache_path}")
+                    if result_code == 0:
+                        logger.info(f"[清理] 已删除 {user_name} 的 .cache")
+                        MessageHandler.enqueue_hard_disk_warning_msg(
+                            f"[系统自动清理] 已删除用户 {user_name} 的 .cache 缓存"
+                        )
+                except Exception as e:
+                    logger.warning(f"[清理] 删除 {user_name} 的 .cache 失败: {e}")
 
     def get_user_dir_size_info(self, hard_disk: HardDisk) -> None:
         """
@@ -347,7 +408,26 @@ def start_resource_monitor_all() -> None:
         logger.warning("Resource monitor only support root user.")
         return
 
-    hard_disk_monitor = HardDiskMonitor(HARD_DISK_MOUNT_POINT)
+    # 优先检测是否存在 /home 挂载点
+    mount_points_to_monitor = set()
+    if "/home" in HARD_DISK_MOUNT_POINT:
+        mount_points_to_monitor.add("/home")
+        logger.info("Found /home mount point, will monitor /home")
+    else:
+        # 如果没有 /home，检查是否有 / 挂载点
+        if "/" in HARD_DISK_MOUNT_POINT:
+            mount_points_to_monitor.add("/")
+            logger.info("No /home found, will monitor / (system disk)")
+        else:
+            # 使用配置的挂载点
+            mount_points_to_monitor = HARD_DISK_MOUNT_POINT
+            logger.info(f"Using configured mount points: {mount_points_to_monitor}")
+
+    if not mount_points_to_monitor:
+        logger.warning("Cannot get the mountpoint of hard disk.")
+        return
+
+    hard_disk_monitor = HardDiskMonitor(mount_points_to_monitor)
     hard_disk_monitor.start_monitor(hard_disk_monitor.hard_disk_monitor_thread)
 
 

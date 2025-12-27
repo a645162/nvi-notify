@@ -1,5 +1,6 @@
 import copy
 
+import psutil
 from nvitop import Device
 from nvitop.api.process import GpuProcess
 from nvitop.api.utils import NaType
@@ -66,7 +67,18 @@ class GPU:
             if pid in self.processes:
                 continue
 
-            new_process = GPUProcessInfo(pid, self.gpu_id, gpu_process)
+            try:
+                new_process = GPUProcessInfo(pid, self.gpu_id, gpu_process)
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                # 进程已不存在或无法访问，跳过
+                logger.debug(f"Process {pid} no longer exists or cannot be accessed, skipping")
+                continue
+
+            # 如果是僵尸进程，跳过
+            if new_process.is_zombie:
+                logger.debug(f"Process {pid} is zombie, skipping")
+                continue
+
             if not new_process.is_python:
                 continue
 

@@ -136,6 +136,9 @@ class GPUProcessInfo:
         self.already_has_alerted_zero_cpu_usage: bool = False
         self.total_cpu_zero_alert_count: int = 0
 
+        # 僵尸进程标记 - 如果进程已不存在则为 True
+        self.is_zombie: bool = False
+
         self._gpu = None
         self._state: TaskState = TaskState.DEFAULT
         self._running_time_in_seconds: int = 0
@@ -150,11 +153,19 @@ class GPUProcessInfo:
 
             # 初始化CPU监控，第一次调用会启动监控，第一次总为0
             self._process.cpu_percent()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        except psutil.NoSuchProcess:
+            self._process = None
+            self.is_zombie = True  # 标记为僵尸进程
+        except (psutil.AccessDenied, psutil.ZombieProcess):
             self._process = None
 
     def _init_static_info(self) -> None:
         """初始化静态信息 - 只在创建对象时调用一次"""
+        # 如果是僵尸进程，跳过初始化
+        if self.is_zombie:
+            self.ignore_task = True
+            return
+
         try:
             self._get_basic_process_info()
             self._get_environment_info()
@@ -231,7 +242,9 @@ class GPUProcessInfo:
 
             if self._process:
                 self.process_environ = self._process.environ().copy()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        except psutil.NoSuchProcess:
+            self.is_zombie = True  # 标记为僵尸进程
+        except (psutil.AccessDenied, psutil.ZombieProcess):
             pass
 
     def _get_environment_info(self) -> None:
@@ -335,6 +348,10 @@ class GPUProcessInfo:
 
     def update(self) -> None:
         """更新动态信息 - 定期调用此方法刷新状态"""
+        # 如果是僵尸进程，跳过更新
+        if self.is_zombie:
+            return
+
         try:
             self._update_memory_info()
             self._update_runtime_info()

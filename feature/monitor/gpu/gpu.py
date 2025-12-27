@@ -66,12 +66,16 @@ class GPU:
         for pid, gpu_process in self.all_processes.items():
             if pid in self.processes:
                 continue
+            
+            if gpu_process.is_zombie:
+                # logger.debug(f"Process {pid} is zombie, skipping")
+                continue
 
             try:
                 new_process = GPUProcessInfo(pid, self.gpu_id, gpu_process)
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 # 进程已不存在或无法访问，跳过
-                logger.debug(f"Process {pid} no longer exists or cannot be accessed, skipping")
+                # logger.debug(f"Process {pid} no longer exists or cannot be accessed, skipping")
                 continue
 
             # 如果是僵尸进程，跳过

@@ -63,12 +63,18 @@ class GPU:
             self._num_task: int = 0
             return
 
+        # 这里的gpu_process是psutil.Process对象
         for pid, gpu_process in self.all_processes.items():
             if pid in self.processes:
                 continue
             
-            if gpu_process.is_zombie:
-                # logger.debug(f"Process {pid} is zombie, skipping")
+            # 检查进程是否为僵尸进程
+            try:
+                if gpu_process.status() == psutil.STATUS_ZOMBIE:
+                    # logger.debug(f"Process {pid} is zombie, skipping")
+                    continue
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                # 进程已不存在或无法访问，跳过
                 continue
 
             try:

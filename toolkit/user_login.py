@@ -59,6 +59,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 # 系统内置用户过滤清单
@@ -83,9 +84,11 @@ DEFAULT_SYSTEM_USERS: Set[str] = {
     "list",
     "irc",
     "sshd",
+    "gnats",
     # 包管理和系统服务
     "_apt",
     "_flatpak",
+    "_rpc",
     # systemd 相关
     "systemd-network",
     "systemd-timesync",
@@ -96,6 +99,7 @@ DEFAULT_SYSTEM_USERS: Set[str] = {
     "messagebus",
     "dnsmasq",
     "avahi",
+    "avahi-autoipd",
     "nm-openvpn",
     # 日志和监控
     "syslog",
@@ -116,15 +120,20 @@ DEFAULT_SYSTEM_USERS: Set[str] = {
     "polkitd",
     "rtkit",
     "colord",
+    "pulse",
     "gnome-initial-set",
+    "gnome-initial-setup",
     "gdm",
     "gnome-remote-desk",
     "geoclue",
     # 其他服务
     "sssd",
     "fwupd-refresh",
+    "statd",
+    "nvpd",
     # 应用服务账户（可能需要根据实际情况调整）
     "nvidia-persistenc",  # NVIDIA 持久化守护进程
+    "nvidia-persistenced",  # NVIDIA 持久化守护进程（完整名称）
     "ollama",  # Ollama AI 服务
 }
 
@@ -202,6 +211,7 @@ class UserLoginChecker:
 
         last命令输出格式：
         username pts/0 192.168.1.10 Mon Dec 25 14:32 - 14:45 (00:13)
+        或：shijunha pts/16       :pts/6:S.0       Tue Dec  2 15:04 - 17:29  (02:25)
 
         Returns:
             LastLoginInfo: 解析后的登录信息
@@ -221,21 +231,38 @@ class UserLoginChecker:
 
         # 取第一行（最新的登录记录）
         first_line = lines[0]
+        
+        # 检查是否是 "wtmp begins" 行（表示没有登录记录）
+        if "wtmp begins" in first_line.lower() or "btmp begins" in first_line.lower():
+            return LastLoginInfo(
+                username=username,
+                login_time=None,
+                login_type="",
+                from_host="",
+                duration="",
+                raw_output=output,
+                port="",
+                is_never_logged_in=True,
+            )
 
         login_type = ""
         from_host = ""
         duration = ""
         login_time = None
+        port = ""
 
         # 先提取基本字段：username pts/0 192.168.1.10 ...
         parts = first_line.split()
+        if len(parts) >= 2:
+            port = parts[1]  # pts/0 或 pts/16
+            login_type = port  # 使用 port 作为 login_type
         if len(parts) >= 3:
-            login_type = parts[1]  # pts/0
-            from_host = parts[2]  # 192.168.1.10
+            from_host = parts[2]  # 192.168.1.10 或 :pts/6:S.0
 
         # 解析时间部分 - 使用正则表达式匹配整行
         # 完整格式：username pts/0 192.168.1.10 Mon Dec 25 14:32 - 14:45 (00:13)
         # 时间部分：Mon Dec 25 14:32 - 14:45 (00:13)
+        # 注意：日期中可能有多个空格，如 "Dec  2" （个位数日期）
         time_pattern = (
             r"(\w+)\s+(\w+)\s+(\d+)\s+(\d+:\d+)\s+-\s+(\d+:\d+)\s+\((\d+:\d+)\)"
         )
@@ -265,7 +292,7 @@ class UserLoginChecker:
             from_host=from_host,
             duration=duration,
             raw_output=output,
-            port="",
+            port=port,
             is_never_logged_in=False,
         )
 
@@ -284,8 +311,15 @@ class UserLoginChecker:
         """
         lines = output.strip().split("\n")
 
-        # 检查是否从未登录过
-        if len(lines) == 1 or "Never logged in" in output or "从未登录" in output:
+        # 检查是否从未登录过（支持中英文、带星号等各种格式）
+        never_logged_patterns = [
+            "Never logged in",
+            "从未登录",
+            "**从未登录",  # 匹配 **从未登录过** 等
+        ]
+        
+        # 先检查整个输出
+        if len(lines) == 1 or any(pattern in output for pattern in never_logged_patterns):
             return LastLoginInfo(
                 username=username,
                 login_time=None,
@@ -303,12 +337,8 @@ class UserLoginChecker:
         else:
             data_line = lines[0]
 
-        # 检查是否从未登录
-        if (
-            "Never logged in" in data_line
-            or "**Never logged in**" in data_line
-            or "从未登录" in data_line
-        ):
+        # 再检查数据行是否包含"从未登录"相关文本
+        if any(pattern in data_line for pattern in never_logged_patterns):
             return LastLoginInfo(
                 username=username,
                 login_time=None,
@@ -445,32 +475,65 @@ class UserLoginChecker:
 
         return self._parse_lastlog_output(stdout, username)
 
-    def get_all_users_lastlog(self, days: Optional[int] = None) -> List[LastLoginInfo]:
+    def get_all_users_lastlog(self, days: Optional[int] = None, use_last: bool = True) -> List[LastLoginInfo]:
         """
         扫描所有用户的最后登录时间
+        
+        采用逐个用户查询的方式，避免固定列宽导致的用户名截断问题
 
         Args:
             days: 如果指定，只返回最近days天内有登录的用户
+            use_last: 是否使用 last 命令（更准确）而不是 lastlog
 
         Returns:
             List[LastLoginInfo]: 所有用户的最后登录信息列表
         """
-        cmd = self._lastlog_command[:]  # 复制命令列表
-        if days is not None:
-            cmd.extend(["-t", str(days)])
-
-        returncode, stdout, stderr = self._execute_command(cmd)
-
-        if returncode != 0:
-            return []
-
-        all_users = self._parse_all_lastlog_output(stdout)
-
-        # 如果需要过滤系统用户
+        # 获取系统所有用户列表
+        all_usernames = self._get_all_system_users()
+        
+        # 如果需要过滤系统用户，先过滤掉
         if self.exclude_system_users or self.excluded_users:
-            all_users = [u for u in all_users if u.username not in self.excluded_users]
-
-        return all_users
+            all_usernames = [u for u in all_usernames if u not in self.excluded_users]
+        
+        result = []
+        
+        # 对每个用户单独查询
+        for username in all_usernames:
+            if use_last:
+                info = self.get_last_login_by_last(username)
+            else:
+                info = self.get_last_login_by_lastlog(username)
+            
+            # 如果指定了天数过滤
+            if days is not None and info.login_time:
+                from datetime import timedelta
+                cutoff_date = datetime.now() - timedelta(days=days)
+                if info.login_time < cutoff_date:
+                    continue  # 跳过太久之前登录的用户
+            
+            result.append(info)
+        
+        return result
+    
+    def _get_all_system_users(self) -> List[str]:
+        """
+        获取系统所有用户列表（从 /etc/passwd）
+        
+        Returns:
+            List[str]: 所有用户名列表
+        """
+        try:
+            with Path("/etc/passwd").open("r") as f:
+                users = []
+                for line in f:
+                    if line.strip():
+                        # /etc/passwd 格式: username:x:uid:gid:comment:home:shell
+                        username = line.split(":")[0]
+                        users.append(username)
+                return users
+        except Exception:
+            # 如果读取失败，返回空列表
+            return []
 
     def is_system_user(self, username: str) -> bool:
         """
@@ -769,7 +832,8 @@ if __name__ == "__main__":
             print("提示: 使用 -s 或 --no-system 参数可排除系统用户")
         print()
 
-        all_users = checker.get_all_users_lastlog()
+        # 使用 last 命令查询（更准确，不会有列宽截断问题）
+        all_users = checker.get_all_users_lastlog(use_last=True)
 
         for user_info in all_users:
             status = (

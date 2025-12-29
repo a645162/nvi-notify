@@ -157,7 +157,7 @@ class MessageHandler:
 
     @classmethod
     def enqueue_hard_disk_warning_msg_to_user(
-        cls, disk_info: str, dir_info: tuple[str, str], user: UserInfo
+        cls, disk_info: str, dir_info: tuple[str, str, str], user: UserInfo
     ):
         """
         通过飞书app向各用户发送硬盘高占用警告消息
@@ -166,7 +166,7 @@ class MessageHandler:
             logger.warning(f"用户{user.name_cn}没有配置Lark通知ID，无法发送消息。")
             return
 
-        dir_name, dir_size = dir_info
+        dir_name, dir_size, last_login_date = dir_info
         if dir_name == "/home":
             last_str = (
                 "可能是 Conda 环境较多，请及时清理不需要使用的 Conda 环境。\n"
@@ -178,7 +178,8 @@ class MessageHandler:
         warning_message = (
             f"⚠️【硬盘可用空间不足】⚠️\n"
             f"{disk_info}\n"
-            f"⚠️用户{user.name_cn}的个人目录[{dir_name}]占用容量为{dir_size}，{last_str}"
+            f"⚠️用户{user.name_cn}的个人目录[{dir_name}]占用容量为{dir_size}，"
+            f"最后登录: {last_login_date}，{last_str}"
         )
 
         msg = cls.handle_normal_text(warning_message)

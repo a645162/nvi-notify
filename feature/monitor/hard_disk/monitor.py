@@ -20,6 +20,7 @@ from feature.utils.common_utils import cat_info, do_command
 from feature.utils.logs import get_logger
 from feature.utils.system import check_is_linux, check_is_root
 from feature.webhook.msg_handler import MessageHandler
+from toolkit.user_login import get_user_lastlog
 
 logger = get_logger()
 
@@ -341,6 +342,7 @@ class HardDiskMonitor(Monitor):
                 # 记录用户和目录大小信息
                 user_size_list.append({
                     "user": user,
+                    "user_name_eng": user.name_eng,
                     "dir_name": user_dir,
                     "dir_size": dir_size,
                     "dir_size_bytes": dir_size_bytes
@@ -351,6 +353,18 @@ class HardDiskMonitor(Monitor):
                 logger.warning(f"[硬盘{hard_disk.mount_point}]解析目录信息失败: {lines}, 错误: {e}")
 
         logger.info(f"[硬盘{hard_disk.mount_point}]扫描统计: 总目录数={total_dirs}, 大目录(>1GB)={large_dirs}, 匹配用户={matched_users}")
+
+        # 获取用户最后登录日期的辅助函数
+        def get_user_last_login_date(username: str) -> str:
+            """获取用户最后登录日期，只返回日期部分"""
+            try:
+                login_info = get_user_lastlog(username, sudo=False)
+                if login_info.login_time:
+                    return login_info.login_time.strftime("%Y-%m-%d")
+                return "从未登录"
+            except Exception as e:
+                logger.debug(f"获取用户 {username} 最后登录日期失败: {e}")
+                return "未知"
 
         # 如果有用户数据，发送群组消息（包含前10名）和个人消息（只给前三名）
         if user_size_list:
@@ -363,7 +377,9 @@ class HardDiskMonitor(Monitor):
                 user = user_info["user"]
                 dir_name = user_info["dir_name"]
                 dir_size = user_info["dir_size"]
-                rank_message += f"{i}. {user.name_cn} - {dir_size} ({dir_name})\n"
+                # 获取用户最后登录日期
+                last_login_date = get_user_last_login_date(user.name_eng)
+                rank_message += f"{i}. {user.name_cn} - {dir_size} ({dir_name}) - 最后登录: {last_login_date}\n"
 
             logger.info(f"[硬盘{hard_disk.mount_point}]发送排名信息: {rank_message}")
 
@@ -381,12 +397,14 @@ class HardDiskMonitor(Monitor):
                 
                 # 如果目录大于10GB，发送个人警告
                 if dir_size_bytes >= humanfriendly.parse_size("10GB", binary=True):
+                    # 获取用户最后登录日期
+                    last_login_date = get_user_last_login_date(user.name_eng)
                     logger.warning(
-                        f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}的个人目录'{dir_name}'占用{dir_size}"
+                        f"[硬盘\"{hard_disk.mount_point}\"]{user.name_cn}的个人目录'{dir_name}'占用{dir_size}，最后登录: {last_login_date}"
                     )
 
                     MessageHandler.enqueue_hard_disk_warning_msg_to_user(
-                        hard_disk.disk_info, (dir_name, dir_size), user
+                        hard_disk.disk_info, (dir_name, dir_size, last_login_date), user
                     )
         else:
             logger.info(f"[硬盘{hard_disk.mount_point}]未找到匹配的用户目录数据")

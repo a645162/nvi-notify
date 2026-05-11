@@ -428,18 +428,31 @@ def start_resource_monitor_all() -> None:
 
     # 优先检测是否存在 /home 挂载点
     mount_points_to_monitor = set()
-    if "/home" in HARD_DISK_MOUNT_POINT:
+    
+    # 解析配置的挂载点（支持 "/, /mnt/hdd1" 格式）
+    if isinstance(HARD_DISK_MOUNT_POINT, str):
+        # 将字符串 "/, /mnt/hdd1" 转换为集合
+        configured_mount_points = set(
+            mp.strip() for mp in HARD_DISK_MOUNT_POINT.split(",") if mp.strip()
+        )
+    else:
+        configured_mount_points = set(HARD_DISK_MOUNT_POINT) if HARD_DISK_MOUNT_POINT else set()
+    
+    # 添加 /home 到监控列表（如果配置中有）
+    if "/home" in configured_mount_points:
         mount_points_to_monitor.add("/home")
         logger.info("Found /home mount point, will monitor /home")
-    else:
-        # 如果没有 /home，检查是否有 / 挂载点
-        if "/" in HARD_DISK_MOUNT_POINT:
-            mount_points_to_monitor.add("/")
-            logger.info("No /home found, will monitor / (system disk)")
-        else:
-            # 使用配置的挂载点
-            mount_points_to_monitor = HARD_DISK_MOUNT_POINT
-            logger.info(f"Using configured mount points: {mount_points_to_monitor}")
+    
+    # 添加 / 到监控列表（如果配置中有且没有 /home）
+    if "/" in configured_mount_points and "/home" not in mount_points_to_monitor:
+        mount_points_to_monitor.add("/")
+        logger.info("Found / mount point, will monitor / (system disk)")
+    
+    # 添加其他配置的挂载点（如 /mnt/hdd1）
+    for mp in configured_mount_points:
+        if mp != "/" and mp != "/home":
+            mount_points_to_monitor.add(mp)
+            logger.info(f"Found additional mount point: {mp}")
 
     if not mount_points_to_monitor:
         logger.warning("Cannot get the mountpoint of hard disk.")

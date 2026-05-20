@@ -2,10 +2,11 @@
 用户最后登录时间查询工具类
 
 提供以下功能：
-1. 查询用户最后一次"真实登录会话"的时间（SSH、本地终端、su – 等）
-2. 查询用户最后一次"出现在系统里"的时间（只要曾经登录过就会写，不管是否成功）
-3. 一次性扫描所有用户
-4. 过滤系统内置用户
+1. 查询用户最后一次"真实登录会话"的时间（SSH、本地终端、su – 等）- 使用 last 命令
+2. 查询用户最后一次"出现在系统里"的时间（只要曾经登录过就会写，不管是否成功）- 使用 lastlog 命令
+3. 综合两种方式，取最新时间
+4. 一次性扫描所有用户
+5. 过滤系统内置用户
 
 使用要求：
 - 需要root权限执行（因为日志文件需要root权限读取）
@@ -15,13 +16,18 @@
     # 基本使用
     from toolkit.user_login import UserLoginChecker, get_user_lastlog
 
-    # 查询单个用户
+    # 查询单个用户（方法1：last命令）
     info = get_user_lastlog('konghaomin')
     print(f'最后登录: {info.login_time}')
 
-    # 查询所有用户（排除系统用户）
-    checker = UserLoginChecker(exclude_system_users=True)
-    all_users = checker.get_all_users_lastlog()
+    # 综合两种方式，取最新时间
+    from toolkit.user_login import get_user_combined_last_login
+    info = get_user_combined_last_login('konghaomin')
+    print(f'最后登录: {info.login_time}')
+
+    # 查询所有用户（综合两种方式）
+    checker = UserLoginChecker(exclude_system_users=True, use_combined=True)
+    all_users = checker.get_all_users_lastlog(use_combined=True)
 
     # 自定义排除用户列表
     custom_exclude = {'test_user', 'temp_user'}
@@ -40,7 +46,7 @@
         print('daemon 是系统用户')
 
 命令行使用：
-    # 查询所有用户
+    # 查询所有用户（综合两种方式）
     python user_login.py
 
     # 查询所有用户（排除系统用户）
@@ -475,45 +481,121 @@ class UserLoginChecker:
 
         return self._parse_lastlog_output(stdout, username)
 
-    def get_all_users_lastlog(self, days: Optional[int] = None, use_last: bool = True) -> List[LastLoginInfo]:
+    def get_all_users_lastlog(
+        self, days: Optional[int] = None, use_last: bool = True, use_combined: bool = True
+    ) -> List[LastLoginInfo]:
         """
-        扫描所有用户的最后登录时间
-        
+        扫描所有用户的最后登录时间（综合两种方式，取最新时间）
+
         采用逐个用户查询的方式，避免固定列宽导致的用户名截断问题
 
         Args:
             days: 如果指定，只返回最近days天内有登录的用户
             use_last: 是否使用 last 命令（更准确）而不是 lastlog
+            use_combined: 是否综合两种方式取最新时间（如果为False，只用last或lastlog）
 
         Returns:
             List[LastLoginInfo]: 所有用户的最后登录信息列表
         """
         # 获取系统所有用户列表
         all_usernames = self._get_all_system_users()
-        
+
         # 如果需要过滤系统用户，先过滤掉
         if self.exclude_system_users or self.excluded_users:
             all_usernames = [u for u in all_usernames if u not in self.excluded_users]
-        
+
         result = []
-        
-        # 对每个用户单独查询
+
+        # 对每个用户查询
         for username in all_usernames:
-            if use_last:
-                info = self.get_last_login_by_last(username)
+            if use_combined:
+                # 综合两种方式，取最新时间
+                info = self._get_combined_login_info(username)
             else:
-                info = self.get_last_login_by_lastlog(username)
-            
+                # 只用一种方式
+                if use_last:
+                    info = self.get_last_login_by_last(username)
+                else:
+                    info = self.get_last_login_by_lastlog(username)
+
             # 如果指定了天数过滤
             if days is not None and info.login_time:
                 from datetime import timedelta
+
                 cutoff_date = datetime.now() - timedelta(days=days)
                 if info.login_time < cutoff_date:
                     continue  # 跳过太久之前登录的用户
-            
+
             result.append(info)
-        
+
         return result
+
+    def _get_combined_login_info(self, username: str) -> LastLoginInfo:
+        """
+        综合两种方式获取用户最后登录时间，取最新时间
+
+        Args:
+            username: 用户名
+
+        Returns:
+            LastLoginInfo: 综合后的最后登录信息
+        """
+        # 方法1：使用 last 命令查询
+        last_info = self.get_last_login_by_last(username)
+        # 方法2：使用 lastlog 命令查询
+        lastlog_info = self.get_last_login_by_lastlog(username)
+
+        # 比较两个时间，取最新
+        time1 = last_info.login_time
+        time2 = lastlog_info.login_time
+
+        if time1 is not None and time2 is not None:
+            if time1 >= time2:
+                return LastLoginInfo(
+                    username=username,
+                    login_time=time1,
+                    login_type=last_info.login_type,
+                    from_host=last_info.from_host,
+                    duration=last_info.duration,
+                    raw_output=last_info.raw_output,
+                    port=last_info.port,
+                    is_never_logged_in=last_info.is_never_logged_in,
+                )
+            else:
+                return LastLoginInfo(
+                    username=username,
+                    login_time=time2,
+                    login_type="lastlog",
+                    from_host=lastlog_info.from_host,
+                    duration="",
+                    raw_output=lastlog_info.raw_output,
+                    port="",
+                    is_never_logged_in=lastlog_info.is_never_logged_in,
+                )
+        elif time1 is not None:
+            return last_info
+        elif time2 is not None:
+            return LastLoginInfo(
+                username=username,
+                login_time=time2,
+                login_type="lastlog",
+                from_host=lastlog_info.from_host,
+                duration="",
+                raw_output=lastlog_info.raw_output,
+                port="",
+                is_never_logged_in=lastlog_info.is_never_logged_in,
+            )
+        else:
+            return LastLoginInfo(
+                username=username,
+                login_time=None,
+                login_type="",
+                from_host="",
+                duration="",
+                raw_output="",
+                port="",
+                is_never_logged_in=True,
+            )
     
     def _get_all_system_users(self) -> List[str]:
         """
@@ -672,17 +754,61 @@ class UserLoginChecker:
         self, username: str, use_both: bool = True
     ) -> Dict[str, Any]:
         """
-        获取用户的完整登录信息
+        获取用户的完整登录信息，综合两种方式取最新时间
 
         Args:
             username: 用户名
-            use_both: 是否同时查询last和lastlog
+            use_both: 是否综合两种方式取最新时间
 
         Returns:
             Dict[str, Any]: 包含两种查询结果的字典
         """
         last_info = self.get_last_login_by_last(username)
         lastlog_info = self.get_last_login_by_lastlog(username)
+
+        # 综合两种方式，取最新时间
+        final_login_time = None
+        final_login_type = ""
+        final_from_host = ""
+        final_duration = ""
+        final_is_never = True
+        final_source = ""  # 记录数据来源
+
+        time1 = last_info.login_time
+        time2 = lastlog_info.login_time
+
+        if time1 is not None and time2 is not None:
+            # 两者都有值，取最新
+            if time1 >= time2:
+                final_login_time = time1
+                final_login_type = last_info.login_type
+                final_from_host = last_info.from_host
+                final_duration = last_info.duration
+                final_is_never = False
+                final_source = "last"
+            else:
+                final_login_time = time2
+                final_login_type = "lastlog"
+                final_from_host = lastlog_info.from_host
+                final_duration = ""
+                final_is_never = False
+                final_source = "lastlog"
+        elif time1 is not None:
+            # 只有方法1有值
+            final_login_time = time1
+            final_login_type = last_info.login_type
+            final_from_host = last_info.from_host
+            final_duration = last_info.duration
+            final_is_never = False
+            final_source = "last"
+        elif time2 is not None:
+            # 只有方法2有值
+            final_login_time = time2
+            final_login_type = "lastlog"
+            final_from_host = lastlog_info.from_host
+            final_duration = ""
+            final_is_never = False
+            final_source = "lastlog"
 
         result = {
             "username": username,
@@ -698,15 +824,22 @@ class UserLoginChecker:
                 "from": lastlog_info.from_host,
                 "is_never": lastlog_info.is_never_logged_in,
             },
+            "combined": {
+                "time": final_login_time,
+                "type": final_login_type,
+                "from": final_from_host,
+                "duration": final_duration,
+                "is_never": final_is_never,
+                "source": final_source,
+            },
         }
 
         if not use_both:
             # 只返回lastlog的结果（更可靠，始终保留最后一次）
             result["primary"] = result["lastlog"]
         else:
-            # last显示的是"真实登录会话"，lastlog显示的是"最后一次出现"
-            # 通常lastlog的结果更全面
-            result["primary"] = result["lastlog"]
+            # 综合两种方式，返回最新时间
+            result["primary"] = result["combined"]
 
         return result
 
@@ -741,22 +874,108 @@ def get_user_lastlog(username: str, sudo: bool = False) -> LastLoginInfo:
     return checker.get_last_login_by_lastlog(username)
 
 
+def get_user_combined_last_login(
+    username: str, sudo: bool = False
+) -> LastLoginInfo:
+    """
+    综合两种方式获取用户最后登录时间，取最新时间
+
+    方法1（last命令）：查询用户最后一次"真实登录会话"的时间（SSH、本地终端、su 等）
+    方法2（lastlog命令）：查询用户最后一次"出现在系统里"的时间
+
+    对于某些用户，可能方法1能获取到最新的登录记录，对于另一些用户可能方法2能获取到。
+    取两者中最新时间的记录。
+
+    Args:
+        username: 用户名
+        sudo: 是否使用sudo
+
+    Returns:
+        LastLoginInfo: 综合后的最后登录信息（取最新时间）
+    """
+    checker = UserLoginChecker(sudo=sudo)
+
+    # 方法1：使用 last 命令查询
+    last_info = checker.get_last_login_by_last(username)
+    # 方法2：使用 lastlog 命令查询
+    lastlog_info = checker.get_last_login_by_lastlog(username)
+
+    # 比较两个时间，取最新
+    final_login_time = None
+    final_login_type = ""
+    final_from_host = ""
+    final_duration = ""
+    final_is_never = True
+
+    # 确定主要时间来源
+    time1 = last_info.login_time
+    time2 = lastlog_info.login_time
+
+    if time1 is not None and time2 is not None:
+        # 两者都有值，取最新
+        if time1 >= time2:
+            final_login_time = time1
+            final_login_type = last_info.login_type
+            final_from_host = last_info.from_host
+            final_duration = last_info.duration
+            final_is_never = False
+        else:
+            final_login_time = time2
+            final_login_type = "lastlog"
+            final_from_host = lastlog_info.from_host
+            final_duration = ""
+            final_is_never = False
+    elif time1 is not None:
+        # 只有方法1有值
+        final_login_time = time1
+        final_login_type = last_info.login_type
+        final_from_host = last_info.from_host
+        final_duration = last_info.duration
+        final_is_never = False
+    elif time2 is not None:
+        # 只有方法2有值
+        final_login_time = time2
+        final_login_type = "lastlog"
+        final_from_host = lastlog_info.from_host
+        final_duration = ""
+        final_is_never = False
+    else:
+        # 两者都没有值
+        final_login_time = None
+        final_is_never = True
+
+    return LastLoginInfo(
+        username=username,
+        login_time=final_login_time,
+        login_type=final_login_type,
+        from_host=final_from_host,
+        duration=final_duration,
+        raw_output=f"last: {last_info.raw_output}\nlastlog: {lastlog_info.raw_output}",
+        port="",
+        is_never_logged_in=final_is_never,
+    )
+
+
 def get_all_users_login_info(
-    days: Optional[int] = None, sudo: bool = False, exclude_system_users: bool = False
+    days: Optional[int] = None,
+    sudo: bool = False,
+    exclude_system_users: bool = False,
+    use_combined: bool = True,
 ) -> List[LastLoginInfo]:
     """
-    便捷函数：扫描所有用户的最后登录时间
+    便捷函数：扫描所有用户的最后登录时间（综合两种方式，取最新时间）
 
     Args:
         days: 如果指定，只返回最近days天内有登录的用户
         sudo: 是否使用sudo
         exclude_system_users: 是否排除系统内置用户
+        use_combined: 是否综合两种方式取最新时间
 
     Returns:
         List[LastLoginInfo]: 所有用户的登录信息列表
     """
     checker = UserLoginChecker(sudo=sudo, exclude_system_users=exclude_system_users)
-    return checker.get_all_users_lastlog(days=days)
+    return checker.get_all_users_lastlog(days=days, use_combined=use_combined)
 
 
 if __name__ == "__main__":

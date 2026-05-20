@@ -20,7 +20,7 @@ from feature.utils.common_utils import cat_info, do_command
 from feature.utils.logs import get_logger
 from feature.utils.system import check_is_linux, check_is_root
 from feature.webhook.msg_handler import MessageHandler
-from toolkit.user_login import get_user_last_login
+from toolkit.user_login import get_user_combined_last_login
 
 logger = get_logger()
 
@@ -356,9 +356,9 @@ class HardDiskMonitor(Monitor):
 
         # 获取用户最后登录日期的辅助函数
         def get_user_last_login_date(username: str) -> str:
-            """获取用户最后登录日期，只返回日期部分"""
+            """获取用户最后登录日期（综合两种方式，取最新时间），只返回日期部分"""
             try:
-                login_info = get_user_last_login(username, sudo=True)
+                login_info = get_user_combined_last_login(username, sudo=True)
                 if login_info.login_time:
                     return login_info.login_time.strftime("%Y-%m-%d")
                 return "从未登录"
